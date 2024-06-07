@@ -455,7 +455,7 @@ def inscrever(request, curso_id):
     # Compara com o número de vagas
     # Caso seja maior ou igual redireciona
     if inscricoes_validas >= curso.vagas:
-        print(inscricoes_validas)
+        # print(inscricoes_validas)
         # O curso está lotado
         try:
           inscricao, criada = Inscricao.objects.get_or_create(participante=request.user, curso=curso, status=status_id_fila)
@@ -1639,7 +1639,9 @@ def gerar_relatorio(request, curso_id):
     nota_numerica=Cast('nota', FloatField())
         ).values('subtema__tema__id', 'subtema__tema__nome') \
         .annotate(media_notas=Avg('nota_numerica'))
-    medias_notas_dict = {item['subtema__tema__id']: item['media_notas'] for item in medias_notas_por_tema}
+    medias_notas_dict = {
+        item['subtema__tema__id']: item['media_notas'] for item in medias_notas_por_tema
+        }
     temas = Tema.objects.filter(subtema__avaliacao__curso_id=curso_id).distinct()
 
     # Conta o número de participantes distintos que avaliaram o curso
