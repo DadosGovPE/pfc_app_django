@@ -457,6 +457,7 @@ def inscrever(request, curso_id):
     if inscricoes_validas >= curso.vagas:
         # print(inscricoes_validas)
         # O curso está lotado
+        
         try:
           inscricao, criada = Inscricao.objects.get_or_create(participante=request.user, curso=curso, status=status_id_fila)
           if criada:
