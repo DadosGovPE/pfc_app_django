@@ -2222,19 +2222,28 @@ def curadoria(request):
 
 
 def curadoria_html_show(request):
-    year_range_curadoria = Curadoria.objects.aggregate(
-        min_year=Min(ExtractYear('mes_competencia')),
-        max_year=Max(ExtractYear('mes_competencia'))
-    )
-    min_year_curadoria = year_range_curadoria['min_year']
-    max_year_curadoria = year_range_curadoria['max_year']
+    try:
+        year_range_curadoria = Curadoria.objects.aggregate(
+            min_year=Min(ExtractYear('mes_competencia')),
+            max_year=Max(ExtractYear('mes_competencia'))
+        )
+        min_year_curadoria = year_range_curadoria['min_year']
+        max_year_curadoria = year_range_curadoria['max_year']
+    except:
+        min_year_curadoria = 0
+        max_year_curadoria = 0
+    
 
-    year_range_pfc = Curso.objects.aggregate(
-        min_year=Min(ExtractYear('data_inicio')),
-        max_year=Max(ExtractYear('data_inicio'))
-    )
-    min_year_pfc = year_range_pfc['min_year']
-    max_year_pfc = year_range_pfc['max_year']
+    try:
+        year_range_pfc = Curso.objects.aggregate(
+            min_year=Min(ExtractYear('data_inicio')),
+            max_year=Max(ExtractYear('data_inicio'))
+        )
+        min_year_pfc = year_range_pfc['min_year']
+        max_year_pfc = year_range_pfc['max_year']
+    except:
+        min_year_pfc = 0
+        max_year_pfc = 0
 
     min_year = 0
     max_year = 0
