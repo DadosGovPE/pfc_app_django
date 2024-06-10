@@ -2222,24 +2222,34 @@ def curadoria(request):
 
 
 def curadoria_html_show(request):
-    year_range_curadoria = Curadoria.objects.aggregate(
-        min_year=Min(ExtractYear('mes_competencia')),
-        max_year=Max(ExtractYear('mes_competencia'))
-    )
-    min_year_curadoria = year_range_curadoria['min_year'] if year_range_curadoria['min_year'] is not None else 0
-    max_year_curadoria = year_range_curadoria['max_year'] if year_range_curadoria['max_year'] is not None else 0
+    current_year = datetime.now().year
+    if Curadoria.objects.exists():
+        year_range_curadoria = Curadoria.objects.aggregate(
+            min_year=Min(ExtractYear('mes_competencia')),
+            max_year=Max(ExtractYear('mes_competencia'))
+        )
+        min_year_curadoria = year_range_curadoria['min_year'] if year_range_curadoria['min_year'] is not None else 0
+        max_year_curadoria = year_range_curadoria['max_year'] if year_range_curadoria['max_year'] is not None else 0
+    else:
+        min_year_curadoria = current_year
+        max_year_curadoria = current_year
 
-    year_range_pfc = Curso.objects.aggregate(
-        min_year=Min(ExtractYear('data_inicio')),
-        max_year=Max(ExtractYear('data_inicio'))
-    )
-    min_year_pfc = year_range_pfc['min_year'] if year_range_pfc['min_year'] is not None else 0
-    max_year_pfc = year_range_pfc['max_year'] if year_range_pfc['max_year'] is not None else 0
-
+    if Curso.objects.exists():
+        year_range_pfc = Curso.objects.aggregate(
+            min_year=Min(ExtractYear('data_inicio')),
+            max_year=Max(ExtractYear('data_inicio'))
+        )
+        min_year_pfc = year_range_pfc['min_year'] if year_range_pfc['min_year'] is not None else 0
+        max_year_pfc = year_range_pfc['max_year'] if year_range_pfc['max_year'] is not None else 0
+    else:
+        min_year_pfc = current_year
+        max_year_pfc = current_year
+        
     min_year = 0
     max_year = 0
 
     if int(min_year_pfc) < int(min_year_curadoria):
+
         min_year = int(min_year_pfc)
     else:
         min_year = int(min_year_curadoria)
