@@ -29,7 +29,7 @@
       <label for="email" class="sr-only">Email</label>
       <input type="text" value="{{ email }}" name="email" id="email" class="form-control mt-3" placeholder="Digite seu email" required>
       <label for="telefone" class="sr-only">Telefone</label>
-      <input type="text" value="{{ telefone }}" name="telefone" id="telefone" class="form-control mt-3" placeholder="Digite seu telefone" required>
+      <input type="text" value="{{ telefone }}" name="telefone" id="telefone" maxlength="15" onkeyup="handlePhone(event)" class="form-control mt-3" placeholder="Digite seu telefone (xx) xxxx-xxxx" required>
       <label for="orgao_origem" class="sr-only">Órgão de origem</label>
       <input type="text" value="{{ orgao_origem }}" name="orgao_origem" id="orgao_origem" class="form-control mt-3" placeholder="Digite seu órgão de origem" required>
       
@@ -44,7 +44,18 @@
 <div class="col"></div>
 </div>
 <script>
+const handlePhone = (event) => {
+  let input = event.target
+  input.value = phoneMask(input.value)
+}
 
+const phoneMask = (value) => {
+  if (!value) return ""
+  value = value.replace(/\D/g,'')
+  value = value.replace(/(\d{2})(\d)/,"($1) $2")
+  value = value.replace(/(\d)(\d{4})$/,"$1-$2")
+  return value
+}
 
 document.getElementById('meuFormulario').addEventListener('submit', function(e) {
     e.preventDefault();
