@@ -19,7 +19,7 @@ from django.template import loader
 from .models import Curso, Inscricao, StatusInscricao, Avaliacao, \
                     Validacao_CH, StatusValidacao, User, Certificado,\
                     Tema, Subtema, Carreira, Modalidade, Categoria, ItemRelatorio,\
-                    PlanoCurso, Trilha, Curadoria
+                    PlanoCurso, Trilha, Curadoria, AvaliacaoAberta
 from .forms import AvaliacaoForm, DateFilterForm, UserUpdateForm
 from django.db.models import Count, Q, Sum, F, \
                                 Avg, FloatField, When, BooleanField, \
@@ -533,9 +533,16 @@ def avaliacao(request, curso_id):
         for subtema in subtemas:
             #print("id: "+subtema.id)
             avaliacao = Avaliacao(curso=curso, participante=request.user,
-                                    subtema=subtema, nota=request.POST.get(subtema.nome))
+                                    subtema=subtema, 
+                                    nota=request.POST.get(subtema.nome)
+                                    )
             avaliacao.save()
 
+
+        avaliacao_aberta = AvaliacaoAberta(curso=curso, participante=request.user,
+                                           avaliacao=request.POST.get("avaliacao")
+                                           )
+        avaliacao_aberta.save()
         #avaliacao = form.save(commit=False)
         #avaliacao.participante = usuario
         

@@ -153,6 +153,7 @@ class Curso(models.Model):
     inst_promotora = models.ForeignKey(InstituicaoPromotora, on_delete=models.SET_NULL, blank=True, null=True)
     participantes = models.ManyToManyField(User, through='Inscricao', related_name='curso_participante')
     avaliacoes = models.ManyToManyField(User, through='Avaliacao', related_name='curso_avaliacao')
+    avaliacoes_abertas = models.ManyToManyField(User, through='AvaliacaoAberta', related_name='avaliacoes_abertas')
     #acao = models.ForeignKey(Acao, on_delete=models.CASCADE)
     #gestor = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     coordenador = models.ForeignKey(User, on_delete=models.SET_NULL, blank=True, null=True)
@@ -272,6 +273,19 @@ class Avaliacao(models.Model):
     class Meta:
         verbose_name_plural = "avaliações"
 
+
+class AvaliacaoAberta(models.Model):
+    curso = models.ForeignKey(Curso, on_delete=models.CASCADE)
+    participante = models.ForeignKey(User, on_delete=models.CASCADE)
+    
+    avaliacao = models.TextField(max_length=4000, default=None, blank=True, null=True)
+    
+    
+    def __str__(self):
+        return self.curso.nome_curso + ' > '+ self.participante.username
+    
+    class Meta:
+        verbose_name_plural = "avaliações abertas"
 
 def user_directory_path(instance, filename):
     # O "instance" é a instância do modelo Avaliacao e "filename" é o nome do arquivo original

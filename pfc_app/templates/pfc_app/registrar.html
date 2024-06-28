@@ -5,8 +5,8 @@
   <div class="col"></div>
   <div class="col-md-5 col-sm-12">
 <form id='meuFormulario' method="POST" action="{% url 'registrar' %}" class="form-signin">
-    {% include 'parciais/_messages.html' %}
-    {% csrf_token %}
+      {% include 'parciais/_messages.html' %}
+      {% csrf_token %}
 
     <div id='mensagemCarregando' class="alert alert-danger" style='display: none;'>
         
