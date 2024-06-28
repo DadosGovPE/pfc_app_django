@@ -171,6 +171,7 @@ admin.site.register(StatusCurso)
 admin.site.register(StatusInscricao)
 admin.site.register(StatusValidacao)
 admin.site.register(Avaliacao, AvaliacaoAdmin)
+admin.site.register(AvaliacaoAberta)
 admin.site.register(Tema)
 admin.site.register(Subtema, SubtemaAdmin)
 admin.site.register(Validacao_CH, Validacao_CHAdmin)
@@ -186,6 +187,7 @@ admin.site.register(Modalidade)
 admin.site.register(PlanoCurso, PlanoCursoAdmin)
 admin.site.register(Relatorio, RelatorioAdmin)
 admin.site.register(Curadoria, CuradoriaAdmin)
+
 
 
 
