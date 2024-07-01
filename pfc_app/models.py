@@ -393,6 +393,7 @@ class Certificado(models.Model):
     subcabecalho1 = models.CharField(max_length=100, default='')
     subcabecalho2 = models.CharField(max_length=100, default='')
     texto = models.TextField(max_length=4000, default='')
+    assinatura = models.FileField(upload_to='upload/certificado/', blank=True, null=True, default='upload/certificado/')
 
 
     def __str__(self):

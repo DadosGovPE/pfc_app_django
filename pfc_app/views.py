@@ -867,7 +867,7 @@ def generate_single_pdf(request, inscricao_id):
     p1=Paragraph(texto_customizado, style_body)
         # Caminho relativo para a imagem dentro do diretório 'static'
     imagem_relative_path = 'Certificado-FUNDO.png'
-    assinatura_relative_path = 'assinatura.jpg'
+    assinatura_relative_path = 'upload/certificado/assinatura.jpg'
     igpe_relative_path = 'igpe.png'
     egape_relative_path = 'Egape.png'
     pfc_relative_path = 'retangulartransp.png'
@@ -1053,7 +1053,7 @@ def generate_all_reconhecimento(request, validacao_id):
         
             # Caminho relativo para a imagem dentro do diretório 'static'
         
-        assinatura_relative_path = 'assinatura.jpg'
+        assinatura_relative_path = 'upload/certificado/assinatura.jpg'
         igpe_relative_path = 'igpe.png'
         egape_relative_path = 'Egape.jpg'
         pfc_relative_path = 'retangulartransp.png'
