@@ -36,14 +36,14 @@ class CursoAdmin(admin.ModelAdmin):
     inlines = [ InscricaoInline ]
 
     list_display = ('nome_curso', 'data_inicio', 'data_termino', 
-                    'vagas', 'numero_inscritos', 'status', 'periodo_avaliativo',
+                    'vagas', 'numero_inscritos', 'status', 'curso_priorizado', 'periodo_avaliativo',
                     'gerar_certificados', 'gerar_ata',)
     fields = ['nome_curso', 'ementa_curso', 'modalidade', 'tipo_reconhecimento', 'ch_curso', 'vagas',
                'categoria', 'trilha', 'curso_priorizado', 'descricao', ('data_inicio', 'data_termino'), 'turno', 'turma',
                'inst_certificadora', 'inst_promotora', 'coordenador', 'status', 'periodo_avaliativo', 'eh_evento',
                'horario', 'observacao', ]
     list_filter = ('nome_curso', 'data_inicio', 'data_termino', 'periodo_avaliativo',)
-    list_editable = ('status', 'periodo_avaliativo',)
+    list_editable = ('status', 'periodo_avaliativo', 'curso_priorizado',)
 
     def numero_inscritos(self, obj):
         users_aprovados = obj.inscricao_set.filter(
