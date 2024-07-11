@@ -19,7 +19,7 @@ from django.template import loader
 from .models import Curso, Inscricao, StatusInscricao, Avaliacao, \
                     Validacao_CH, StatusValidacao, User, Certificado,\
                     Tema, Subtema, Carreira, Modalidade, Categoria, ItemRelatorio,\
-                    PlanoCurso, Trilha, Curadoria, AvaliacaoAberta
+                    PlanoCurso, Trilha, Curadoria, AvaliacaoAberta, CursoPriorizado
 from .forms import AvaliacaoForm, DateFilterForm, UserUpdateForm
 from django.db.models import Count, Q, Sum, F, \
                                 Avg, FloatField, When, BooleanField, \
@@ -2353,3 +2353,29 @@ def curadoria_html(request, ano, mes):
     }
 
     return render(request, 'pfc_app/agenda_pfc.html', context)
+
+def estatistica_lnt(request):
+    # Contagem de cursos priorizados na tabela Curso
+    cursos_priorizados_count = Curso.objects.filter(curso_priorizado__isnull=False).count()
+    
+    # Contagem de cursos priorizados na tabela Curadoria
+    curadorias_priorizadas_count = Curadoria.objects.filter(curso_priorizado__isnull=False).count()
+    
+    # IDs de cursos priorizados que estão na tabela Curso
+    cursos_priorizados_ids = Curso.objects.filter(curso_priorizado__isnull=False).values_list('curso_priorizado_id', flat=True)
+    
+    # IDs de cursos priorizados que estão na tabela Curadoria
+    curadorias_priorizadas_ids = Curadoria.objects.filter(curso_priorizado__isnull=False).values_list('curso_priorizado_id', flat=True)
+    
+    # Contagem de cursos priorizados que não estão nem na tabela Curso nem na tabela Curadoria
+    cursos_nao_ofertados_count = CursoPriorizado.objects.filter(
+        ~Q(id__in=cursos_priorizados_ids) & ~Q(id__in=curadorias_priorizadas_ids)
+    ).count()
+
+    context = {
+        'cursos_priorizados_count': cursos_priorizados_count,
+        'curadorias_priorizadas_count': curadorias_priorizadas_count,
+        'cursos_nao_ofertados_count': cursos_nao_ofertados_count,
+    }
+    
+    return render(request, 'pfc_app/estatistica_priorizados.html', context)

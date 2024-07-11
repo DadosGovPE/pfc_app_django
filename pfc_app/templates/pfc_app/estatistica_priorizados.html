@@ -1,0 +1,9 @@
+{% extends 'base.html' %}
+
+{% block content %}
+{% include 'parciais/_messages.html' %}
+<h1>Estatísticas de Cursos Priorizados</h1>
+    <p>Quantidade de cursos priorizados ofertados pela tabela de cursos: {{ cursos_priorizados_count }}</p>
+    <p>Quantidade de cursos priorizados ofertados pela tabela de curadoria: {{ curadorias_priorizadas_count }}</p>
+    <p>Quantidade de cursos priorizados que não foram ofertados: {{ cursos_nao_ofertados_count }}</p>
+{% endblock %}
