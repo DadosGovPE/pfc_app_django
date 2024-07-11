@@ -60,6 +60,7 @@ from matplotlib.colors import to_rgb
 from pdf2docx import Converter
 from PIL import Image
 import shutil
+import re
 
 
 MONTHS = [

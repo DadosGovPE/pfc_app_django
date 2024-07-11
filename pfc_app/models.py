@@ -63,8 +63,7 @@ class User(AbstractUser):
             os.remove(self.avatar.path)
 
             # Defina o campo avatar como vazio para garantir que o arquivo não seja salvo novamente
-            
-
+             
 
 class StatusCurso(models.Model):
     nome = models.CharField(max_length=50)
@@ -99,6 +98,19 @@ class Trilha(models.Model):
 
     def __str__(self):
         return self.nome
+
+class CursoPriorizado(models.Model):
+    FORMA_CHOICES = [
+        ('PFC', 'PFC'),
+        ('Curadoria', 'Curadoria'),
+    ]
+    nome_sugestão_acao = models.CharField(max_length=400, blank=False, null=False)
+    forma_atendimento = models.CharField(max_length=10, choices=FORMA_CHOICES,  blank=True, null=True)
+    mes_competencia = models.DateField()
+    trilha = models.ForeignKey(Trilha, on_delete=models.SET_NULL, blank=True, null=True, related_name='cursos_priorizados')
+
+    class Meta:
+        verbose_name_plural = "cursos priorizados"
 
 class InstituicaoPromotora(models.Model):
     nome = models.CharField(max_length=400, blank=False, null=False)
@@ -164,6 +176,7 @@ class Curso(models.Model):
     eh_evento = models.BooleanField(default=False, verbose_name = ("É evento"))
     observacao = models.TextField(max_length=4000, blank=True, null=True, verbose_name = ("Observação"))
     horario = models.TextField(max_length=400, blank=True, null=True, verbose_name = ("Horário"))
+    curso_priorizado = models.ForeignKey(CursoPriorizado, on_delete=models.SET_NULL, blank=True, null=True, related_name='cursos_priorizados')
 
     def publish(self):
         self.published_date = timezone.now()
@@ -318,6 +331,7 @@ class Curadoria(models.Model):
     mes_competencia = models.DateField()
     trilha = models.ForeignKey(Trilha, on_delete=models.SET_NULL, blank=True, null=True, related_name='curadorias')
     permanente = models.BooleanField(default=False)
+    curso_priorizado = models.ForeignKey(CursoPriorizado, on_delete=models.SET_NULL, blank=True, null=True, related_name='curadorias_priorizadas')
 
 
 

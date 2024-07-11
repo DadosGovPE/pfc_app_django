@@ -39,7 +39,7 @@ class CursoAdmin(admin.ModelAdmin):
                     'vagas', 'numero_inscritos', 'status', 'periodo_avaliativo',
                     'gerar_certificados', 'gerar_ata',)
     fields = ['nome_curso', 'ementa_curso', 'modalidade', 'tipo_reconhecimento', 'ch_curso', 'vagas',
-               'categoria', 'trilha', 'descricao', ('data_inicio', 'data_termino'), 'turno', 'turma',
+               'categoria', 'trilha', 'curso_priorizado', 'descricao', ('data_inicio', 'data_termino'), 'turno', 'turma',
                'inst_certificadora', 'inst_promotora', 'coordenador', 'status', 'periodo_avaliativo', 'eh_evento',
                'horario', 'observacao', ]
     list_filter = ('nome_curso', 'data_inicio', 'data_termino', 'periodo_avaliativo',)
@@ -163,6 +163,10 @@ class TrilhaAdmin(admin.ModelAdmin):
     list_display = ('nome', 'cor_circulo', 'ordem_relatorio', 'fundo_tabela')
     list_editable = ('ordem_relatorio', 'cor_circulo', 'fundo_tabela',)
 
+class CursoPriorizadoAdmin(admin.ModelAdmin):
+    list_display = ('nome_sugestão_acao', 'forma_atendimento', 'mes_competencia', 'trilha')
+    list_editable = ('forma_atendimento', 'mes_competencia', 'trilha',)
+
 # Register your models here.
 admin.site.register(Curso, CursoAdmin)
 admin.site.register(User, CustomUserAdmin)
@@ -187,6 +191,7 @@ admin.site.register(Modalidade)
 admin.site.register(PlanoCurso, PlanoCursoAdmin)
 admin.site.register(Relatorio, RelatorioAdmin)
 admin.site.register(Curadoria, CuradoriaAdmin)
+admin.site.register(CursoPriorizado, CursoPriorizadoAdmin)
 
 
 
