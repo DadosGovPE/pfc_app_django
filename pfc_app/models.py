@@ -111,6 +111,8 @@ class CursoPriorizado(models.Model):
 
     class Meta:
         verbose_name_plural = "cursos priorizados"
+    def __str__(self):
+        return self.nome_sugestão_acao
 
 class InstituicaoPromotora(models.Model):
     nome = models.CharField(max_length=400, blank=False, null=False)
