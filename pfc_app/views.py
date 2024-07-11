@@ -1,4 +1,4 @@
-from django.shortcuts import render,redirect
+from django.shortcuts import render,redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib import messages, auth
@@ -19,7 +19,8 @@ from django.template import loader
 from .models import Curso, Inscricao, StatusInscricao, Avaliacao, \
                     Validacao_CH, StatusValidacao, User, Certificado,\
                     Tema, Subtema, Carreira, Modalidade, Categoria, ItemRelatorio,\
-                    PlanoCurso, Trilha, Curadoria, AvaliacaoAberta, CursoPriorizado
+                    PlanoCurso, Trilha, Curadoria, AvaliacaoAberta, CursoPriorizado,\
+                    AjustesPesquisa, PesquisaCursosPriorizados
 from .forms import AvaliacaoForm, DateFilterForm, UserUpdateForm
 from django.db.models import Count, Q, Sum, F, \
                                 Avg, FloatField, When, BooleanField, \
@@ -2379,3 +2380,40 @@ def estatistica_lnt(request):
     }
     
     return render(request, 'pfc_app/estatistica_priorizados.html', context)
+
+def listar_cursos_priorizados(request):
+    # Supondo que você deseja que o ano de referência padrão seja o ano atual
+    ano_atual = datetime.now().year
+
+    # Obtenha ou crie o registro de AjustesPesquisa
+    ajustes, created = AjustesPesquisa.objects.get_or_create(
+        defaults={'nome': 'padrao', 'ano_ref': ano_atual}
+    )
+
+    if not ajustes.is_aberta:
+        messages.error(request, f'Pesquisa de priorização fechada!')
+        return redirect('lista_cursos')
+
+    cursos = PesquisaCursosPriorizados.objects.filter(ano_ref=ajustes.ano_ref)
+    user_cursos = request.user.pesquisa_cursos_priorizados.all()
+
+    context = {
+        'cursos': cursos,
+        'user_cursos': user_cursos,
+        'ano_ref': ajustes.ano_ref
+    }
+    return render(request, 'pfc_app/pesquisa_priorizacao.html', context)
+
+@login_required
+def votar_cursos(request):
+    if request.method == 'POST':
+        try:
+            cursos_ids = request.POST.getlist('cursos')
+            cursos_selecionados = PesquisaCursosPriorizados.objects.filter(id__in=cursos_ids)
+            request.user.pesquisa_cursos_priorizados.set(cursos_selecionados)
+            messages.success(request, f'Priorizações computadas com sucesso!')
+        except:
+            messages.error(request, f'Algo deu errado!')
+
+    return redirect('lista_cursos')
+

@@ -73,7 +73,7 @@ class CustomUserAdmin(UserAdmin):
                            'cpf', 'nome', 'telefone', 'lotacao', 'lotacao_especifica', 'lotacao_especifica_2',
                            'classificacao_lotacao', 'cargo', 'nome_cargo', 'categoria', 'grupo_ocupacional',
                            'origem', 'simbologia', 'tipo_atuacao',
-                           'role', 'is_externo', 'avatar', )}),
+                           'role', 'is_externo', 'avatar', 'pesquisa_cursos_priorizados')}),
         ('Permissões', {'fields': ('is_staff', 'is_active', 'is_superuser', 'groups')}),
     )
     add_fieldsets = (
@@ -192,6 +192,8 @@ admin.site.register(PlanoCurso, PlanoCursoAdmin)
 admin.site.register(Relatorio, RelatorioAdmin)
 admin.site.register(Curadoria, CuradoriaAdmin)
 admin.site.register(CursoPriorizado, CursoPriorizadoAdmin)
+admin.site.register(AjustesPesquisa)
+admin.site.register(PesquisaCursosPriorizados)
 
 
 

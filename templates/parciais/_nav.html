@@ -132,7 +132,14 @@
                             <li><hr class="dropdown-divider"></li>
                             <li><a class="dropdown-item" href="{% url 'update_profile' %}">Meu Perfil</a></li>
                             <li><hr class="dropdown-divider"></li>
+                            {% if is_aberta %}
+                            <li><a class="dropdown-item" href="{% url 'listar_cursos_priorizados' %}">Pesquisa de priorização</a></li>
+                            {% else %}
+                            <li><a class="dropdown-item disabled" style="color: gray;" href="{% url 'listar_cursos_priorizados' %}">Pesquisa de priorização</a></li>
+                            {% endif %}
+                            <li><hr class="dropdown-divider"></li>
                             <li><a class="dropdown-item" href="{% url 'logout' %}">Sair</a></li>
+
                         </ul>
                     </li>
                     {% else %}

@@ -7,8 +7,15 @@ from django.dispatch import receiver
 import base64
 from django.conf import settings
 from django.utils import timezone
+from datetime import datetime
 
 # Create your models here.
+class PesquisaCursosPriorizados(models.Model):
+    nome = models.CharField(max_length=200, blank=False, null=False)
+    ano_ref = models.IntegerField(default=datetime.now().year)
+    def __str__(self):
+        return self.nome
+
 
 class User(AbstractUser):
     data_criacao = models.DateTimeField(auto_now_add=True)
@@ -28,6 +35,7 @@ class User(AbstractUser):
     lotacao_especifica = models.CharField(max_length=400, blank=True, null=True)
     lotacao_especifica_2 = models.CharField(max_length=400, blank=True, null=True, verbose_name = ("Lotação sigla"))
     classificacao_lotacao = models.CharField(max_length=400, blank=True, null=True)
+    pesquisa_cursos_priorizados = models.ManyToManyField(PesquisaCursosPriorizados, blank=True, null=True)
 
     is_ativo = models.BooleanField(default=True)
     role = models.CharField(max_length=40, default="USER")
@@ -64,6 +72,13 @@ class User(AbstractUser):
 
             # Defina o campo avatar como vazio para garantir que o arquivo não seja salvo novamente
              
+class AjustesPesquisa(models.Model):
+    nome = models.CharField(max_length=50)
+    is_aberta = models.BooleanField(default=False)
+    ano_ref = models.IntegerField()
+
+    def __str__(self):
+        return self.nome
 
 class StatusCurso(models.Model):
     nome = models.CharField(max_length=50)

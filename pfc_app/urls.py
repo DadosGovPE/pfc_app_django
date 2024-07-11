@@ -39,6 +39,8 @@ urlpatterns = [
     path('curadoria_show/', views.curadoria_html_show, name='curadoria_show'),
     path('curadoria_html/<int:ano>/<int:mes>/', views.curadoria_html, name='curadoria_html'),
     path('estatisticas_lnt/', views.estatistica_lnt, name='estatisticas_lnt'),
+    path('pesquisa_priorizacao/', views.listar_cursos_priorizados, name='listar_cursos_priorizados'),
+    path('votar/', views.votar_cursos, name='votar_cursos'),
 
 ]
 

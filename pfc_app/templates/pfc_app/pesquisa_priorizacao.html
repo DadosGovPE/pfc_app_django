@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+
+{% block content %}
+{% include 'parciais/_messages.html' %}
+
+<div class="d-flex p-2 justify-content-center mb-2"><h1>PESQUISA DE PRIORIZAÇÃO DE CURSOS - {{ano_ref}}</h1></div>
+<form method="POST" action="{% url 'votar_cursos' %}">
+    {% csrf_token %}
+    <ul>
+        {% for curso in cursos %}
+            <li>
+                <input type="checkbox" name="cursos" value="{{ curso.id }}" 
+                {% if curso in user_cursos %}checked{% endif %}>
+                {{ curso.nome }}
+            </li>
+        {% endfor %}
+    </ul>
+    <button class="btn btn-success " type="submit">Votar</button>
+</form>
+
+{% endblock %}
