@@ -104,7 +104,7 @@ class CursoPriorizado(models.Model):
         ('PFC', 'PFC'),
         ('Curadoria', 'Curadoria'),
     ]
-    nome_sugestão_acao = models.CharField(max_length=400, blank=False, null=False)
+    nome_sugestao_acao = models.CharField(max_length=400, blank=False, null=False)
     forma_atendimento = models.CharField(max_length=10, choices=FORMA_CHOICES,  blank=True, null=True)
     mes_competencia = models.DateField()
     trilha = models.ForeignKey(Trilha, on_delete=models.SET_NULL, blank=True, null=True, related_name='cursos_priorizados')
@@ -112,7 +112,7 @@ class CursoPriorizado(models.Model):
     class Meta:
         verbose_name_plural = "cursos priorizados"
     def __str__(self):
-        return self.nome_sugestão_acao
+        return f"({self.mes_competencia.strftime('%Y')}) {self.nome_sugestao_acao}"
 
 class InstituicaoPromotora(models.Model):
     nome = models.CharField(max_length=400, blank=False, null=False)

@@ -156,15 +156,15 @@ class RelatorioAdmin(admin.ModelAdmin):
     list_display = ('codigo',)
 
 class CuradoriaAdmin(admin.ModelAdmin):
-    list_display = ('nome_curso', 'mes_competencia', 'permanente',)
-    list_editable = ('permanente',)
+    list_display = ('nome_curso', 'curso_priorizado', 'mes_competencia', 'permanente',)
+    list_editable = ('permanente', 'curso_priorizado',)
 
 class TrilhaAdmin(admin.ModelAdmin):
     list_display = ('nome', 'cor_circulo', 'ordem_relatorio', 'fundo_tabela')
     list_editable = ('ordem_relatorio', 'cor_circulo', 'fundo_tabela',)
 
 class CursoPriorizadoAdmin(admin.ModelAdmin):
-    list_display = ('nome_sugestão_acao', 'forma_atendimento', 'mes_competencia', 'trilha')
+    list_display = ('nome_sugestao_acao', 'forma_atendimento', 'mes_competencia', 'trilha')
     list_editable = ('forma_atendimento', 'mes_competencia', 'trilha',)
 
 # Register your models here.
