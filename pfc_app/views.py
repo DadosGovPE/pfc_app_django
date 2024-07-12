@@ -1009,7 +1009,7 @@ def generate_all_reconhecimento(request, validacao_id):
         rodape_custom = rodape
         local_data_custom = local_data
         rodape2_custom = rodape2
-        pdf_filename = os.path.join(output_folder, f"{user.username}-requerimento.pdf")
+        pdf_filename = os.path.join(output_folder, f"{validacao_id}-{user.username}-requerimento.pdf")
         # Crie o PDF usando ReportLab
 
         style_body = ParagraphStyle('body',
