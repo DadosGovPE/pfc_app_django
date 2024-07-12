@@ -4,7 +4,7 @@
 {% include 'parciais/_messages.html' %}
 
 <div class="d-flex p-2 justify-content-center mb-2">
-    <h1>ESTATÍSTICA DE CURSOS PRIORIZADOS</h1>
+    <h1>ESTATÍSTICA DE CURSOS PRIORIZADOS DE {{ano_referencia}}</h1>
 </div>
 <div class="container">
     <div class="row">
@@ -35,6 +35,43 @@
                 <div class="kpi-value">{{ cursos_priorizados_ofertados }}</div>
                 <div class="kpi-percentage">{{ total_ofertado_percent }}%</div>
             </div>
+        </div>
+    </div>
+    <div class="row mt-5">
+        <div class="col-md-6">
+            <h3>Cursos Priorizados Não Ofertados</h3>
+            <table class="table">
+                <thead>
+                <tr>
+                    <th scope="col" class="col-6">NOME DO CURSO</th>
+                    <th scope="col" class="col-6 text-center">FORMA DE ATENDIMENTO</th>
+
+                </tr>
+                </thead>
+                <tbody>
+                {% for curso in cursos_nao_ofertados %}
+                <tr>
+                    <th scope="row">{{ curso.nome_sugestao_acao }}</th>
+                    <td class="text-center">{{ curso.forma_atendimento }}</td>
+                </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <div class="col-md-2"></div>
+        <div class="col-md-4">
+            <form method="POST" action="." class="d-flex align-items-center">
+                {% csrf_token %}
+                <div class="form-floating flex-grow-1 me-2">
+                    <select class="form-control" style="background-color: #f5f5f5;" name="ano" id="id_ano">
+                        {% for ano in todos_anos %}
+                            <option value="{{ ano }}">{{ ano }}</option>
+                        {% endfor %}
+                    </select>
+                    <label for="id_ano">Escolha o ano</label>
+                </div>
+                <button type="submit" class="btn btn-success">Filtrar</button>
+            </form>
         </div>
     </div>
 </div>

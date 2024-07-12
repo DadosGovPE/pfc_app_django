@@ -126,6 +126,8 @@ class CursoPriorizado(models.Model):
 
     class Meta:
         verbose_name_plural = "cursos priorizados"
+        ordering = ['-mes_competencia', 'nome_sugestao_acao']
+        
     def __str__(self):
         return f"({self.mes_competencia.strftime('%Y')}) {self.nome_sugestao_acao}"
 

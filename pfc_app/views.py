@@ -568,7 +568,7 @@ def avaliacao(request, curso_id):
 
     return render(request, 'pfc_app/avaliacao.html', {'temas': temas, 'curso':curso})
 
-
+@login_required
 def validar_ch(request):
     if request.method == 'POST':
         status_validacao = StatusValidacao.objects.get(nome="EM ANÁLISE")
@@ -634,7 +634,7 @@ def validar_ch(request):
 def download_all_pdfs(request):
     return render(request, 'pfc_app/download_all_pdfs.html')
 
-
+@login_required
 def generate_all_pdfs(request, curso_id, unico=0):
     try:
       curso = Curso.objects.get(pk=curso_id)
@@ -781,7 +781,7 @@ def generate_all_pdfs(request, curso_id, unico=0):
 
     return response
 
-
+@login_required
 def generate_single_pdf(request, inscricao_id):
     try:
       inscricao = Inscricao.objects.get(pk=inscricao_id)
@@ -921,7 +921,7 @@ def generate_single_pdf(request, inscricao_id):
     return pdf_filename
 
 
-
+@login_required
 def generate_all_reconhecimento(request, validacao_id):
     try:
       validacao = Validacao_CH.objects.get(pk=validacao_id)
@@ -1642,7 +1642,7 @@ def pagina_fotos(c: canvas.Canvas, width, height):
 
     c.showPage()
 
-
+@login_required
 def gerar_relatorio(request, curso_id):
     avaliacoes = Avaliacao.objects.filter(curso_id=curso_id).select_related('subtema', 'subtema__tema')
     medias_notas_por_tema = Avaliacao.objects.filter(~Q(nota='0'), curso_id=curso_id ).annotate(
@@ -1934,7 +1934,7 @@ def salva_fotos(fotos):
                     f.write(chunk)
 
 
-
+@login_required
 def relatorio(request):
     cursos = Curso.objects.order_by('data_inicio').filter(
         status__nome = 'FINALIZADO', planocurso__isnull=False)
@@ -1995,7 +1995,7 @@ def draw_logos_curadoria(c: canvas.Canvas, width, height):
     c.drawImage(seplag_path, x_seplag, y_seplag, width=logo_width_seplag, height=logo_height_seplag, mask='auto')
     c.drawImage(pfc_path, x_pfc, y_pfc, width=logo_width, height=logo_height, mask='auto')
 
-
+@login_required
 def gerar_curadoria(request, ano, mes):
     # Ano e mês são presumivelmente passados como inteiros, se não, converta-os.
     ano = int(ano)
@@ -2200,7 +2200,7 @@ def gerar_curadoria(request, ano, mes):
     return response
 
 
-
+@login_required
 def curadoria(request):
     current_year = datetime.now().year
     if Curadoria.objects.exists():
@@ -2258,7 +2258,7 @@ def curadoria(request):
 
     return render(request, 'pfc_app/curadoria.html' ,context)
 
-
+@login_required
 def curadoria_html_show(request):
     current_year = datetime.now().year
     if Curadoria.objects.exists():
@@ -2317,6 +2317,7 @@ def curadoria_html_show(request):
 
     return render(request, 'pfc_app/curadoria_show.html' ,context)
 
+@login_required
 def curadoria_html(request, ano, mes):
 
     ano = int(ano)
@@ -2355,21 +2356,30 @@ def curadoria_html(request, ano, mes):
 
     return render(request, 'pfc_app/agenda_pfc.html', context)
 
+@login_required
 def estatistica_lnt(request):
-    total_cursos = Curso.objects.count()
-    total_curadorias = Curadoria.objects.count()
+    if request.method == 'GET':
+        ano_referencia = datetime.now().year
+    elif request.method == 'POST':
+        ano_referencia = request.POST.get('ano')
+
+    todos_anos = CursoPriorizado.objects.dates('mes_competencia', 'year', order='ASC').distinct()
+
+
+    total_cursos = Curso.objects.filter(Q(data_termino__year=ano_referencia)).count()
+    total_curadorias = Curadoria.objects.filter(Q(mes_competencia__year=ano_referencia)).count()
     total_cursos_ofertados = total_cursos + total_curadorias
-    total_cursos_priorizados = CursoPriorizado.objects.all().count()
-    # Contagem de cursos priorizados na tabela Curso
-    cursos_priorizados_count = Curso.objects.filter(curso_priorizado__isnull=False).count()
-    curadorias_priorizadas_count = Curadoria.objects.filter(curso_priorizado__isnull=False).count()
-    cursos_priorizados_ids = Curso.objects.filter(curso_priorizado__isnull=False).values_list('curso_priorizado_id', flat=True)
-    curadorias_priorizadas_ids = Curadoria.objects.filter(curso_priorizado__isnull=False).values_list('curso_priorizado_id', flat=True)
+    total_cursos_priorizados = CursoPriorizado.objects.filter(Q(mes_competencia__year=ano_referencia)).count()
+ 
+    cursos_priorizados_count = Curso.objects.filter(curso_priorizado__isnull=False, data_termino__year=ano_referencia).count()
+    curadorias_priorizadas_count = Curadoria.objects.filter(curso_priorizado__isnull=False, mes_competencia__year=ano_referencia).count()
+    cursos_priorizados_ids = Curso.objects.filter(curso_priorizado__isnull=False, data_termino__year=ano_referencia).values_list('curso_priorizado_id', flat=True)
+    curadorias_priorizadas_ids = Curadoria.objects.filter(curso_priorizado__isnull=False, mes_competencia__year=ano_referencia).values_list('curso_priorizado_id', flat=True)
     cursos_nao_ofertados_count = CursoPriorizado.objects.filter(
-        ~Q(id__in=cursos_priorizados_ids) & ~Q(id__in=curadorias_priorizadas_ids)
+        ~Q(id__in=cursos_priorizados_ids) & ~Q(id__in=curadorias_priorizadas_ids) & Q(mes_competencia__year=ano_referencia)
     ).count()
     cursos_nao_ofertados = CursoPriorizado.objects.filter(
-        ~Q(id__in=cursos_priorizados_ids) & ~Q(id__in=curadorias_priorizadas_ids)
+        ~Q(id__in=cursos_priorizados_ids) & ~Q(id__in=curadorias_priorizadas_ids) & Q(mes_competencia__year=ano_referencia)
     )
 
 
@@ -2379,6 +2389,8 @@ def estatistica_lnt(request):
 
     cursos_priorizados_ofertados = total_cursos_priorizados - cursos_nao_ofertados_count
     context = {
+        'todos_anos': [date.year for date in todos_anos],
+        'ano_referencia': ano_referencia,
         'cursos_priorizados_count': cursos_priorizados_count,
         'curadorias_priorizadas_count': curadorias_priorizadas_count,
         'cursos_nao_ofertados_count': cursos_nao_ofertados_count,
@@ -2393,6 +2405,7 @@ def estatistica_lnt(request):
     
     return render(request, 'pfc_app/estatistica_priorizados.html', context)
 
+@login_required
 def listar_cursos_priorizados(request):
     # Supondo que você deseja que o ano de referência padrão seja o ano atual
     ano_atual = datetime.now().year
@@ -2428,4 +2441,60 @@ def votar_cursos(request):
             messages.error(request, f'Algo deu errado!')
 
     return redirect('lista_cursos')
+
+def cursos_mais_votados(request):
+    ano_referencia_pesquisa = AjustesPesquisa.objects.get(nome='padrao').ano_ref
+    data_referencia = datetime(ano_referencia_pesquisa, 1, 1).date()
+    if request.method == 'POST':
+        cursos_selecionados = request.POST.getlist('cursos')
+        cursos_selecionados_ids = [int(curso_id) for curso_id in cursos_selecionados]
+
+        # Cursos atualmente priorizados
+        cursos_priorizados = CursoPriorizado.objects.filter(mes_competencia=data_referencia).values_list('nome_sugestao_acao', flat=True)
+
+        # Adicionar cursos que foram selecionados e não estão na tabela CursoPriorizado
+        for curso_id in cursos_selecionados_ids:
+            curso = PesquisaCursosPriorizados.objects.get(id=curso_id)
+            mes_ref = datetime(curso.ano_ref, 1, 1).date()
+            if curso.nome not in cursos_priorizados:
+                CursoPriorizado.objects.create(nome_sugestao_acao=curso.nome, mes_competencia=mes_ref)
+
+        # Remover cursos que foram desmarcados e estão na tabela CursoPriorizado
+        cursos_a_remover = PesquisaCursosPriorizados.objects.exclude(id__in=cursos_selecionados_ids)
+        for curso in cursos_a_remover:
+            CursoPriorizado.objects.filter(nome_sugestao_acao=curso.nome).delete()
+
+        messages.success(request, f'Priorizações enviadas com sucesso!')
+        return redirect('cursos_mais_votados')  # Redireciona para a própria página
+
+    cursos_votados = PesquisaCursosPriorizados.objects.filter(ano_ref=ano_referencia_pesquisa).annotate(num_votos=Count('user')).order_by('-num_votos')
+
+    # Obter os IDs dos cursos já priorizados
+    cursos_priorizados_nomes = CursoPriorizado.objects.filter(mes_competencia=data_referencia).values_list('nome_sugestao_acao', flat=True)
+    cursos_priorizados_ids = PesquisaCursosPriorizados.objects.filter(ano_ref=ano_referencia_pesquisa, nome__in=cursos_priorizados_nomes).values_list('id', flat=True)
+
+    context = {
+        'ano_referencia_pesquisa': ano_referencia_pesquisa,
+        'cursos_votados': cursos_votados,
+        'cursos_priorizados_ids': list(cursos_priorizados_ids),  # Convertendo para lista para usar no template
+    }
+
+    return render(request, 'pfc_app/cursos_mais_votados.html', context)
+
+# def cursos_mais_votados(request):
+#     if request.method == 'POST':
+#         cursos_selecionados = request.POST.getlist('cursos')
+#         for curso_id in cursos_selecionados:
+#             curso = PesquisaCursosPriorizados.objects.get(id=curso_id)
+#             mes_ref = datetime(curso.ano_ref, 1, 1).date()
+#             CursoPriorizado.objects.create(nome_sugestao_acao=curso.nome, mes_competencia=mes_ref)
+#         return redirect('cursos_mais_votados')  # Substitua 'cursos_mais_votados' pelo nome da sua URL
+
+#     cursos_votados = PesquisaCursosPriorizados.objects.annotate(num_votos=Count('user')).order_by('-num_votos')
+
+#     context = {
+#         'cursos_votados': cursos_votados,
+#     }
+
+#     return render(request, 'pfc_app/cursos_mais_votados.html', context)
 

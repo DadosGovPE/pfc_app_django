@@ -41,6 +41,7 @@ urlpatterns = [
     path('estatisticas_lnt/', views.estatistica_lnt, name='estatisticas_lnt'),
     path('pesquisa_priorizacao/', views.listar_cursos_priorizados, name='listar_cursos_priorizados'),
     path('votar/', views.votar_cursos, name='votar_cursos'),
+    path('cursos_mais_votados/', views.cursos_mais_votados, name='cursos_mais_votados'),
 
 ]
 

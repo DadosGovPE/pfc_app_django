@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+
+{% block content %}
+{% include 'parciais/_messages.html' %}
+
+<div class="container mt-5">
+    <h1 class="mb-4">Cursos Mais Votados - Pesquisa {{ano_referencia_pesquisa}}</h1>
+    <form method="POST" action=".">
+        {% csrf_token %}
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th scope="col">Nome do Curso</th>
+                    <th scope="col">Quantidade de Votos</th>
+                    <th scope="col">Selecionar</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for curso in cursos_votados %}
+                    <tr>
+                        <td>{{ curso.nome }}</td>
+                        <td>{{ curso.num_votos }}</td>
+                        <td>
+                            <input type="checkbox" name="cursos" value="{{ curso.id }}"
+                                {% if curso.id in cursos_priorizados_ids %} checked {% endif %}>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        <button type="submit" class="btn btn-success">Enviar Para Tabela de Cursos Priorizados</button>
+    </form>
+</div>
+
+{% endblock %}
