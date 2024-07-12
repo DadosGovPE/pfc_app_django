@@ -2,8 +2,45 @@
 
 {% block content %}
 {% include 'parciais/_messages.html' %}
-<h1>Estatísticas de Cursos Priorizados</h1>
-    <p>Quantidade de cursos priorizados ofertados pela tabela de cursos: {{ cursos_priorizados_count }}</p>
-    <p>Quantidade de cursos priorizados ofertados pela tabela de curadoria: {{ curadorias_priorizadas_count }}</p>
-    <p>Quantidade de cursos priorizados que não foram ofertados: {{ cursos_nao_ofertados_count }}</p>
+
+<div class="d-flex p-2 justify-content-center mb-2">
+    <h1>ESTATÍSTICA DE CURSOS PRIORIZADOS</h1>
+</div>
+<div class="container">
+    <div class="row">
+        <div class="col-md-3">
+            <div class="kpi-box">
+                <div class="kpi-title">Cursos Priorizados (Tabela de Cursos)</div>
+                <div class="kpi-value">{{ cursos_priorizados_count }}</div>
+                <div class="kpi-percentage">{{ cursos_priorizados_percent }}%</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="kpi-box">
+                <div class="kpi-title">Cursos Priorizados (Tabela de Curadoria)</div>
+                <div class="kpi-value">{{ curadorias_priorizadas_count }}</div>
+                <div class="kpi-percentage">{{ curadorias_priorizadas_percent }}%</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="kpi-box">
+                <div class="kpi-title">Cursos Priorizados Não Ofertados</div>
+                <div class="kpi-value">{{ cursos_nao_ofertados_count }}</div>
+                <div class="kpi-percentage">-</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="kpi-box">
+                <div class="kpi-title">Total de cursos priorizados ofertados</div>
+                <div class="kpi-value">{{ cursos_priorizados_ofertados }}</div>
+                <div class="kpi-percentage">{{ total_ofertado_percent }}%</div>
+            </div>
+        </div>
+    </div>
+</div>
+{%comment%}
+{% for curso in cursos_nao_ofertados %}
+                        <li>{{ curso.nome_sugestao_acao }}</li>
+                    {% endfor %}
+{%endcomment%}
 {% endblock %}

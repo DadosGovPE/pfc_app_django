@@ -2356,27 +2356,39 @@ def curadoria_html(request, ano, mes):
     return render(request, 'pfc_app/agenda_pfc.html', context)
 
 def estatistica_lnt(request):
+    total_cursos = Curso.objects.count()
+    total_curadorias = Curadoria.objects.count()
+    total_cursos_ofertados = total_cursos + total_curadorias
+    total_cursos_priorizados = CursoPriorizado.objects.all().count()
     # Contagem de cursos priorizados na tabela Curso
     cursos_priorizados_count = Curso.objects.filter(curso_priorizado__isnull=False).count()
-    
-    # Contagem de cursos priorizados na tabela Curadoria
     curadorias_priorizadas_count = Curadoria.objects.filter(curso_priorizado__isnull=False).count()
-    
-    # IDs de cursos priorizados que estão na tabela Curso
     cursos_priorizados_ids = Curso.objects.filter(curso_priorizado__isnull=False).values_list('curso_priorizado_id', flat=True)
-    
-    # IDs de cursos priorizados que estão na tabela Curadoria
     curadorias_priorizadas_ids = Curadoria.objects.filter(curso_priorizado__isnull=False).values_list('curso_priorizado_id', flat=True)
-    
-    # Contagem de cursos priorizados que não estão nem na tabela Curso nem na tabela Curadoria
     cursos_nao_ofertados_count = CursoPriorizado.objects.filter(
         ~Q(id__in=cursos_priorizados_ids) & ~Q(id__in=curadorias_priorizadas_ids)
     ).count()
+    cursos_nao_ofertados = CursoPriorizado.objects.filter(
+        ~Q(id__in=cursos_priorizados_ids) & ~Q(id__in=curadorias_priorizadas_ids)
+    )
 
+
+    cursos_priorizados_percent = (cursos_priorizados_count / total_cursos * 100) if total_cursos else 0
+    curadorias_priorizadas_percent = (curadorias_priorizadas_count / total_curadorias * 100) if total_curadorias else 0
+    total_ofertado_percent = ((total_cursos_priorizados - cursos_nao_ofertados_count) / total_cursos_priorizados * 100) if total_cursos_priorizados else 0
+
+    cursos_priorizados_ofertados = total_cursos_priorizados - cursos_nao_ofertados_count
     context = {
         'cursos_priorizados_count': cursos_priorizados_count,
         'curadorias_priorizadas_count': curadorias_priorizadas_count,
         'cursos_nao_ofertados_count': cursos_nao_ofertados_count,
+        'cursos_priorizados_percent': round(cursos_priorizados_percent, 2),
+        'curadorias_priorizadas_percent': round(curadorias_priorizadas_percent, 2),
+        'total_ofertado_percent': round(total_ofertado_percent, 2),
+        'total_cursos_ofertados': total_cursos_ofertados,
+        'cursos_priorizados_ofertados': cursos_priorizados_ofertados,
+        'cursos_nao_ofertados': cursos_nao_ofertados,
+
     }
     
     return render(request, 'pfc_app/estatistica_priorizados.html', context)
