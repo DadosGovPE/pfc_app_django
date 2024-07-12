@@ -20,7 +20,7 @@ pydantic_core==2.14.6
 python-dotenv==1.0.0
 reportlab==4.0.6
 soupsieve==2.4.1
-sqlparse==0.4.4
+sqlparse==0.5.0
 typing_extensions==4.9.0
 tzdata==2023.3
 validate-docbr==1.10.0
