@@ -44,6 +44,8 @@ class CursoAdmin(admin.ModelAdmin):
                'horario', 'observacao', ]
     list_filter = ('nome_curso', 'data_inicio', 'data_termino', 'periodo_avaliativo',)
     list_editable = ('status', 'periodo_avaliativo', 'curso_priorizado',)
+    autocomplete_fields = ['curso_priorizado']
+
 
     def numero_inscritos(self, obj):
         users_aprovados = obj.inscricao_set.filter(
@@ -158,12 +160,14 @@ class RelatorioAdmin(admin.ModelAdmin):
 class CuradoriaAdmin(admin.ModelAdmin):
     list_display = ('nome_curso', 'curso_priorizado', 'mes_competencia', 'permanente',)
     list_editable = ('permanente', 'curso_priorizado',)
+    autocomplete_fields = ['curso_priorizado']
 
 class TrilhaAdmin(admin.ModelAdmin):
     list_display = ('nome', 'cor_circulo', 'ordem_relatorio', 'fundo_tabela')
     list_editable = ('ordem_relatorio', 'cor_circulo', 'fundo_tabela',)
 
 class CursoPriorizadoAdmin(admin.ModelAdmin):
+    search_fields = ['nome_sugestao_acao']
     list_display = ('nome_sugestao_acao', 'forma_atendimento', 'mes_competencia', 'trilha')
     list_editable = ('forma_atendimento', 'mes_competencia', 'trilha',)
 

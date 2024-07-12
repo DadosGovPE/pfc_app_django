@@ -2382,14 +2382,14 @@ def estatistica_lnt(request):
     todos_anos = CursoPriorizado.objects.dates('mes_competencia', 'year', order='ASC').distinct()
 
 
-    total_cursos = Curso.objects.filter(Q(data_termino__year=ano_referencia)).count()
+    total_cursos = Curso.objects.filter(Q(data_inicio__year=ano_referencia)).count()
     total_curadorias = Curadoria.objects.filter(Q(mes_competencia__year=ano_referencia)).count()
     total_cursos_ofertados = total_cursos + total_curadorias
     total_cursos_priorizados = CursoPriorizado.objects.filter(Q(mes_competencia__year=ano_referencia)).count()
  
-    cursos_priorizados_count = Curso.objects.filter(curso_priorizado__isnull=False, data_termino__year=ano_referencia).count()
+    cursos_priorizados_count = Curso.objects.filter(curso_priorizado__isnull=False, data_inicio__year=ano_referencia).count()
     curadorias_priorizadas_count = Curadoria.objects.filter(curso_priorizado__isnull=False, mes_competencia__year=ano_referencia).count()
-    cursos_priorizados_ids = Curso.objects.filter(curso_priorizado__isnull=False, data_termino__year=ano_referencia).values_list('curso_priorizado_id', flat=True)
+    cursos_priorizados_ids = Curso.objects.filter(curso_priorizado__isnull=False, data_inicio__year=ano_referencia).values_list('curso_priorizado_id', flat=True)
     curadorias_priorizadas_ids = Curadoria.objects.filter(curso_priorizado__isnull=False, mes_competencia__year=ano_referencia).values_list('curso_priorizado_id', flat=True)
     cursos_nao_ofertados_count = CursoPriorizado.objects.filter(
         ~Q(id__in=cursos_priorizados_ids) & ~Q(id__in=curadorias_priorizadas_ids) & Q(mes_competencia__year=ano_referencia)
@@ -2416,6 +2416,7 @@ def estatistica_lnt(request):
         'total_cursos_ofertados': total_cursos_ofertados,
         'cursos_priorizados_ofertados': cursos_priorizados_ofertados,
         'cursos_nao_ofertados': cursos_nao_ofertados,
+        'cursos_priorizados': cursos_nao_ofertados_count + cursos_priorizados_ofertados
 
     }
     
@@ -2513,4 +2514,86 @@ def cursos_mais_votados(request):
 #     }
 
 #     return render(request, 'pfc_app/cursos_mais_votados.html', context)
+def get_month_name(month_number):
+    """Retorna o nome do mês dado o seu número."""
+    for month in MONTHS:
+        if month[0] == month_number:
+            return month[1]
+    return ""
 
+def generate_bda_pdf(request):
+    cursos = Curso.objects.filter(data_inicio__month=5, curso_priorizado__isnull=False)
+    curadorias = Curadoria.objects.filter(mes_competencia__month=5, curso_priorizado__isnull=False)
+    
+    # Cria o documento PDF
+    pdf_path = os.path.join(settings.BASE_DIR, 'pdf_output', 'sugestoes_de_acao.pdf')
+    doc = SimpleDocTemplate(pdf_path, pagesize=A4)
+
+    # Estilos
+    styles = getSampleStyleSheet()
+    style_normal = styles['Normal']
+    style_title = styles['Title']
+
+    # Estilo para células de tabela com quebra de linha
+    table_cell_style = ParagraphStyle(name='Table_Cell', fontSize=10, leading=12, wordWrap='CJK')
+    header_cell_style = ParagraphStyle(name='Header_Cell', fontSize=10, leading=12, alignment=1, wordWrap='CJK')  # Centralizado
+    # Elementos do PDF
+    elements = []
+
+    # Título
+    elements.append(Paragraph('Sugestões de Ação', style_title))
+
+    # Dados da tabela
+    header = [
+        Paragraph('Nome da Sugestão', header_cell_style),
+        Paragraph('Curso ofertado', header_cell_style),
+        Paragraph('Forma de Atendimento', header_cell_style),
+        Paragraph('Mês', header_cell_style)
+    ]
+    data = [header]
+    
+    for curso in cursos:
+        data.append([
+            Paragraph(curso.curso_priorizado.nome_sugestao_acao, table_cell_style),
+            Paragraph(curso.nome_curso, table_cell_style),
+            'PFC',
+            get_month_name(curso.data_inicio.month),
+            
+        ])
+    for curadoria in curadorias:
+        data.append([
+            Paragraph(curadoria.curso_priorizado.nome_sugestao_acao, table_cell_style),
+            Paragraph(curadoria.nome_curso, table_cell_style),
+            'Curadoria',
+            get_month_name(curadoria.mes_competencia.month),
+            
+        ])
+
+    col_widths = [150, 270, 80, 50]  # Define larguras fixas para as colunas
+    # Cria a tabela
+    table = Table(data, colWidths=col_widths)
+    table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('ALIGN', (0, 0), (-1, 0), 'CENTER'),
+        ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+        ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
+        ('GRID', (0, 0), (-1, -1), 1, colors.black),
+        ('VALIGN', (0, 1), (-1, -1), 'TOP'),  # Alinha o texto ao topo da célula para as linhas de dados
+    ]))
+
+    elements.append(table)
+
+    # Gera o PDF
+    doc.build(elements)
+
+    # Lê o PDF gerado
+    with open(pdf_path, 'rb') as pdf_file:
+        pdf_data = pdf_file.read()
+
+    # Cria uma resposta HTTP com o PDF
+    response = HttpResponse(pdf_data, content_type='application/pdf')
+    response['Content-Disposition'] = f'inline; filename="sugestoes_de_acao.pdf"'
+
+    return response
