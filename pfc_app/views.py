@@ -62,6 +62,8 @@ from pdf2docx import Converter
 from PIL import Image
 import shutil
 import re
+from django.core.files.storage import default_storage
+from django.core.files.base import ContentFile
 
 
 MONTHS = [
@@ -611,6 +613,19 @@ def validar_ch(request):
                                  conhecimento_posterior=conhecimento_posterior,
                                  voce_indicaria=voce_indicaria)
         avaliacao.save()
+
+        # Renomeando o arquivo PDF
+        caminho_antigo = avaliacao.arquivo_pdf.path
+        novo_nome_arquivo = f"{avaliacao.id}-{request.user.username}-certificado.pdf"
+        caminho_novo = os.path.join(os.path.dirname(caminho_antigo), novo_nome_arquivo)
+
+        # Renomeando o arquivo no sistema de arquivos
+        os.rename(caminho_antigo, caminho_novo)
+
+        # Atualizando o campo arquivo_pdf do objeto avaliacao
+        avaliacao.arquivo_pdf.name = caminho_novo
+        avaliacao.save()
+
         # Redirecionar ou fazer algo após o envio bem-sucedido
         messages.success(request, 'Arquivo enviado com sucesso!')
         return redirect('validar_ch')
