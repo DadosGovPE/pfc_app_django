@@ -147,6 +147,82 @@
       </div>
     </div>
   </div>
+
+{% empty %}
+<div class="col-sm-4"></div>
+<div class="col-sm-4">
+<div class="card border-secondary mb-3 mt-3 position-relative zoom" style="height: auto;">
+  {% if curso.num_inscricoes >= curso.vagas %}
+    <span class="position-absolute top-0 end-0 badge bg-danger p-2">Lotado</span>
+  {% endif %}
+
+  <div class="card-body justify-content-between d-flex flex-column">
+      
+        <h6 class="card-title mb-3 text-center">
+            <strong>CALMA, NOVOS CURSOS EM BREVE!</strong>
+        </h6>
+        <div class="d-flex justify-content-center">
+          <img src="/media/minion.png" alt="" width="250" height="250">
+        </div>
+
+      <div class="btn-toolbar justify-content-between">
+          <div class="text-left mr-2">
+            {% if curso.usuario_inscrito %}
+              {% if curso.status_inscricao == "CANCELADA" %}
+                <a href="#" class="btn btn-danger position-relative">
+                
+                  <i class="fa-solid fa-circle-check"
+                  style="color: lightgreen;"></i>  INSCRIÇÃO CANCELADA 
+                {% elif curso.status_inscricao == "EM FILA" %}
+                <a href="#" class="btn btn-warning position-relative">
+                
+                  <i class="fa-solid fa-circle-check"
+                  style="color: lightgreen;"></i>  INSCRIÇÃO EM FILA
+                {% else %}
+                <a href="#" class="btn btn-secondary position-relative" data-bs-toggle="modal" data-bs-target="#staticBackdrop{{ forloop.counter }}">
+                  <i class="fa-solid fa-circle-check"
+                  style="color: lightgreen;"></i>  INSCRITO 
+              {% endif %}
+              
+              
+              {% with numerator=curso.num_inscricoes denominator=curso.vagas %}
+              {% if numerator|div:denominator > 0.5 %}
+              <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                {{curso.num_inscricoes}}/{{curso.vagas}}
+                <span class="visually-hidden">unread messages</span>
+              </span>
+              {% endif %}
+              {% endwith %}
+            </a>
+          {% else %}
+          {% if curso.status.nome == "A INICIAR" %}
+            
+              {% if curso.num_inscricoes >= curso.vagas %}
+                    <a href="/curso_detail/{{ curso.id }}/true" class="btn btn-warning">ENTRAR NA FILA</a>
+              {% else %}
+                    <a href="/curso_detail/{{ curso.id }}" class="btn btn-primary position-relative">
+                      <i class="fa-solid fa-pen-to-square"></i>  SAIBA MAIS
+                        {% with numerator=curso.num_inscricoes denominator=curso.vagas %}
+                        {% if numerator|div:denominator > 0.5 %}
+                        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                          {{curso.num_inscricoes}}/{{curso.vagas}}
+                          <span class="visually-hidden">unread messages</span>
+                        </span>
+                        {% endif %}
+                        {% endwith %}
+                    </a>
+              {% endif %}   
+            
+               
+          {% endif %}      
+          {% endif %}      
+          </div>
+       
+      </div>
+  </div>
+</div>
+</div>
+<div class="col-sm-4"></div>
 {% endfor %}
 </div>
 
