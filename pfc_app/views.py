@@ -614,16 +614,17 @@ def validar_ch(request):
                                  voce_indicaria=voce_indicaria)
         avaliacao.save()
 
-        # Renomeando o arquivo PDF
+         # Renomeando o arquivo PDF
         caminho_antigo = avaliacao.arquivo_pdf.path
         novo_nome_arquivo = f"{avaliacao.id}-{request.user.username}-certificado.pdf"
-        caminho_novo = os.path.join(os.path.dirname(caminho_antigo), novo_nome_arquivo)
+        pasta_destino = os.path.dirname(caminho_antigo)
+        caminho_novo = os.path.join(pasta_destino, novo_nome_arquivo)
 
         # Renomeando o arquivo no sistema de arquivos
         os.rename(caminho_antigo, caminho_novo)
 
         # Atualizando o campo arquivo_pdf do objeto avaliacao
-        avaliacao.arquivo_pdf.name = caminho_novo
+        avaliacao.arquivo_pdf.name = os.path.join('uploads', request.user.username, novo_nome_arquivo)
         avaliacao.save()
 
         # Redirecionar ou fazer algo após o envio bem-sucedido
