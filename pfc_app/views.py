@@ -616,7 +616,7 @@ def validar_ch(request):
 
          # Renomeando o arquivo PDF
         caminho_antigo = avaliacao.arquivo_pdf.path
-        novo_nome_arquivo = f"{avaliacao.id}-{request.user.username}-certificado.pdf"
+        novo_nome_arquivo = f"{avaliacao.id}-{request.user.nome}.pdf"
         pasta_destino = os.path.dirname(caminho_antigo)
         caminho_novo = os.path.join(pasta_destino, novo_nome_arquivo)
 
