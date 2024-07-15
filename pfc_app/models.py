@@ -164,6 +164,11 @@ class Curso(models.Model):
         ('TURMA3', 'TURMA 3'),
         ('TURMA4', 'TURMA 4'),
         ('TURMA5', 'TURMA 5'),
+        ('TURMA5', 'TURMA 6'),
+        ('TURMA5', 'TURMA 7'),
+        ('TURMA5', 'TURMA 8'),
+        ('TURMA5', 'TURMA 9'),
+        ('TURMA5', 'TURMA 10'),
     ]
 
     data_criacao = models.DateTimeField(auto_now_add=True)
@@ -202,6 +207,8 @@ class Curso(models.Model):
         self.save()
 
     def __str__(self):
+        if not self.turma == 'TURMA1':
+            return self.nome_curso + self.turma
         return self.nome_curso
     
 
