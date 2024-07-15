@@ -207,7 +207,12 @@ class Curso(models.Model):
         self.save()
 
     def __str__(self):
-        if not self.turma == 'TURMA1':
+        if not self.turma == ' - TURMA1':
+            return self.nome_curso + self.turma
+        return self.nome_curso
+    @property
+    def nome_formatado(self):
+        if not self.turma == ' - TURMA1':
             return self.nome_curso + self.turma
         return self.nome_curso
     
