@@ -164,11 +164,11 @@ class Curso(models.Model):
         ('TURMA3', 'TURMA 3'),
         ('TURMA4', 'TURMA 4'),
         ('TURMA5', 'TURMA 5'),
-        ('TURMA5', 'TURMA 6'),
-        ('TURMA5', 'TURMA 7'),
-        ('TURMA5', 'TURMA 8'),
-        ('TURMA5', 'TURMA 9'),
-        ('TURMA5', 'TURMA 10'),
+        ('TURMA6', 'TURMA 6'),
+        ('TURMA7', 'TURMA 7'),
+        ('TURMA8', 'TURMA 8'),
+        ('TURMA9', 'TURMA 9'),
+        ('TURMA10', 'TURMA 10'),
     ]
 
     data_criacao = models.DateTimeField(auto_now_add=True)
@@ -207,13 +207,15 @@ class Curso(models.Model):
         self.save()
 
     def __str__(self):
-        if not self.turma == 'TURMA1':
-            return self.nome_curso +' - '+ self.turma
+        turma_display = dict(self.TURMA_CHOICES).get(self.turma, self.turma)
+        if self.turma != 'TURMA1':
+            return f"{self.nome_curso} - {turma_display}"
         return self.nome_curso
     @property
     def nome_formatado(self):
-        if not self.turma == 'TURMA1':
-            return self.nome_curso +' - '+ self.turma
+        turma_display = dict(self.TURMA_CHOICES).get(self.turma, self.turma)
+        if self.turma != 'TURMA1':
+            return f"{self.nome_curso} - {turma_display}"
         return self.nome_curso
     
 

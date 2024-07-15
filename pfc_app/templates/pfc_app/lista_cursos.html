@@ -16,7 +16,7 @@
   <div class="card-body justify-content-between d-flex flex-column">
       
         <h6 class="card-title mb-3">
-            <a href="{% url 'detail_curso' curso.id %}" class="text-dark"><strong>{{ curso.nome_curso.upper }}</strong></a>
+            <a href="{% url 'detail_curso' curso.id %}" class="text-dark"><strong>{{ curso.nome_formatado.upper }}</strong></a>
         </h6>
         <p class="card-text">
           <i class="bi bi-pencil-square"></i>

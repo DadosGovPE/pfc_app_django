@@ -35,7 +35,7 @@ class SubtemaAdmin(admin.ModelAdmin):
 class CursoAdmin(admin.ModelAdmin):
     inlines = [ InscricaoInline ]
 
-    list_display = ('nome_curso', 'data_inicio', 'data_termino', 
+    list_display = ('nome_formatado', 'data_inicio', 'data_termino', 
                     'vagas', 'numero_inscritos', 'status', 'curso_priorizado', 'periodo_avaliativo',
                     'gerar_certificados', 'gerar_ata',)
     fields = ['nome_curso', 'ementa_curso', 'modalidade', 'tipo_reconhecimento', 'ch_curso', 'vagas',
