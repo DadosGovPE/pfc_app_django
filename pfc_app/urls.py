@@ -43,6 +43,7 @@ urlpatterns = [
     path('votar/', views.votar_cursos, name='votar_cursos'),
     path('cursos_mais_votados/', views.cursos_mais_votados, name='cursos_mais_votados'),
     path('gerar-pdf-bda/', views.generate_bda_pdf, name='gerar_pdf'),
+    path('planocurso_duplicar/', views.duplicar_plano_curso, name='duplicar_plano_curso'),
 
 ]
 

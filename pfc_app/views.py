@@ -20,7 +20,7 @@ from .models import Curso, Inscricao, StatusInscricao, Avaliacao, \
                     Validacao_CH, StatusValidacao, User, Certificado,\
                     Tema, Subtema, Carreira, Modalidade, Categoria, ItemRelatorio,\
                     PlanoCurso, Trilha, Curadoria, AvaliacaoAberta, CursoPriorizado,\
-                    AjustesPesquisa, PesquisaCursosPriorizados
+                    AjustesPesquisa, PesquisaCursosPriorizados, CronogramaExecucao
 from .forms import AvaliacaoForm, DateFilterForm, UserUpdateForm
 from django.db.models import Count, Q, Sum, F, \
                                 Avg, FloatField, When, BooleanField, \
@@ -1952,7 +1952,7 @@ def salva_fotos(fotos):
 
 @login_required
 def relatorio(request):
-    cursos = Curso.objects.order_by('data_inicio').filter(
+    cursos = Curso.objects.order_by('-data_inicio').filter(
         status__nome = 'FINALIZADO', planocurso__isnull=False)
     
     
@@ -2597,3 +2597,47 @@ def generate_bda_pdf(request):
     response['Content-Disposition'] = f'inline; filename="sugestoes_de_acao.pdf"'
 
     return response
+
+def duplicar_plano_curso(request):
+    
+    
+    if request.method == 'POST':
+        plano_id = request.POST.get('plano')
+        plano = get_object_or_404(PlanoCurso, pk=plano_id)
+        novo_curso_id = request.POST.get('curso')
+        novo_curso = get_object_or_404(Curso, pk=novo_curso_id)
+
+        # Duplicar o plano de curso
+        novo_plano = PlanoCurso.objects.create(
+            curso=novo_curso,
+            publico_alvo=plano.publico_alvo,
+            quantidade_turma=plano.quantidade_turma,
+            pre_requisitos=plano.pre_requisitos,
+            objetivo_geral=plano.objetivo_geral,
+            objetivo_especifico=plano.objetivo_especifico,
+            metodologia_ensino=plano.metodologia_ensino,
+            metodologia_avaliacao=plano.metodologia_avaliacao,
+            recursos_professor=plano.recursos_professor,
+            recursos_aluno=plano.recursos_aluno,
+            referencia_bibliografica=plano.referencia_bibliografica,
+        )
+
+        # Duplicar os cronogramas associados
+        cronogramas = CronogramaExecucao.objects.filter(plano=plano)
+        for cronograma in cronogramas:
+            CronogramaExecucao.objects.create(
+                plano=novo_plano,
+                aula=cronograma.aula,
+                turno=cronograma.turno,
+                conteudo=cronograma.conteudo,
+                atividade=cronograma.atividade
+            )
+        
+        messages.success(request, f'Plano de Curso duplicado com sucesso!')
+        return redirect('duplicar_plano_curso')
+    planos = PlanoCurso.objects.all()
+    # Listar cursos sem plano de curso associado
+    cursos_disponiveis = Curso.objects.filter(planocurso__isnull=True)
+    return render(request, 
+                  'pfc_app/duplicar_plano_curso.html', 
+                  {'planos': planos, 'cursos_disponiveis': cursos_disponiveis})
