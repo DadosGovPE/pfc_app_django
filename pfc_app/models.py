@@ -173,7 +173,7 @@ class Curso(models.Model):
 
     data_criacao = models.DateTimeField(auto_now_add=True)
     data_atualizacao = models.DateTimeField(auto_now=True)
-    nome_curso =  models.CharField(max_length=400, blank=False, null=False)
+    nome_curso =  models.CharField(max_length=400, blank=False, null=False, db_index=True)
     ementa_curso =  models.TextField(max_length=4000, blank=False, null=False)
     modalidade = models.ForeignKey(Modalidade, on_delete=models.SET_NULL, blank=True, null=True)
     tipo_reconhecimento = models.CharField(max_length=400, blank=True, null=True)
@@ -192,7 +192,7 @@ class Curso(models.Model):
     avaliacoes_abertas = models.ManyToManyField(User, through='AvaliacaoAberta', related_name='avaliacoes_abertas')
     #acao = models.ForeignKey(Acao, on_delete=models.CASCADE)
     #gestor = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
-    coordenador = models.ForeignKey(User, on_delete=models.SET_NULL, blank=True, null=True)
+    coordenador = models.ForeignKey(User, on_delete=models.SET_NULL, blank=True, null=True, db_index=True)
     #history = HistoricalRecords()
     status = models.ForeignKey(StatusCurso, on_delete=models.PROTECT)
     trilha = models.ForeignKey(Trilha, on_delete=models.PROTECT, blank=True, null=True, related_name='cursos')
@@ -217,6 +217,11 @@ class Curso(models.Model):
         if self.turma != 'TURMA1':
             return f"{self.nome_curso} - {turma_display}"
         return self.nome_curso
+    class Meta:
+        indexes = [
+            models.Index(fields=['nome_curso']),
+            models.Index(fields=['coordenador']),
+        ]
     
 
 
@@ -260,8 +265,8 @@ class Inscricao(models.Model):
         ('DISCENTE', 'DISCENTE'),
         ('DOCENTE', 'DOCENTE'),
     ]
-    curso = models.ForeignKey(Curso, on_delete=models.CASCADE)
-    participante = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name = ("Usuário"))
+    curso = models.ForeignKey(Curso, on_delete=models.CASCADE, db_index=True)
+    participante = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name = ("Usuário"), db_index=True)
     ch_valida = models.IntegerField(blank=True, null=True)
     condicao_na_acao = models.CharField(max_length=400, choices=CONDICAO_ACAO_CHOICES, blank=False, null=False, default="DISCENTE")
     status = models.ForeignKey(StatusInscricao, on_delete=models.PROTECT)
@@ -271,6 +276,9 @@ class Inscricao(models.Model):
     class Meta:
         verbose_name_plural = "inscrições"
         unique_together = ('curso', 'participante')
+        indexes = [
+            models.Index(fields=['curso', 'participante']),
+        ]
 
     def __str__(self):
         return f'Curso: {self.curso.nome_curso} >> Participante: {self.participante.nome}'
