@@ -278,6 +278,8 @@ class Inscricao(models.Model):
         unique_together = ('curso', 'participante')
         indexes = [
             models.Index(fields=['curso', 'participante']),
+            models.Index(fields=['participante']),
+            models.Index(fields=['curso']),
         ]
 
     def __str__(self):
