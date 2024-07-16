@@ -49,8 +49,7 @@ class CursoAdmin(admin.ModelAdmin):
 
     def get_queryset(self, request):
         qs = super().get_queryset(request)
-        return qs.select_related('coordenador', 'status', 'trilha', 'curso_priorizado')\
-                 .prefetch_related('participantes', 'avaliacoes', 'avaliacoes_abertas')
+        return qs.prefetch_related('participantes',)
 
     def numero_inscritos(self, obj):
         users_aprovados = obj.inscricao_set.filter(
