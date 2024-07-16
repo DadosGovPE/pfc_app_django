@@ -1,5 +1,5 @@
 from django.contrib import admin
-from django.db.models import Q
+from django.db.models import Q, Prefetch
 from django.contrib.auth.admin import UserAdmin
 from .models import *
 #Curso, User, Inscricao, StatusCurso, StatusInscricao, \
@@ -16,6 +16,7 @@ class InscricaoInline(admin.TabularInline):
     fields = ['curso', 'participante', 'condicao_na_acao', 'status']
     list_display = ('curso', 'participante', 'ch_valida', 'condicao_na_acao', 'status')
     ordering = ['-participante__nome']
+    
 
 class CronogramaExecucaoInline(admin.TabularInline):
     model = CronogramaExecucao
@@ -46,10 +47,6 @@ class CursoAdmin(admin.ModelAdmin):
     list_editable = ('status', 'periodo_avaliativo', 'curso_priorizado',)
     autocomplete_fields = ['curso_priorizado']
 
-
-    def get_queryset(self, request):
-        qs = super().get_queryset(request)
-        return qs.prefetch_related('participantes',)
 
     def numero_inscritos(self, obj):
         users_aprovados = obj.inscricao_set.filter(
