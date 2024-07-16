@@ -47,6 +47,11 @@ class CursoAdmin(admin.ModelAdmin):
     autocomplete_fields = ['curso_priorizado']
 
 
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        return qs.select_related('coordenador', 'status', 'trilha', 'curso_priorizado')\
+                 .prefetch_related('participantes', 'avaliacoes', 'avaliacoes_abertas')
+
     def numero_inscritos(self, obj):
         users_aprovados = obj.inscricao_set.filter(
             ~Q(status__nome="CANCELADA") & Q(condicao_na_acao="DISCENTE")
