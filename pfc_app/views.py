@@ -2650,7 +2650,7 @@ def generate_bda_pdf(request, ano, mes):
 
     # Cria uma resposta HTTP com o PDF
     response = HttpResponse(pdf_data, content_type='application/pdf')
-    response['Content-Disposition'] = f'attachment; filename="sugestoes_de_acao.pdf"'
+    response['Content-Disposition'] = f'attachment; filename="comprovante_bda_{ano}.pdf"'
 
 
     return response
