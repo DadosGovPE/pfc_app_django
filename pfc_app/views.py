@@ -2520,7 +2520,7 @@ def generate_bda_pdf(request, ano, mes):
     image_path = os.path.join(settings.MEDIA_ROOT, 'igpe.png')
     print(image_path)
     # Cria o documento PDF
-    pdf_path = os.path.join(settings.BASE_DIR, 'pdf_output', 'sugestoes_de_acao.pdf')
+    pdf_path = os.path.join(settings.BASE_DIR, 'pdf_output', 'comprovante_bda_{ano}.pdf')
     doc = SimpleDocTemplate(pdf_path, 
                             pagesize=A4,
                             title=f'Comprovante BDA IGPE {ano_referencia}')
