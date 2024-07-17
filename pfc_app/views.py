@@ -59,7 +59,7 @@ import matplotlib.colors as mc
 import colorsys
 from matplotlib.colors import to_rgb
 from pdf2docx import Converter
-from PIL import Image
+from PIL import Image as pImage
 import shutil
 import re
 from django.core.files.storage import default_storage
@@ -1645,7 +1645,7 @@ def pagina_fotos(c: canvas.Canvas, width, height):
     for filename in os.listdir(upload_dir):
         if filename.lower().endswith((".png", ".jpg", ".jpeg")):  # Aceitar formatos de imagem comuns
             path = os.path.join(upload_dir, filename)
-            img = Image.open(path)
+            img = pImage.open(path)
             img_width, img_height = img.size
             scale_factor = 300 / img_width
             scaled_height = img_height * scale_factor
@@ -2459,6 +2459,7 @@ def votar_cursos(request):
 
     return redirect('lista_cursos')
 
+@login_required
 def cursos_mais_votados(request):
     ano_referencia_pesquisa = AjustesPesquisa.objects.get(nome='padrao').ano_ref
     data_referencia = datetime(ano_referencia_pesquisa, 1, 1).date()
@@ -2498,22 +2499,7 @@ def cursos_mais_votados(request):
 
     return render(request, 'pfc_app/cursos_mais_votados.html', context)
 
-# def cursos_mais_votados(request):
-#     if request.method == 'POST':
-#         cursos_selecionados = request.POST.getlist('cursos')
-#         for curso_id in cursos_selecionados:
-#             curso = PesquisaCursosPriorizados.objects.get(id=curso_id)
-#             mes_ref = datetime(curso.ano_ref, 1, 1).date()
-#             CursoPriorizado.objects.create(nome_sugestao_acao=curso.nome, mes_competencia=mes_ref)
-#         return redirect('cursos_mais_votados')  # Substitua 'cursos_mais_votados' pelo nome da sua URL
 
-#     cursos_votados = PesquisaCursosPriorizados.objects.annotate(num_votos=Count('user')).order_by('-num_votos')
-
-#     context = {
-#         'cursos_votados': cursos_votados,
-#     }
-
-#     return render(request, 'pfc_app/cursos_mais_votados.html', context)
 def get_month_name(month_number):
     """Retorna o nome do mês dado o seu número."""
     for month in MONTHS:
@@ -2521,13 +2507,23 @@ def get_month_name(month_number):
             return month[1]
     return ""
 
-def generate_bda_pdf(request):
-    cursos = Curso.objects.filter(data_inicio__month=5, curso_priorizado__isnull=False)
-    curadorias = Curadoria.objects.filter(mes_competencia__month=5, curso_priorizado__isnull=False)
+@login_required
+def generate_bda_pdf(request, ano, mes):
+    ano_referencia = ano
+    mes_referencia = mes
+    total_cursos_priorizados = CursoPriorizado.objects.filter(Q(mes_competencia__year=ano_referencia,)).count()
     
+    cursos = Curso.objects.filter(data_inicio__month=mes_referencia, curso_priorizado__isnull=False)
+    curadorias = Curadoria.objects.filter(mes_competencia__month=mes_referencia, curso_priorizado__isnull=False)
+    
+    # Caminho da imagem
+    image_path = os.path.join(settings.MEDIA_ROOT, 'igpe.png')
+    print(image_path)
     # Cria o documento PDF
     pdf_path = os.path.join(settings.BASE_DIR, 'pdf_output', 'sugestoes_de_acao.pdf')
-    doc = SimpleDocTemplate(pdf_path, pagesize=A4)
+    doc = SimpleDocTemplate(pdf_path, 
+                            pagesize=A4,
+                            title=f'Comprovante BDA IGPE {ano_referencia}')
 
     # Estilos
     styles = getSampleStyleSheet()
@@ -2541,7 +2537,9 @@ def generate_bda_pdf(request):
     elements = []
 
     # Título
-    elements.append(Paragraph('Sugestões de Ação', style_title))
+    elements.append(Paragraph(f'ANEXO - Comprovante BDA IGPE {ano}', style_title))
+    # Adiciona espaçamento
+    elements.append(Spacer(1, 24))
 
     # Dados da tabela
     header = [
@@ -2569,24 +2567,82 @@ def generate_bda_pdf(request):
             
         ])
 
-    col_widths = [150, 270, 80, 50]  # Define larguras fixas para as colunas
+    col_widths = [150, 200, 80, 50]  # Define larguras fixas para as colunas
     # Cria a tabela
     table = Table(data, colWidths=col_widths)
     table.setStyle(TableStyle([
-        ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
+        ('BACKGROUND', (0, 0), (-1, 0), '#9FC5E8'),
         ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
         ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
         ('ALIGN', (0, 0), (-1, 0), 'CENTER'),
         ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
-        ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
+        ('BACKGROUND', (0, 1), (-1, -1), colors.white),
         ('GRID', (0, 0), (-1, -1), 1, colors.black),
         ('VALIGN', (0, 1), (-1, -1), 'TOP'),  # Alinha o texto ao topo da célula para as linhas de dados
     ]))
 
     elements.append(table)
 
+
+    # Adiciona a tabela de estatísticas
+    # Adiciona espaçamento
+    elements.append(Spacer(1, 50))
+    
+    # Cabeçalho da tabela de estatísticas
+    stats_header = [
+        Paragraph('Mês', header_cell_style),
+        Paragraph('% LNT do mês', header_cell_style),
+        Paragraph('% LNT incremental do mês (considerando apenas cursos não atendidos)', header_cell_style),
+        Paragraph('% LNT acumulado (incremental)', header_cell_style)
+    ]
+    stats_data = [stats_header]
+
+    cursos_priorizados_jacontabilizados = set()
+    acumulado = 0
+
+    for month in range(1, mes_referencia + 1):
+        cursos_priorizados_ofertados = CursoPriorizado.objects.filter(
+            Q(curadorias_priorizadas__mes_competencia__month=month) | Q(cursos_priorizados__data_inicio__month=month),
+            mes_competencia__year=ano_referencia
+        ).distinct()
+    
+        cursos_novos_ofertados = cursos_priorizados_ofertados.exclude(pk__in=cursos_priorizados_jacontabilizados)
+        
+        # Atualiza o conjunto de cursos já contabilizados
+        cursos_priorizados_jacontabilizados.update(cursos_novos_ofertados.values_list('pk', flat=True))
+        
+        percentage_ofertados = (cursos_priorizados_ofertados.count() / total_cursos_priorizados) * 100 if total_cursos_priorizados else 0
+        percentage_novos = (cursos_novos_ofertados.count() / total_cursos_priorizados) * 100 if total_cursos_priorizados else 0
+        acumulado += percentage_novos
+
+        stats_data.append([
+            get_month_name(month),
+            f'{percentage_ofertados:.2f}%',
+            f'{percentage_novos:.2f}%',
+            f'{acumulado:.2f}%'  # Valor acumulado
+        ])
+    
+    stats_col_widths = [80, 100, 200, 100]  # Define larguras fixas para as colunas
+    stats_table = Table(stats_data, colWidths=stats_col_widths)
+    stats_table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), '#9FC5E8'),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+        ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+        ('BACKGROUND', (0, 1), (-1, -1), colors.white),
+        ('GRID', (0, 0), (-1, -1), 1, colors.black),
+        ('VALIGN', (0, 1), (-1, -1), 'TOP'),  # Alinha o texto ao topo da célula para as linhas de dados
+    ]))
+
+    elements.append(stats_table)
+
     # Gera o PDF
-    doc.build(elements)
+    #doc.build(elements)
+    doc.build(
+        elements, 
+        onFirstPage=lambda canvas, doc: draw_igpe_logo(canvas, doc)
+        )
 
     # Lê o PDF gerado
     with open(pdf_path, 'rb') as pdf_file:
@@ -2594,10 +2650,30 @@ def generate_bda_pdf(request):
 
     # Cria uma resposta HTTP com o PDF
     response = HttpResponse(pdf_data, content_type='application/pdf')
-    response['Content-Disposition'] = f'inline; filename="sugestoes_de_acao.pdf"'
+    response['Content-Disposition'] = f'attachment; filename="sugestoes_de_acao.pdf"'
+
 
     return response
 
+
+def draw_igpe_logo(canvas, doc):
+    # Coordenadas para o logo (ajuste conforme necessário)
+    logo_width = 50
+    logo_height = 50
+    x_ig = doc.width/2  + logo_width  # Alinhamento à direita
+    y_ig = doc.height + doc.bottomMargin + doc.topMargin - logo_height -20 # No topo
+
+    x_pfc = x_ig - logo_width - 10
+    y_pfc = y_ig
+
+    igpe_relative_path = 'igpe.png'
+
+    igpe_path = os.path.join(settings.MEDIA_ROOT, igpe_relative_path)
+
+    # Substitua 'path/to/your/logo.png' pelo caminho do seu logo
+    canvas.drawImage(igpe_path, x_ig, y_ig, width=logo_width, height=logo_height, mask='auto')
+
+@login_required
 def duplicar_plano_curso(request):
     
     
@@ -2641,3 +2717,33 @@ def duplicar_plano_curso(request):
     return render(request, 
                   'pfc_app/duplicar_plano_curso.html', 
                   {'planos': planos, 'cursos_disponiveis': cursos_disponiveis})
+
+@login_required
+def estatistica_bda(request):
+    current_year = datetime.now().year
+    if CursoPriorizado.objects.exists():
+        year_range_priorizados = CursoPriorizado.objects.aggregate(
+            min_year=Min(ExtractYear('mes_competencia')),
+            max_year=Max(ExtractYear('mes_competencia'))
+        )
+        # min_year_curadoria
+        min_year_priorizados = year_range_priorizados['min_year'] if year_range_priorizados['min_year'] is not None else 0
+        max_year_priorizados = year_range_priorizados['max_year'] if year_range_priorizados['max_year'] is not None else 0
+    else:
+        min_year_priorizados = current_year
+        max_year_priorizados = current_year
+    
+    available_years = list(range(min_year_priorizados, max_year_priorizados + 1))
+
+    if request.method == 'POST':
+        ano = request.POST.get('ano')
+        mes = request.POST.get('mes') 
+        
+        return redirect('gerar_pdf_bda', ano, mes)
+
+    context = {
+        'anos': available_years,
+        'meses': MONTHS,
+    }
+
+    return render (request, 'pfc_app/estatistica_bda.html', context)

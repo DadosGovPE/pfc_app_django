@@ -42,7 +42,8 @@ urlpatterns = [
     path('pesquisa_priorizacao/', views.listar_cursos_priorizados, name='listar_cursos_priorizados'),
     path('votar/', views.votar_cursos, name='votar_cursos'),
     path('cursos_mais_votados/', views.cursos_mais_votados, name='cursos_mais_votados'),
-    path('gerar-pdf-bda/', views.generate_bda_pdf, name='gerar_pdf'),
+    path('gerar-pdf-bda/<int:ano>/<int:mes>', views.generate_bda_pdf, name='gerar_pdf_bda'),
+    path('pdf_bda/', views.estatistica_bda, name='estatistica_bda'),
     path('planocurso_duplicar/', views.duplicar_plano_curso, name='duplicar_plano_curso'),
 
 ]
