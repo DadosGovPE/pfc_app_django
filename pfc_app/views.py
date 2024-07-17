@@ -2721,6 +2721,18 @@ def duplicar_plano_curso(request):
 @login_required
 def estatistica_bda(request):
     current_year = datetime.now().year
+
+    cursos_priorizados_ids = Curso.objects.filter(curso_priorizado__isnull=False, data_inicio__year=current_year).values_list('curso_priorizado_id', flat=True)
+    curadorias_priorizadas_ids = Curadoria.objects.filter(curso_priorizado__isnull=False, mes_competencia__year=current_year).values_list('curso_priorizado_id', flat=True)
+
+    cursos_nao_ofertados_count = CursoPriorizado.objects.filter(
+        ~Q(id__in=cursos_priorizados_ids) & ~Q(id__in=curadorias_priorizadas_ids) & Q(mes_competencia__year=current_year)
+    ).count()
+    total_cursos_priorizados = CursoPriorizado.objects.filter(Q(mes_competencia__year=current_year)).count()
+    cursos_priorizados_ofertados = total_cursos_priorizados - cursos_nao_ofertados_count
+    
+    total_ofertado_percent = ((total_cursos_priorizados - cursos_nao_ofertados_count) / total_cursos_priorizados * 100) if total_cursos_priorizados else 0
+    
     if CursoPriorizado.objects.exists():
         year_range_priorizados = CursoPriorizado.objects.aggregate(
             min_year=Min(ExtractYear('mes_competencia')),
@@ -2744,6 +2756,8 @@ def estatistica_bda(request):
     context = {
         'anos': available_years,
         'meses': MONTHS,
+        'cursos_priorizados_ofertados': cursos_priorizados_ofertados,
+        'total_ofertado_percent': round(total_ofertado_percent, 2),
     }
 
     return render (request, 'pfc_app/estatistica_bda.html', context)
