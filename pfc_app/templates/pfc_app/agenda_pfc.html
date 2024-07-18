@@ -10,6 +10,31 @@
             <h2 style="color: {{ dados.cor_circulo }}">{{ trilha.nome }}</h2>
         </div>
         <div class="content pb-5">
+        {% if dados.cursos %}
+        <table style="width: 100%; border-collapse: collapse; border: 2px solid white;">
+            <tr style="background-color: {{ dados.cor_circulo }};">
+                <th style="width: 55%; border: 2px solid white; color: white; text-align: center;">PFC</th>
+                <th style="width: 10%; border: 2px solid white; color: white; text-align: center;">Link</th>
+                <th style="width: 5%; border: 2px solid white; color: white; text-align: center;">CH</th>
+                <th style="width: 10%; border: 2px solid white; color: white; text-align: center;">Modalidade</th>
+                <th style="width: 20%; border: 2px solid white; color: white; text-align: center;">Período</th>
+            </tr>
+            {% for curso in dados.cursos %}
+            <tr style="background-color: {{ dados.fundo_tabela }};">
+                {% if curso.turma != 'TURMA1' %}
+                    <td style="border: 2px solid white; text-align: center;">{{ curso.nome_curso }} - ({{curso.get_turma_display}})</td>
+                {% else %}
+                    <td style="border: 2px solid white; text-align: center;">{{ curso.nome_curso }}</td>
+                {% endif %}
+                <td style="border: 2px solid white; text-align: center;"><a href="https://www.pfc.seplag.pe.gov.br/curso_detail/{{ curso.id }}">Inscrição</a></td>
+                <td style="border: 2px solid white; text-align: center;">{{ curso.ch_curso }}</td>
+                <td style="border: 2px solid white; text-align: center;">{{ curso.modalidade.nome }}</td>
+                <td style="border: 2px solid white; text-align: center;">de {{ curso.data_inicio|date:"d/m/Y" }} a {{ curso.data_termino|date:"d/m/Y" }}</td>
+            </tr>
+            {% endfor %}
+        </table>
+        {% endif %}
+
         {% if dados.curadorias %}
         <table style="width: 100%; border-collapse: collapse; border: 2px solid white;">
             <tr style="background-color: {{ dados.cor_circulo }};">
@@ -35,26 +60,7 @@
         </table>
         {% endif %}
 
-        {% if dados.cursos %}
-        <table style="width: 100%; border-collapse: collapse; border: 2px solid white;">
-            <tr style="background-color: {{ dados.cor_circulo }};">
-                <th style="width: 55%; border: 2px solid white; color: white; text-align: center;">PFC</th>
-                <th style="width: 10%; border: 2px solid white; color: white; text-align: center;">Link</th>
-                <th style="width: 5%; border: 2px solid white; color: white; text-align: center;">CH</th>
-                <th style="width: 10%; border: 2px solid white; color: white; text-align: center;">Modalidade</th>
-                <th style="width: 20%; border: 2px solid white; color: white; text-align: center;">Período</th>
-            </tr>
-            {% for curso in dados.cursos %}
-            <tr style="background-color: {{ dados.fundo_tabela }};">
-                <td style="border: 2px solid white; text-align: center;">{{ curso.nome_curso }}</td>
-                <td style="border: 2px solid white; text-align: center;"><a href="https://www.pfc.seplag.pe.gov.br/curso_detail/{{ curso.id }}">Inscrição</a></td>
-                <td style="border: 2px solid white; text-align: center;">{{ curso.ch_curso }}</td>
-                <td style="border: 2px solid white; text-align: center;">{{ curso.modalidade.nome }}</td>
-                <td style="border: 2px solid white; text-align: center;">de {{ curso.data_inicio|date:"d/m/Y" }} a {{ curso.data_termino|date:"d/m/Y" }}</td>
-            </tr>
-            {% endfor %}
-        </table>
-        {% endif %}
+
         </div>
     {% endfor %}
 {% endblock %}

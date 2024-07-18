@@ -2084,8 +2084,12 @@ def gerar_curadoria(request, ano, mes):
         for curso in trilha.cursos.filter(data_inicio__gte=data_inicio, data_inicio__lte=data_fim):
             url = f"https://www.pfc.seplag.pe.gov.br/curso_detail/{curso.id}"
             link_text = '<u><link href="' + url + '">' + 'Inscrição' + '</link></u>'
+            curso_nome = curso.nome_curso
+            if curso.turma != 'TURMA1':
+                curso_nome += f" - ({curso.get_turma_display()})"
+
             data_pfc.append(
-                [Paragraph(curso.nome_curso, body_style), 
+                [Paragraph(curso_nome, body_style), 
                  Paragraph(link_text, link_style), 
                  Paragraph(str(curso.ch_curso), body_style), 
                  Paragraph(curso.modalidade.nome, body_style), 
