@@ -46,6 +46,7 @@ class CursoAdmin(admin.ModelAdmin):
     list_filter = ('nome_curso', 'data_inicio', 'data_termino', 'periodo_avaliativo',)
     list_editable = ('status', 'periodo_avaliativo', 'curso_priorizado',)
     autocomplete_fields = ['curso_priorizado']
+    ordering = ['-data_inicio']
 
 
     def numero_inscritos(self, obj):
@@ -172,8 +173,33 @@ class CursoPriorizadoAdmin(admin.ModelAdmin):
     list_display = ('nome_sugestao_acao', 'forma_atendimento', 'mes_competencia', 'trilha')
     list_editable = ('forma_atendimento', 'mes_competencia', 'trilha',)
 
+
+class CursoNomeFilter(admin.SimpleListFilter):
+    title = 'Nome do Curso'
+    parameter_name = 'curso__nome_curso'
+
+    def lookups(self, request, model_admin):
+        return [(curso.id, curso.nome_curso) for curso in Curso.objects.all()]
+
+    def queryset(self, request, queryset):
+        if self.value():
+            return queryset.filter(curso__nome_curso=self.value())
+        return queryset
+
+class ParticipanteNomeFilter(admin.SimpleListFilter):
+    title = 'Nome do Participante'
+    parameter_name = 'participante__nome'
+
+    def lookups(self, request, model_admin):
+        return [(participante.id, participante.nome) for participante in User.objects.all()]
+
+    def queryset(self, request, queryset):
+        if self.value():
+            return queryset.filter(participante__id=self.value())
+        return queryset
+    
 class AvaliacaoAbertaAdmin(admin.ModelAdmin):
-    list_filter = ('curso__nome_curso', 'participante__nome',)
+    list_filter = (CursoNomeFilter, ParticipanteNomeFilter)
     list_display = ('curso_nome', 'participante_nome', 'avaliacao',)
 
     def curso_nome(self, obj):

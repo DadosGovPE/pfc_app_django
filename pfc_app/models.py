@@ -45,6 +45,12 @@ class User(AbstractUser):
     
     USERNAME_FIELD = "cpf"
 
+    class Meta:
+        indexes = [
+            models.Index(fields=['nome']),
+        ]
+        ordering = ['nome']
+
     def publish(self):
         self.published_date = timezone.now()
         self.save()
@@ -222,6 +228,7 @@ class Curso(models.Model):
             models.Index(fields=['nome_curso']),
             models.Index(fields=['coordenador']),
         ]
+        ordering = ['nome_curso']
     
 
 
