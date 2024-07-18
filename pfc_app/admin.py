@@ -172,6 +172,20 @@ class CursoPriorizadoAdmin(admin.ModelAdmin):
     list_display = ('nome_sugestao_acao', 'forma_atendimento', 'mes_competencia', 'trilha')
     list_editable = ('forma_atendimento', 'mes_competencia', 'trilha',)
 
+class AvaliacaoAbertaAdmin(admin.ModelAdmin):
+    list_filter = ('curso__nome_curso', 'participante__nome',)
+    list_display = ('curso_nome', 'participante_nome', 'avaliacao',)
+
+    def curso_nome(self, obj):
+        return obj.curso.nome_curso
+    curso_nome.admin_order_field = 'curso__nome_curso'
+    curso_nome.short_description = 'Nome do Curso'
+
+    def participante_nome(self, obj):
+        return obj.participante.nome
+    participante_nome.admin_order_field = 'participante__nome'
+    participante_nome.short_description = 'Nome do Participante'
+
 # Register your models here.
 admin.site.register(Curso, CursoAdmin)
 admin.site.register(User, CustomUserAdmin)
@@ -180,7 +194,7 @@ admin.site.register(StatusCurso)
 admin.site.register(StatusInscricao)
 admin.site.register(StatusValidacao)
 admin.site.register(Avaliacao, AvaliacaoAdmin)
-admin.site.register(AvaliacaoAberta)
+admin.site.register(AvaliacaoAberta, AvaliacaoAbertaAdmin)
 admin.site.register(Tema)
 admin.site.register(Subtema, SubtemaAdmin)
 admin.site.register(Validacao_CH, Validacao_CHAdmin)
