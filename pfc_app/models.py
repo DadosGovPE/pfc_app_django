@@ -427,6 +427,7 @@ class Validacao_CH(models.Model):
     conhecimento_previo = models.TextField(choices=notas, blank=False, null=False)
     conhecimento_posterior = models.TextField(choices=notas, blank=False, null=False)
     voce_indicaria = models.TextField(choices=notas, blank=False, null=False)
+    modalidade = models.ForeignKey(Modalidade, on_delete=models.SET_NULL, blank=True, null=True)
 
     def __str__(self):
         return self.usuario.username

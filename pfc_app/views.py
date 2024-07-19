@@ -586,6 +586,7 @@ def validar_ch(request):
         conhecimento_previo = request.POST['conhecimento_previo']
         conhecimento_posterior = request.POST['conhecimento_posterior']
         voce_indicaria = request.POST['voce_indicaria']
+        modalidade = Modalidade.objects.get(id=request.POST['modalidade'])
         try:
             agenda_pfc_check = request.POST['agenda_pfc']
             agenda_pfc = True
@@ -611,7 +612,7 @@ def validar_ch(request):
                                  condicao_na_acao=condicao_na_acao, carreira=carreira,
                                  conhecimento_previo=conhecimento_previo, 
                                  conhecimento_posterior=conhecimento_posterior,
-                                 voce_indicaria=voce_indicaria)
+                                 voce_indicaria=voce_indicaria, modalidade=modalidade)
         avaliacao.save()
 
          # Renomeando o arquivo PDF
