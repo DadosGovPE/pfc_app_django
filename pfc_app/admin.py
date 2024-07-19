@@ -13,9 +13,15 @@ from django.urls import reverse
 class InscricaoInline(admin.TabularInline):
     model = Inscricao
     extra = 1
-    fields = ['curso', 'participante', 'condicao_na_acao', 'status']
-    list_display = ('curso', 'participante', 'ch_valida', 'condicao_na_acao', 'status')
-    ordering = ['-participante__nome']
+    fields = ['participante', 'condicao_na_acao', 'status']
+    raw_id_fields = ['participante']
+    #list_display = ('curso', 'participante', 'ch_valida', 'condicao_na_acao', 'status')
+    #ordering = ['-participante__nome']
+    def get_queryset(self, request):
+        queryset = super().get_queryset(request)
+        return queryset.select_related('participante').only('participante__id', 'condicao_na_acao', 'status')
+    
+
     
 
 class CronogramaExecucaoInline(admin.TabularInline):
@@ -47,6 +53,8 @@ class CursoAdmin(admin.ModelAdmin):
     list_editable = ('status', 'periodo_avaliativo', 'curso_priorizado',)
     autocomplete_fields = ['curso_priorizado']
     ordering = ['-data_inicio']
+
+
 
 
     def numero_inscritos(self, obj):
@@ -141,6 +149,13 @@ class Validacao_CHAdmin(admin.ModelAdmin):
         if db_field.name == "curadoria":
             kwargs["queryset"] = Curadoria.objects.order_by('-mes_competencia')
         return super().formfield_for_foreignkey(db_field, request, **kwargs)
+    
+    def get_queryset(self, request):
+        queryset = super().get_queryset(request)
+        queryset = queryset.select_related('usuario', 'responsavel_analise').defer(
+            'usuario__avatar_base64', 'responsavel_analise__avatar_base64'
+        )
+        return queryset
 
     # def save_model(self, request, obj, form, change):
     #     if change:
