@@ -130,11 +130,11 @@ class AvaliacaoAdmin(admin.ModelAdmin):
     list_filter = ('curso', 'participante',)
 
 class Validacao_CHAdmin(admin.ModelAdmin):
-    list_display = ('usuario', 'nome_curso','instituicao_promotora', 'modalidade', 'enviado_em', 'ch_solicitada', 
+    list_display = ('usuario', 'nome_curso', 'enviado_em', 'ch_solicitada', 
                     'ch_confirmada', 'data_termino_curso', 'status',
                     'gerar_reconhecimento_ch', 'analisado_em',)
-    list_editable = ('modalidade','ch_solicitada', 'ch_confirmada', 'data_termino_curso', 'status',)
-    list_filter = ('instituicao_promotora','usuario', 'status',)
+    list_editable = ('ch_solicitada', 'ch_confirmada', 'data_termino_curso', 'status',)
+    list_filter = ('usuario', 'status',)
     readonly_fields = ('conhecimento_previo', 'conhecimento_posterior', 'voce_indicaria')
 
     def gerar_reconhecimento_ch(self, obj):

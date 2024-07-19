@@ -126,21 +126,25 @@ def registrar(request):
     }
     
     if User.objects.filter(username=username).exists():
-        return JsonResponse({'success': False, 'msg': 'Username já existe!'})
+        messages.error(request, f'Username digitado já existe!')
+        return render(request, 'pfc_app/registrar.html', context)
     if User.objects.filter(email=email).exists():
-        return JsonResponse({'success': False, 'msg': 'Email já existe!'})
+        messages.error(request, f'Email digitado já existe!')
+        return render(request, 'pfc_app/registrar.html', context)
     if User.objects.filter(cpf=cpf).exists():
-        return JsonResponse({'success': False, 'msg': 'CPF já existe!'})
+        messages.error(request, f'CPF digitado já existe!')
+        return render(request, 'pfc_app/registrar.html', context)
 
     cpf_padrao = CPF()
     # Validar CPF
     if not cpf_padrao.validate(cpf):
-        #messages.error(request, f'CPF digitado está errado!')
-        return JsonResponse({'success': False, 'msg': 'CPF Inválido!'})
-        #return render(request, 'pfc_app/registrar.html', context)
+        messages.error(request, f'CPF digitado está errado!')
+        #return JsonResponse({'success': False, 'msg': 'CPF Inválido!'})
+        return render(request, 'pfc_app/registrar.html', context)
 
     if not re.match(r'^\d{11}$', cpf):
-        return JsonResponse({'success': False, 'msg': 'Digite o CPF sem números e sem traços.'})
+        messages.error(request, f'Digite apenas números no CPF!')
+        return render(request, 'pfc_app/registrar.html', context)
 
     send_mail('Solicitação de cadastro', 
               f'Nome:{nome}\n '
@@ -155,7 +159,7 @@ def registrar(request):
     
     messages.success(request, f'Solicitação enviada com sucesso. Aguarde suas credenciais!')
         
-    return JsonResponse({'success': True})
+    return redirect('login')
     # return render(request, 'pfc_app/login.html')
 
 def logout(request):

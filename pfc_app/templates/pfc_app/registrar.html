@@ -43,6 +43,22 @@
 </div>
 <div class="col"></div>
 </div>
+
+<!-- Modal -->
+<div class="modal fade" id="loadingModal" tabindex="-1" aria-labelledby="loadingModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-body text-center">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <p class="mt-3">Enviando suas credenciais ao PFC!</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+
 <script>
 const handlePhone = (event) => {
   let input = event.target
@@ -57,38 +73,16 @@ const phoneMask = (value) => {
   return value
 }
 
-document.getElementById('meuFormulario').addEventListener('submit', function(e) {
-    e.preventDefault();
-    
-    // Desabilitar o botão de envio
-    var botaoEnviar = document.getElementById('botaoEnviar');
-    botaoEnviar.disabled = true;
 
-    // Mostrar mensagem de carregamento
-    document.getElementById('mensagemCarregando').style.display = 'block';
 
-    // Preparar dados do formulário para envio
-    var formData = new FormData(this);
 
-    // Enviar dados com AJAX
-    fetch("{% url 'registrar' %}", {
-        method: 'POST',
-        body: formData
-    })
-    .then(response => response.json())
-    .then(data => {
-        // Esconder mensagem de carregamento
-        document.getElementById('mensagemCarregando').style.display = 'none';
 
-        // Redirecionar ou atualizar a página
-        if(data.success) {
-            window.location.href = "{% url 'login' %}";
-        } else {
-            document.getElementById('mensagemCarregando').style.display = 'none';
-            alert(`${data.msg}`);
-            botaoEnviar.disabled = false;
-        }
+document.addEventListener('DOMContentLoaded', function() {
+        var loadingModal = new bootstrap.Modal(document.getElementById('loadingModal'));
+
+        document.getElementById('meuFormulario').addEventListener('submit', function() {
+            loadingModal.show();
+        });
     });
-});
 </script>
 {% endblock %}
