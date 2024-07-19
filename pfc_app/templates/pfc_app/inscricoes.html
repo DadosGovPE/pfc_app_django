@@ -94,7 +94,7 @@
                         {% if  inscricao.curso.status.nome == "FINALIZADO" and inscricao.concluido %}
                             <td class="text-center">
                                 <a href="{% url 'generate_all_pdfs' curso_id=inscricao.curso.id unico=1 %}" 
-                                class="btn btn-primary"
+                                class="btn btn-primary gerar-certificado-btn" id="botaoCertificado"
                                 data-bs-toggle="tooltip" data-bs-placement="top" title="Baixa seu certificado">
                                 <i class="bi bi-download"></i> CERTIFICADO</a>
                             </td>
@@ -104,14 +104,14 @@
                         {% if  inscricao.curso.status.nome == "FINALIZADO" and inscricao.concluido and inscricao.curso.inst_certificadora.nome == 'IGPE' and inscricao.curso_avaliado  %}
                             <td class="text-center">
                                 <a href="{% url 'generate_all_pdfs' curso_id=inscricao.curso.id unico=1 %}" 
-                                class="btn btn-primary"
+                                class="btn btn-primary gerar-certificado-btn" id="botaoCertificado"
                                 data-bs-toggle="tooltip" data-bs-placement="top" title="Baixa seu certificado">
                                 <i class="bi bi-download"></i> CERTIFICADO</a>
                             </td>
                         {% elif inscricao.curso.status.nome == "FINALIZADO" and inscricao.concluido and inscricao.curso.inst_certificadora.nome == 'IGPE' and inscricao.condicao_na_acao == 'DOCENTE'%}
                             <td class="text-center">
                                 <a href="{% url 'generate_all_pdfs' curso_id=inscricao.curso.id unico=1 %}" 
-                                class="btn btn-primary"
+                                class="btn btn-primary gerar-certificado-btn" id="botaoCertificado"
                                 data-bs-toggle="tooltip" data-bs-placement="top" title="Baixa seu certificado">
                                 <i class="bi bi-download"></i> CERTIFICADO</a>
                             </td>
@@ -129,5 +129,34 @@
       </table>
     </div>
 
+<!-- Modal -->
+<div class="modal fade" id="loadingModal" tabindex="-1" aria-labelledby="loadingModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-body text-center">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <p class="mt-3">Gerando certificado! Calma!</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        var loadingModal = new bootstrap.Modal(document.getElementById('loadingModal'));
+
+        // Adiciona um event listener para todos os links de gerar certificado
+        document.querySelectorAll('.gerar-certificado-btn').forEach(function(button) {
+            button.addEventListener('click', function(event) {
+                loadingModal.show();
+                setTimeout(function() {
+                    loadingModal.hide();
+                }, 3000); // 3000 milissegundos = 3 segundos
+            });
+        });
+    });
+</script>
 {% endblock %}
 

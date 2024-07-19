@@ -798,7 +798,11 @@ def generate_all_pdfs(request, curso_id, unico=0):
     with open(zip_filename, 'rb') as zip_file:
         response.write(zip_file.read())
 
-    os.remove(zip_filename)
+    try:
+        os.remove(zip_filename)
+    except:
+        messages.error(request, f"Tente baixa um certificado por vez!")
+        return redirect('inscricoes')
 
     return response
 
