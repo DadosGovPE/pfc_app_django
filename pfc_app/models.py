@@ -35,7 +35,7 @@ class User(AbstractUser):
     lotacao_especifica = models.CharField(max_length=400, blank=True, null=True)
     lotacao_especifica_2 = models.CharField(max_length=400, blank=True, null=True, verbose_name = ("Lotação sigla"))
     classificacao_lotacao = models.CharField(max_length=400, blank=True, null=True)
-    pesquisa_cursos_priorizados = models.ManyToManyField(PesquisaCursosPriorizados, blank=True, null=True)
+    pesquisa_cursos_priorizados = models.ManyToManyField(PesquisaCursosPriorizados, blank=True)
 
     is_ativo = models.BooleanField(default=True)
     role = models.CharField(max_length=40, default="USER")
@@ -291,6 +291,7 @@ class Inscricao(models.Model):
 
     def __str__(self):
         return f'Curso: {self.curso.nome_curso} >> Participante: {self.participante.nome}'
+    
 
 @receiver(pre_save, sender=Inscricao)
 def calcular_carga_horaria(sender, instance, **kwargs):

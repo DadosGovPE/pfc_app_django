@@ -39,6 +39,20 @@ class SubtemaAdmin(admin.ModelAdmin):
     list_display = ['nome', 'tema', 'cor']
     list_filter = ('tema',)
 
+class CursoNomeTurmaFilter(admin.SimpleListFilter):
+    title = 'Curso e Turma'
+    parameter_name = 'curso_nome_turma'
+
+    def lookups(self, request, model_admin):
+        cursos = Curso.objects.all().values_list('id', 'nome_curso', 'turma')
+        return [(curso[0], f"{curso[1]} - {curso[2]}") for curso in cursos]
+
+    def queryset(self, request, queryset):
+        if self.value():
+            return queryset.filter(curso__id=self.value())
+        return queryset
+
+
 class CursoAdmin(admin.ModelAdmin):
     inlines = [ InscricaoInline ]
 
@@ -49,7 +63,7 @@ class CursoAdmin(admin.ModelAdmin):
                'categoria', 'trilha', 'curso_priorizado', 'descricao', ('data_inicio', 'data_termino'), 'turno', 'turma',
                'inst_certificadora', 'inst_promotora', 'coordenador', 'status', 'periodo_avaliativo', 'eh_evento',
                'horario', 'observacao', ]
-    list_filter = ('nome_curso', 'data_inicio', 'data_termino', 'periodo_avaliativo',)
+    list_filter = (CursoNomeTurmaFilter, 'data_inicio', 'data_termino', 'periodo_avaliativo',)
     list_editable = ('status', 'periodo_avaliativo', 'curso_priorizado',)
     autocomplete_fields = ['curso_priorizado']
     ordering = ['-data_inicio']
@@ -113,10 +127,16 @@ class CustomUserAdmin(UserAdmin):
     #     else:
     #         super().save_model(request, obj, form, change)
 
+##
+## Verificar a performance. Ficou mais lento.
+##
+
+
 class InscricaoAdmin(admin.ModelAdmin):
     list_display = ('curso', 'participante', 'participante_username', 'condicao_na_acao', 'ch_valida', 'status', 'concluido', )
-    list_filter = ('participante', 'status', 'curso__nome_curso', 'condicao_na_acao',)
+    list_filter = ('participante', 'status', CursoNomeTurmaFilter, 'condicao_na_acao',)
     list_editable = ('condicao_na_acao', 'status', 'concluido',)
+    
     def participante_username(self, obj):
         return obj.participante.username if obj.participante else 'N/A'
     participante_username.short_description = 'Username'
