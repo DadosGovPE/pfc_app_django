@@ -194,7 +194,7 @@ def update_profile(request):
 
 @login_required
 def cursos(request):
-  logger.info(f'cursos: {request.user}') 
+  logger.info(f'cursos: {request.user.cpf}') 
   lista_cursos = Curso.objects.all()
   data_atual = date.today()
   status_inscricao=Subquery(
