@@ -64,6 +64,10 @@ import shutil
 import re
 from django.core.files.storage import default_storage
 from django.core.files.base import ContentFile
+from logging import getLogger
+logger = getLogger('django')
+
+
 
 
 MONTHS = [
@@ -190,6 +194,7 @@ def update_profile(request):
 
 @login_required
 def cursos(request):
+  logger.info(f'cursos: {request.user}') 
   lista_cursos = Curso.objects.all()
   data_atual = date.today()
   status_inscricao=Subquery(
