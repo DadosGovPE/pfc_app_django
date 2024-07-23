@@ -63,7 +63,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'pfc_app_django.middleware.LogUsernameMiddleware',
+    'pfc_app.middleware.LogUsernameMiddleware',
 ]
 
 ROOT_URLCONF = 'pfc_app_django.urls'
