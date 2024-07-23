@@ -5,7 +5,7 @@ class LogUsernameMiddleware:
     def __call__(self, request):
         response = self.get_response(request)
         if request.user.is_authenticated:
-            response['X-User'] = request.user.id
+            response['X-User'] = "Auth"
         else:
-            response['X-User'] = request.user.id
+            response['X-User'] = "Nao auth"
         return response
