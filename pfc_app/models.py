@@ -50,6 +50,7 @@ class User(AbstractUser):
             models.Index(fields=['nome']),
         ]
         ordering = ['nome']
+        verbose_name_plural = "Usuários"
 
     def publish(self):
         self.published_date = timezone.now()
