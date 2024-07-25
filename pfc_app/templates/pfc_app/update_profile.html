@@ -3,14 +3,17 @@
 {% block content %}
 {% include 'parciais/_messages.html' %}
 <div class="row my-3">
-    <div class="text-left mb-2 col-2">
+    <div class="text-left mb-2 col-xs-5 col-sm-4">
         {% if user.avatar_base64 %}
-            <img src="data:image/png;base64,{{ user.avatar_base64 }}" class="shadow-lg rounded-circle img-thumbnail" alt="Avatar" style="width: 150px; height: 150px; object-fit: cover;">
+            <img src="data:image/png;base64,{{ user.avatar_base64 }}" 
+            class="shadow-lg rounded-circle img-thumbnail" 
+            alt="Avatar" 
+            style="width: auto; height: 150px; object-fit: cover;">
         {% else %}
             <p>Nenhum avatar carregado</p>
         {% endif %}
     </div>
-    <div class="col-8 d-flex p-2 justify-content-center mb-2"><h1>MEU PERFIL</h1></div>
+    <div class="col-xs-5 col-sm-6 d-flex p-2 justify-content-center mb-2"><h1>MEU PERFIL</h1></div>
     <div col-2></div>
 </div>
   
