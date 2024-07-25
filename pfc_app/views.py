@@ -130,9 +130,9 @@ def registrar(request):
     }
     
     # Validar nome
-    nome_regex = r'^[a-zA-Z\s]+$'
+    nome_regex = r'^(?!\d+$)[a-zA-Z0-9\s]+$'
     if not re.match(nome_regex, nome):
-        messages.error(request, 'Por favor, insira um nome válido (apenas letras e espaços são permitidos).')
+        messages.error(request, f'{nome}, por favor, insira um nome válido (não são aceitos nomes com apenas números).')
         return render(request, 'pfc_app/registrar.html', context)
     
     cpf_padrao = CPF()
