@@ -129,26 +129,45 @@ def registrar(request):
         'orgao_origem': orgao_origem
     }
     
-    if User.objects.filter(username=username).exists():
-        messages.error(request, f'Username digitado já existe!')
+    # Validar nome
+    nome_regex = r'^[a-zA-Z\s]+$'
+    if not re.match(nome_regex, nome):
+        messages.error(request, 'Por favor, insira um nome válido (apenas letras e espaços são permitidos).')
         return render(request, 'pfc_app/registrar.html', context)
-    if User.objects.filter(email=email).exists():
-        messages.error(request, f'Email digitado já existe!')
-        return render(request, 'pfc_app/registrar.html', context)
-    if User.objects.filter(cpf=cpf).exists():
-        messages.error(request, f'CPF digitado já existe!')
-        return render(request, 'pfc_app/registrar.html', context)
-
+    
     cpf_padrao = CPF()
     # Validar CPF
     if not cpf_padrao.validate(cpf):
         messages.error(request, f'CPF digitado está errado!')
         #return JsonResponse({'success': False, 'msg': 'CPF Inválido!'})
         return render(request, 'pfc_app/registrar.html', context)
-
     if not re.match(r'^\d{11}$', cpf):
         messages.error(request, f'Digite apenas números no CPF!')
         return render(request, 'pfc_app/registrar.html', context)
+    
+    # Validar email
+    email_regex = r'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$'
+    if not re.match(email_regex, email):
+        messages.error(request, 'Por favor, insira um endereço de email válido.')
+        return render(request, 'pfc_app/registrar.html', context)
+    
+    if User.objects.filter(cpf=cpf).exists():
+        messages.error(request, f'CPF digitado já existe!')
+        return render(request, 'pfc_app/registrar.html', context)
+    if User.objects.filter(username=username).exists():
+        messages.error(request, f'Username digitado já existe!')
+        return render(request, 'pfc_app/registrar.html', context)
+    if User.objects.filter(email=email).exists():
+        messages.error(request, f'Email digitado já existe!')
+        return render(request, 'pfc_app/registrar.html', context)
+
+    
+   
+    
+    if len(telefone) < 15:
+        messages.error(request, f'Celular precisa ter o DDD mais 9 números!')
+        return render(request, 'pfc_app/registrar.html', context)
+    
 
     send_mail('Solicitação de cadastro', 
               f'Nome:{nome}\n '
