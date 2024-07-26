@@ -1,0 +1,33 @@
+<select id="lotacao-select">
+    <option value="">Select Lotacao</option>
+    {% for lotacao in lotacoes %}
+        <option value="{{ lotacao.id }}">{{ lotacao.nome }}</option>
+    {% endfor %}
+</select>
+
+<select id="lotacao-especifica-select">
+    <option value="">Select Lotacao Especifica</option>
+</select>
+
+<script>
+document.getElementById('lotacao-select').addEventListener('change', function() {
+    var lotacaoId = this.value;
+    var especificaSelect = document.getElementById('lotacao-especifica-select');
+
+    // Clear existing options
+    especificaSelect.innerHTML = '<option value="">Select Lotacao Especifica</option>';
+
+    if (lotacaoId) {
+        fetch(`/lotacao-especifica/${lotacaoId}/`)
+            .then(response => response.json())
+            .then(data => {
+                data.forEach(function(item) {
+                    var option = document.createElement('option');
+                    option.value = item.id;
+                    option.textContent = item.nome;
+                    especificaSelect.appendChild(option);
+                });
+            });
+    }
+});
+</script>

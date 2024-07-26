@@ -20,7 +20,8 @@ from .models import Curso, Inscricao, StatusInscricao, Avaliacao, \
                     Validacao_CH, StatusValidacao, User, Certificado,\
                     Tema, Subtema, Carreira, Modalidade, Categoria, ItemRelatorio,\
                     PlanoCurso, Trilha, Curadoria, AvaliacaoAberta, CursoPriorizado,\
-                    AjustesPesquisa, PesquisaCursosPriorizados, CronogramaExecucao
+                    AjustesPesquisa, PesquisaCursosPriorizados, CronogramaExecucao,\
+                    LotacaoEspecifica, Lotacao
 from .forms import AvaliacaoForm, DateFilterForm, UserUpdateForm
 from django.db.models import Count, Q, Sum, F, \
                                 Avg, FloatField, When, BooleanField, \
@@ -2798,3 +2799,11 @@ def estatistica_bda(request):
     }
 
     return render (request, 'pfc_app/estatistica_bda.html', context)
+
+def select_lotacao_view(request):
+    lotacoes = Lotacao.objects.all()
+    return render(request, 'pfc_app/change_lotacao.html', {'lotacoes': lotacoes})
+
+def get_lotacao_especifica(request, lotacao_id):
+    especificacoes = LotacaoEspecifica.objects.filter(lotacao_id=lotacao_id).values('id', 'nome')
+    return JsonResponse(list(especificacoes), safe=False)

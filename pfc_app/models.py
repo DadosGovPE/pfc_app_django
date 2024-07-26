@@ -21,6 +21,11 @@ class Lotacao(models.Model):
 
     def __str__(self):
         return self.nome
+    class Meta:
+        indexes = [
+            models.Index(fields=['nome']),
+        ]
+        ordering = ['nome']
 
 class LotacaoEspecifica(models.Model):
     nome = models.CharField(max_length=255)
@@ -29,6 +34,11 @@ class LotacaoEspecifica(models.Model):
 
     def __str__(self):
         return self.nome
+    class Meta:
+        indexes = [
+            models.Index(fields=['nome']),
+        ]
+        ordering = ['nome']
     
 class User(AbstractUser):
     data_criacao = models.DateTimeField(auto_now_add=True)
@@ -47,8 +57,8 @@ class User(AbstractUser):
     lotacao = models.CharField(max_length=400, blank=True, null=True)
     lotacao_especifica = models.CharField(max_length=400, blank=True, null=True)
     lotacao_especifica_2 = models.CharField(max_length=400, blank=True, null=True, verbose_name = ("Lotação sigla"))
-    lotacao_fk = models.ForeignKey(Lotacao, on_delete=models.SET_NULL, null=True, blank=True, related_name='users')
-    lotacao_especifica_fk = models.ForeignKey(LotacaoEspecifica, on_delete=models.SET_NULL, null=True, blank=True, related_name='users_especifica')
+    lotacao_fk = models.ForeignKey(Lotacao, on_delete=models.SET_NULL, null=True, blank=True, related_name='users', verbose_name = ("Lotação"))
+    lotacao_especifica_fk = models.ForeignKey(LotacaoEspecifica, on_delete=models.SET_NULL, null=True, blank=True, related_name='users_especifica', verbose_name = ("Lotação Específica"))
     classificacao_lotacao = models.CharField(max_length=400, blank=True, null=True)
     pesquisa_cursos_priorizados = models.ManyToManyField(PesquisaCursosPriorizados, blank=True)
 

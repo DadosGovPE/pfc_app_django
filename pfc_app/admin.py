@@ -96,7 +96,7 @@ class CustomUserAdmin(UserAdmin):
     list_display = ('username', 'nome', 'cpf', 'email', 'is_externo', )
     fieldsets = (
         ('Geral', {'fields': ('username', 'email', 'password', 'first_name', 'last_name', 
-                           'cpf', 'nome', 'telefone', 'lotacao', 'lotacao_especifica', 'lotacao_especifica_2',
+                           'cpf', 'nome', 'telefone', 'lotacao', 'lotacao_fk', 'lotacao_especifica', 'lotacao_especifica_fk', 'lotacao_especifica_2',
                            'classificacao_lotacao', 'cargo', 'nome_cargo', 'categoria', 'grupo_ocupacional',
                            'origem', 'simbologia', 'tipo_atuacao',
                            'role', 'is_externo', 'avatar', 'pesquisa_cursos_priorizados')}),

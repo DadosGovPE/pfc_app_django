@@ -45,6 +45,8 @@ urlpatterns = [
     path('gerar-pdf-bda/<int:ano>/<int:mes>', views.generate_bda_pdf, name='gerar_pdf_bda'),
     path('pdf_bda/', views.estatistica_bda, name='estatistica_bda'),
     path('planocurso_duplicar/', views.duplicar_plano_curso, name='duplicar_plano_curso'),
+    path('change-lotacao/', views.select_lotacao_view, name='change_lotacao'),
+    path('lotacao-especifica/<int:lotacao_id>/', views.get_lotacao_especifica, name='get_lotacao_especifica'),
 
 ]
 
