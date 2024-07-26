@@ -274,6 +274,8 @@ admin.site.register(Curadoria, CuradoriaAdmin)
 admin.site.register(CursoPriorizado, CursoPriorizadoAdmin)
 admin.site.register(AjustesPesquisa)
 admin.site.register(PesquisaCursosPriorizados)
+admin.site.register(Lotacao)
+admin.site.register(LotacaoEspecifica)
 
 
 
