@@ -1,5 +1,6 @@
 from django.shortcuts import render,redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
+from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib import messages, auth
 from django.conf import settings
@@ -7,7 +8,7 @@ from django.core.mail import send_mail
 from django.contrib.auth.forms import PasswordChangeForm, PasswordResetForm
 from django.contrib.auth.tokens import default_token_generator
 from django.utils.http import urlsafe_base64_encode
-from django.utils import dateformat
+from django.utils import dateformat, timezone
 from django.urls import reverse
 import random
 import string
@@ -21,7 +22,7 @@ from .models import Curso, Inscricao, StatusInscricao, Avaliacao, \
                     Tema, Subtema, Carreira, Modalidade, Categoria, ItemRelatorio,\
                     PlanoCurso, Trilha, Curadoria, AvaliacaoAberta, CursoPriorizado,\
                     AjustesPesquisa, PesquisaCursosPriorizados, CronogramaExecucao,\
-                    LotacaoEspecifica, Lotacao
+                    LotacaoEspecifica, Lotacao, PageVisit
 from .forms import AvaliacaoForm, DateFilterForm, UserUpdateForm
 from django.db.models import Count, Q, Sum, F, \
                                 Avg, FloatField, When, BooleanField, \
@@ -65,6 +66,7 @@ import shutil
 import re
 from django.core.files.storage import default_storage
 from django.core.files.base import ContentFile
+import json
 from logging import getLogger
 logger = getLogger('django')
 
@@ -2802,8 +2804,88 @@ def estatistica_bda(request):
 
 def select_lotacao_view(request):
     lotacoes = Lotacao.objects.all()
-    return render(request, 'pfc_app/change_lotacao.html', {'lotacoes': lotacoes})
+    #lotacoes_especificas = LotacaoEspecifica.objects.all()
+    context = {
+        'lotacoes': lotacoes,
+        #'lotacoes_especificas': lotacoes_especificas,
+        }
+    return render(request, 'pfc_app/change_lotacao.html', context)
 
-def get_lotacao_especifica(request, lotacao_id):
-    especificacoes = LotacaoEspecifica.objects.filter(lotacao_id=lotacao_id).values('id', 'nome')
-    return JsonResponse(list(especificacoes), safe=False)
+def get_lotacao_especifica(request):
+    lotacao = request.GET.get('lotacao')
+    especificacoes = LotacaoEspecifica.objects.filter(lotacao=lotacao)
+    context = {
+        'lotacoes_especificas': especificacoes
+        }
+    return render(request, 'pfc_app/parciais/lotacao_especifica.html', context)
+
+def get_nova_lotacao_especifica(request):
+    nova_lotacao = request.GET.get('nova_lotacao')
+    especificacoes = LotacaoEspecifica.objects.filter(lotacao=nova_lotacao)
+    context = {
+        'nova_lotacoes_especificas': especificacoes
+        }
+    return render(request, 'pfc_app/parciais/nova_lotacao_especifica.html', context)
+
+def listar_usuarios(request):
+    lotacao_especifica = request.GET.get('lotacao-especifica')
+    usuarios = User.objects.filter(lotacao_especifica_fk=lotacao_especifica)
+    lotacoes = Lotacao.objects.all()
+    #lotacoes_especificas = LotacaoEspecifica.objects.all()
+    context = {
+        'usuarios': usuarios,
+        'lotacoes': lotacoes,
+        #'lotacoes_especificas': lotacoes_especificas,
+        }
+    return render(request, 'pfc_app/parciais/lista_usuarios.html', context)
+
+def atualizar_lotacao_usuario(request):
+    usuario_ids = request.POST.getlist('usuario_ids')
+    print(usuario_ids)
+    nova_lotacao_id = request.POST.get('nova_lotacao')
+    nova_lotacao_especifica_id = request.POST.get('nova_lotacao_especifica')
+
+    try:
+        for usuario_id in usuario_ids:
+            usuario = User.objects.get(id=usuario_id)
+            usuario.lotacao_fk_id = nova_lotacao_id
+            usuario.lotacao_especifica_fk_id = nova_lotacao_especifica_id
+            usuario.save()
+
+        #usuarios = User.objects.all()
+        # lotacoes = Lotacao.objects.all()
+        # lotacoes_especificas = LotacaoEspecifica.objects.all()
+        messages.success(request, f'Lotação alterada com sucesso!')
+        return redirect('change_lotacao')
+    except:
+        messages.error(request, f'Algo deu errado!')
+        return redirect('change_lotacao')
+
+def abrir_modal(request):
+    usuario_ids = request.GET.getlist('usuario_check')
+    usuarios = User.objects.filter(id__in=usuario_ids)
+    lotacoes = Lotacao.objects.all()
+    lotacoes_especificas = LotacaoEspecifica.objects.all()
+    print(usuario_ids)
+    context = {
+        'usuario_ids': usuario_ids,
+        'usuarios': usuarios,
+        'lotacoes': lotacoes,
+        'lotacoes_especificas': lotacoes_especificas
+    }
+    return render(request, 'pfc_app/parciais/modal_lotacao.html', context)
+
+@csrf_exempt
+def log_time(request):
+    if request.method == 'POST':
+        data = json.loads(request.body)
+        url = data.get('url')
+        time_spent = data.get('time_spent')
+        
+        if request.user.is_authenticated:
+            # Armazene os dados em um modelo
+            PageVisit.objects.create(user=request.user, url=url, time_spent=time_spent, timestamp=timezone.now())
+
+        return JsonResponse({'status': 'success'})
+
+    return JsonResponse({'status': 'error'}, status=400)

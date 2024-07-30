@@ -1,0 +1,10 @@
+
+
+<select id="nova-lotacao-especifica-select" 
+    name="nova_lotacao_especifica"
+    class="form-select">
+    <option value="">Selecione a Lotação Específica</option>
+    {% for lotacao_esp in nova_lotacoes_especificas %}
+        <option value="{{ lotacao_esp.id }}">{{ lotacao_esp.nome }}</option>
+    {% endfor %}
+</select>

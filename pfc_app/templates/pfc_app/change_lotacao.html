@@ -1,33 +1,68 @@
-<select id="lotacao-select">
-    <option value="">Select Lotacao</option>
-    {% for lotacao in lotacoes %}
-        <option value="{{ lotacao.id }}">{{ lotacao.nome }}</option>
-    {% endfor %}
-</select>
+{% extends 'base.html' %}
 
-<select id="lotacao-especifica-select">
-    <option value="">Select Lotacao Especifica</option>
-</select>
+{% block content %}
+{% include 'parciais/_messages.html' %}
+
+    <div class="d-flex p-2 justify-content-center mb-2"><h1>ALTERAR LOTAÇÃO</h1></div>
+<div class="col-5">
+    <select id="lotacao-select" 
+        name="lotacao"
+        class="form-select"
+        hx-get="{% url 'get_lotacao_especifica' %}"
+        hx-trigger="change"
+        hx-target="#lot_especifica">
+        <option value="">Selecione a Lotação</option>
+        {% for lotacao in lotacoes %}
+            <option value="{{ lotacao.id }}">{{ lotacao.nome }}</option>
+        {% endfor %}
+    </select>
+
+    <div id="lot_especifica" class="mt-3">
+        {% include 'pfc_app/parciais/lotacao_especifica.html' %}
+
+    </div>
+</div>
+<div id="lista_usuarios">
+    {% include 'pfc_app/parciais/lista_usuarios.html' %}
+
+</div>
+<!-- Modal 
+<button type="button" class="btn btn-primary" hx-get="{% url 'abrir_modal' %}" hx-target="#modal-container" hx-include="[name='usuario_check']">Alterar Lotação</button>
+-->
 
 <script>
-document.getElementById('lotacao-select').addEventListener('change', function() {
-    var lotacaoId = this.value;
-    var especificaSelect = document.getElementById('lotacao-especifica-select');
-
-    // Clear existing options
-    especificaSelect.innerHTML = '<option value="">Select Lotacao Especifica</option>';
-
-    if (lotacaoId) {
-        fetch(`/lotacao-especifica/${lotacaoId}/`)
-            .then(response => response.json())
-            .then(data => {
-                data.forEach(function(item) {
-                    var option = document.createElement('option');
-                    option.value = item.id;
-                    option.textContent = item.nome;
-                    especificaSelect.appendChild(option);
-                });
-            });
+  document.addEventListener('change', function(event) {
+    if (event.target.name === 'usuario_check') {
+      const usuariosSelecionados = document.getElementById('usuarios-selecionados');
+      const usuarioId = event.target.value;
+      const username = event.target.closest('tr').querySelector('td:nth-child(2)').innerText;
+      
+      if (event.target.checked) {
+        const hiddenField = document.createElement('input');
+        hiddenField.type = 'hidden';
+        hiddenField.name = 'usuario_ids';
+        hiddenField.value = usuarioId;
+        hiddenField.id = 'hidden-' + usuarioId;
+        
+        const usernameElement = document.createElement('div');
+        usernameElement.id = 'username-' + usuarioId;
+        usernameElement.innerText = username;
+        
+        usuariosSelecionados.appendChild(hiddenField);
+        usuariosSelecionados.appendChild(usernameElement);
+      } else {
+        const hiddenField = document.getElementById('hidden-' + usuarioId);
+        const usernameElement = document.getElementById('username-' + usuarioId);
+        
+        if (hiddenField) {
+          usuariosSelecionados.removeChild(hiddenField);
+        }
+        
+        if (usernameElement) {
+          usuariosSelecionados.removeChild(usernameElement);
+        }
+      }
     }
-});
+  });
 </script>
+{% endblock %}

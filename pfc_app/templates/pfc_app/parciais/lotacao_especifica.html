@@ -1,0 +1,13 @@
+
+
+<select id="lotacao-especifica-select" 
+    name="lotacao-especifica"
+    class="form-select"
+    hx-get="{% url 'listar_usuarios' %}"
+    hx-trigger="change"
+    hx-target="#lista_usuarios">
+    <option value="">Selecione a Lotação Específica</option>
+    {% for lotacao_esp in lotacoes_especificas %}
+        <option value="{{ lotacao_esp.id }}">{{ lotacao_esp.nome }}</option>
+    {% endfor %}
+</select>

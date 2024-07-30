@@ -53,6 +53,7 @@ INSTALLED_APPS = [
     'mathfilters',
     'explorer',
     'django_filters',
+    'simple_history',
 ]
 
 MIDDLEWARE = [
@@ -64,7 +65,7 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'pfc_app_django.middleware.LogUsernameMiddleware',
-    
+    'simple_history.middleware.HistoryRequestMiddleware',
 ]
 
 ROOT_URLCONF = 'pfc_app_django.urls'

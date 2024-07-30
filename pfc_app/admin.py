@@ -276,6 +276,7 @@ admin.site.register(AjustesPesquisa)
 admin.site.register(PesquisaCursosPriorizados)
 admin.site.register(Lotacao)
 admin.site.register(LotacaoEspecifica)
+admin.site.register(PageVisit)
 
 
 

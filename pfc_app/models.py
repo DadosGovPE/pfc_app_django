@@ -8,6 +8,7 @@ import base64
 from django.conf import settings
 from django.utils import timezone
 from datetime import datetime
+from simple_history.models import HistoricalRecords
 
 # Create your models here.
 class PesquisaCursosPriorizados(models.Model):
@@ -67,6 +68,8 @@ class User(AbstractUser):
     is_externo = models.BooleanField(default=False, verbose_name = ("É externo"))
     avatar = models.ImageField(null=True, blank=True)
     avatar_base64 = models.TextField(blank=True, null=True)
+
+    history = HistoricalRecords()
     
     USERNAME_FIELD = "cpf"
 
@@ -511,3 +514,13 @@ class ItemRelatorio(models.Model):
 
     def __str__(self):
         return self.tema.nome
+    
+
+class PageVisit(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    url = models.CharField(max_length=255)
+    time_spent = models.IntegerField(help_text='Time spent in milliseconds')
+    timestamp = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f'{self.user.username} visited {self.url} for {self.time_spent} ms'

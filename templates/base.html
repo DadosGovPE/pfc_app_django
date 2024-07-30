@@ -4,7 +4,7 @@
 <head>
     
     {% include 'parciais/_head.html' %}
-
+    
 </head>
 
 <body>
@@ -24,6 +24,21 @@
 </div>
 {% include 'parciais/_footer.html' %}
 
+<!--
+<script>
+    let startTime = Date.now();
+
+    window.addEventListener('beforeunload', function (event) {
+        let endTime = Date.now();
+        let timeSpent = endTime - startTime;
+
+        navigator.sendBeacon('/log-time/', JSON.stringify({
+            'url': window.location.pathname,
+            'time_spent': timeSpent
+        }));
+    });
+</script>
+-->
 </body>
 
 </html>

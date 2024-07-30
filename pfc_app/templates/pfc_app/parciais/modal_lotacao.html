@@ -1,0 +1,38 @@
+<div class="modal fade" id="alterarLotacaoModal" tabindex="-1" aria-labelledby="alterarLotacaoModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="alterarLotacaoModalLabel">Alterar Lotação</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <form id="alterar-lotacao-form" method="POST" action="{% url 'atualizar_lotacao_usuario' %}">
+          <div id="usuarios-selecionados">
+            {% for usuario_id in usuario_ids %}
+              <input type="hidden" name="usuario_ids" value="{{ usuario_id }}">
+              {{ usuario_id }}<br>
+            {% endfor %}
+          </div>
+          <div class="mb-3">
+            <label for="nova-lotacao" class="form-label">Nova Lotação</label>
+            <select id="nova-lotacao" name="nova_lotacao" class="form-select">
+              {% for lotacao in lotacoes %}
+                <option value="{{ lotacao.id }}">{{ lotacao.nome }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="mb-3">
+            <label for="nova-lotacao-especifica" class="form-label">Nova Lotação Específica</label>
+            <select id="nova-lotacao-especifica" name="nova_lotacao_especifica" class="form-select">
+              {% for lotacao_esp in lotacoes_especificas %}
+                <option value="{{ lotacao_esp.id }}">{{ lotacao_esp.nome }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <button type="submit" class="btn btn-primary">Salvar Alterações</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+

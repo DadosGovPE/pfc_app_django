@@ -46,9 +46,14 @@ urlpatterns = [
     path('pdf_bda/', views.estatistica_bda, name='estatistica_bda'),
     path('planocurso_duplicar/', views.duplicar_plano_curso, name='duplicar_plano_curso'),
     path('change-lotacao/', views.select_lotacao_view, name='change_lotacao'),
-    path('lotacao-especifica/<int:lotacao_id>/', views.get_lotacao_especifica, name='get_lotacao_especifica'),
+    path('lotacao-especifica/', views.get_lotacao_especifica, name='get_lotacao_especifica'),
+    path('nova-lotacao-especifica/', views.get_nova_lotacao_especifica, name='get_nova_lotacao_especifica'),
+    path('listar-usuarios/', views.listar_usuarios, name='listar_usuarios'),
+    path('atualizar-lotacao-usuario/', views.atualizar_lotacao_usuario, name='atualizar_lotacao_usuario'),
+    path('abrir-modal/', views.abrir_modal, name='abrir_modal'),
+    path('log-time/', views.log_time, name='log_time'),
 
-]
+]   
 
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

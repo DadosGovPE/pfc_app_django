@@ -1,5 +1,6 @@
 <!--_nav.html-->
 {% load static %}
+{% load custom_tags %}
 <nav class="navbar navbar-expand-lg navbar-light static-top p-0 align-items-center border-bottom shadow-sm">
     <div class="container-fluid">
         <a class="navbar-brand " href="#">
@@ -20,8 +21,8 @@
                             <a class="nav-link text-center  p-0 dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                                 <div class=" d-flex align-items-center overflow-hidden changeWidth mx-auto">
                                     
-                                    <img class="one iconHeight mx-2" src="{% static 'pfc_app/icones/person-check.svg' %}" alt="person-check">
-                                    <img class="two iconHeight mx-2" src="{% static 'pfc_app/icones/person-fill-check.svg' %}"
+                                    <img class="one iconHeight mx-2" src="{% static 'pfc_app/icones/android.svg' %}" alt="android">
+                                    <img class="two iconHeight mx-2" src="{% static 'pfc_app/icones/android2.svg' %}"
                                         alt="person-check-fill">
                                 </div>
                                 <div class="smallFont textColor">Admin</div> 
@@ -60,6 +61,19 @@
                         </a>
                     </li>
                     {% endcomment %}
+                    {% if user.role == "ADMIN" or user|has_group:"GESPE" %}
+                    <li class="nav-item iconChange  me-4 pt-2">
+                        <a href="{% url 'change_lotacao' %}" class="nav-link text-center  p-0">
+                            <div class=" d-flex align-items-center overflow-hidden changeWidth mx-auto">
+                                
+                                <img class="one iconHeight mx-2" src="{% static 'pfc_app/icones/book.svg' %}" alt="book">
+                                <img class="two iconHeight mx-2" src="{% static 'pfc_app/icones/book-half.svg' %}"
+                                    alt="book-half">
+                            </div>
+                            <div class="smallFont textColor">Alterar Lotação</div>
+                        </a>
+                    </li>
+                    {% endif %}
                     <li class="nav-item iconChange  me-4 pt-2">
                         <a href="{% url 'lista_cursos' %}" class="nav-link text-center  p-0">
                             <div class=" d-flex align-items-center overflow-hidden changeWidth mx-auto">
