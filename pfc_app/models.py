@@ -21,7 +21,19 @@ class Lotacao(models.Model):
     nome = models.CharField(max_length=255)
 
     def __str__(self):
-        return self.nome
+        return f"{self.nome} ({self.get_abreviacao_lotacao()})"
+    
+    def get_abreviacao_lotacao(self):
+        nome_lotacao = self.nome
+        if len(nome_lotacao) > 13:
+            preposicoes = {'de', 'da', 'do', 'das', 'dos', 'a', 'o', 'as', 'os', 'e'}
+            palavras = nome_lotacao.split()
+            palavras_filtradas = [palavra for palavra in palavras if palavra.lower() not in preposicoes]
+            abreviacao = "".join([palavra[0].upper() for palavra in palavras_filtradas])
+            return abreviacao
+        else:
+            return nome_lotacao
+        
     class Meta:
         indexes = [
             models.Index(fields=['nome']),
@@ -34,7 +46,19 @@ class LotacaoEspecifica(models.Model):
     lotacao = models.ForeignKey(Lotacao, on_delete=models.CASCADE, related_name='especificacoes')
 
     def __str__(self):
-        return self.nome
+        return f"{self.get_abreviacao_lotacao()} - {self.nome}"
+
+    def get_abreviacao_lotacao(self):
+        nome_lotacao = self.lotacao.nome
+        if len(nome_lotacao) > 13:
+            preposicoes = {'de', 'da', 'do', 'das', 'dos', 'a', 'o', 'as', 'os', 'e'}
+            palavras = nome_lotacao.split()
+            palavras_filtradas = [palavra for palavra in palavras if palavra.lower() not in preposicoes]
+            abreviacao = "".join([palavra[0].upper() for palavra in palavras_filtradas])
+            return abreviacao
+        else:
+            return nome_lotacao
+    
     class Meta:
         indexes = [
             models.Index(fields=['nome']),

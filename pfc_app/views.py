@@ -2815,13 +2815,14 @@ def get_lotacao_especifica(request):
     lotacao = request.GET.get('lotacao')
     especificacoes = LotacaoEspecifica.objects.filter(lotacao=lotacao)
     context = {
-        'lotacoes_especificas': especificacoes
+        'lotacoes_especificas': especificacoes,
         }
     return render(request, 'pfc_app/parciais/lotacao_especifica.html', context)
 
 def get_nova_lotacao_especifica(request):
     nova_lotacao = request.GET.get('nova_lotacao')
     especificacoes = LotacaoEspecifica.objects.filter(lotacao=nova_lotacao)
+
     context = {
         'nova_lotacoes_especificas': especificacoes
         }
