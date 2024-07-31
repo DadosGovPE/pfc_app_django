@@ -14,7 +14,7 @@ class Command(BaseCommand):
         cpf_padrao = CPF()
         for user in users:
             if not cpf_padrao.validate(user.cpf):
-                self.stdout.write(self.style.ERROR(f'CPF de {user.first_name} COM PROBLEMAS!'))
+                self.stdout.write(self.style.ERROR(f'CPF {user.cpf} de {user.first_name} COM PROBLEMAS!'))
         
             
         self.stdout.write(self.style.SUCCESS('FINALIZADO'))

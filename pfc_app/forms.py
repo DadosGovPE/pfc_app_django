@@ -53,3 +53,13 @@ class UserUpdateForm(forms.ModelForm):
         }
 
     telefone = forms.CharField(required=False, max_length=40, label='Telefone')
+
+class UsuarioForm(forms.ModelForm):
+ 
+    class Meta:
+        model = User
+        fields = '__all__'
+        widgets = {
+            'lotacao_fk': forms.Select(attrs={'class': 'custom-select'}),
+            'lotacao_especifica_fk': forms.Select(attrs={'class': 'custom-select'}),
+        }

@@ -5,7 +5,7 @@ from .models import *
 #Curso, User, Inscricao, StatusCurso, StatusInscricao, \
 #StatusValidacao, Avaliacao, Validacao_CH,Certificado, \
 #RequerimentoCH, Competencia, Trilha
-from .forms import AvaliacaoForm 
+from .forms import UsuarioForm 
 from django.utils.html import format_html
 from django.urls import reverse
 
@@ -91,12 +91,12 @@ class CursoAdmin(admin.ModelAdmin):
 
 class CustomUserAdmin(UserAdmin):
     #add_form = UserCreationForm
-    #form = UserChangeForm
+    form = UsuarioForm
     model = User
-    list_display = ('username', 'nome', 'cpf', 'email', 'is_externo', )
+    list_display = ('nome', 'cpf', 'lotacao_fk', 'lotacao_especifica_fk', 'is_externo', )
     fieldsets = (
         ('Geral', {'fields': ('username', 'email', 'password', 'first_name', 'last_name', 
-                           'cpf', 'nome', 'telefone', 'lotacao', 'lotacao_fk', 'lotacao_especifica', 'lotacao_especifica_fk', 'lotacao_especifica_2',
+                           'cpf', 'nome', 'telefone', 'lotacao_fk', 'lotacao_especifica_fk', 'lotacao_especifica_2',
                            'classificacao_lotacao', 'cargo', 'nome_cargo', 'categoria', 'grupo_ocupacional',
                            'origem', 'simbologia', 'tipo_atuacao',
                            'role', 'is_externo', 'avatar', 'pesquisa_cursos_priorizados')}),
@@ -106,13 +106,22 @@ class CustomUserAdmin(UserAdmin):
         (None, {
             'classes': ('wide',),
             'fields': ('username', 'email', 'password1', 'password2', 'first_name', 'last_name', 
-                       'cpf', 'nome', 'telefone', 'lotacao', 'lotacao_especifica', 'lotacao_especifica_2',
+                       'cpf', 'nome', 'telefone', 'lotacao_fk', 'lotacao_especifica_fk', 'lotacao_especifica_2',
                        'classificacao_lotacao', 'cargo', 'nome_cargo', 'categoria', 'grupo_ocupacional', 
                        'origem', 'simbologia', 'tipo_atuacao',
                        'role', 'is_staff', 'is_active', 'is_superuser', 'is_externo', 
                        'avatar', 'groups', )}
         ),
     )
+    list_editable = ('lotacao_fk', 'lotacao_especifica_fk',)
+    list_filter = ('nome', 'lotacao_fk', 'lotacao_especifica_fk',)
+    search_fields = ['username', 'email', 'cpf']
+
+    def formfield_for_dbfield(self, db_field, **kwargs):
+        formfield = super().formfield_for_dbfield(db_field, **kwargs)
+        if db_field.name in self.list_editable:
+            formfield.widget.attrs.update({'class': 'custom-select'})
+        return formfield
 
     # def save_model(self, request, obj, form, change):
     #     if User.objects.filter(username=obj.username).exists() and not change:
