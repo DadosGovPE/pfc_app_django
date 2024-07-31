@@ -10,6 +10,9 @@
         </tr>
     </thead>
     <tbody>
+          <div id="spinner" class="spinner-border htmx-indicator" role="status">
+            <span class="visually-hidden ">Loading...</span>
+          </div>
         {% for usuario in usuarios %}
         <tr>
             <td>
@@ -26,6 +29,7 @@
         {% endfor %}
     </tbody>
 </table>
+
 
 
 <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#alterarLotacaoModal" >Alterar Lotação</button>
