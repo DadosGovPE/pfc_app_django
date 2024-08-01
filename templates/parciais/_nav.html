@@ -15,7 +15,7 @@
                 <ul class="d-flex list-unstyled navbar-nav mb-2 mb-lg-0">
                     {% if user.is_authenticated %}
                 
-                    {% if user.role == "ADMIN" %}
+                    {% if user.role == "ADMIN" or user|has_group:"GESPE" %}
 
                         <li class="nav-item dropdown iconChange  me-4 pt-2">
                             <a class="nav-link text-center  p-0 dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
@@ -30,6 +30,7 @@
                             </a>
                             <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
                                 <li><a class="dropdown-item" href="/admin/">Admin</a></li>
+                                {% if user.role == "ADMIN" %}
                                 <li><hr class="dropdown-divider"></li>
                                 <li><a class="dropdown-item" href="{% url 'usuarios_sem_ch' %}">Lista Usuários</a></li>
                                 <li><hr class="dropdown-divider"></li>
@@ -44,6 +45,7 @@
                                 <li><a class="dropdown-item" href="{% url 'duplicar_plano_curso' %}">Duplicar Plano de Curso</a></li>
                                 <li><hr class="dropdown-divider"></li>
                                 <li><a class="dropdown-item" href="{% url 'estatistica_bda' %}">Gerar PDF do BDA</a></li>
+                                {% endif %}
                             </ul>
                         </li>
 

@@ -93,6 +93,7 @@ class CustomUserAdmin(UserAdmin):
     #add_form = UserCreationForm
     form = UsuarioForm
     model = User
+    raw_id_fields = ['lotacao_fk', 'lotacao_especifica_fk']
     list_display = ('nome', 'cpf', 'lotacao_fk', 'lotacao_especifica_fk', 'is_externo', )
     fieldsets = (
         ('Geral', {'fields': ('username', 'email', 'password', 'first_name', 'last_name', 
