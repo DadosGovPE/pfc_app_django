@@ -61,9 +61,9 @@ class CursoAdmin(admin.ModelAdmin):
                     'gerar_certificados', 'gerar_ata',)
     fields = ['nome_curso', 'ementa_curso', 'modalidade', 'tipo_reconhecimento', 'ch_curso', 'vagas',
                'categoria', 'trilha', 'curso_priorizado', 'descricao', ('data_inicio', 'data_termino'), 'turno', 'turma',
-               'inst_certificadora', 'inst_promotora', 'coordenador', 'status', 'periodo_avaliativo', 'eh_evento',
+               'inst_certificadora', 'inst_promotora', 'coordenador', 'origem_pagamento', 'status', 'periodo_avaliativo', 'eh_evento',
                'horario', 'observacao', ]
-    list_filter = (CursoNomeTurmaFilter, 'data_inicio', 'data_termino', 'periodo_avaliativo',)
+    list_filter = (CursoNomeTurmaFilter, 'data_inicio', 'data_termino', 'periodo_avaliativo', 'origem_pagamento',)
     list_editable = ('status', 'periodo_avaliativo', 'curso_priorizado',)
     autocomplete_fields = ['curso_priorizado']
     ordering = ['-data_inicio']
@@ -79,10 +79,10 @@ class CursoAdmin(admin.ModelAdmin):
     numero_inscritos.short_description = 'Número de Inscritos'
 
     def gerar_certificados(self, obj):
-        return format_html('<a href="{}">Gerar Certificados</a>', reverse('generate_all_pdfs', args=[obj.id]))
+        return format_html('<a href="{}" class="btn btn-primary">Gerar Certificados</a>', reverse('generate_all_pdfs', args=[obj.id]))
 
     def gerar_ata(self, obj):
-        return format_html('<a href="{}">Gerar Ata</a>', reverse('gerar_ata', args=[obj.id]))
+        return format_html('<a href="{}" class="btn btn-primary">Gerar Ata</a>', reverse('gerar_ata', args=[obj.id]))
 
 
 
@@ -284,10 +284,12 @@ admin.site.register(Relatorio, RelatorioAdmin)
 admin.site.register(Curadoria, CuradoriaAdmin)
 admin.site.register(CursoPriorizado, CursoPriorizadoAdmin)
 admin.site.register(AjustesPesquisa)
+admin.site.register(AjustesHoraAula)
 admin.site.register(PesquisaCursosPriorizados)
 admin.site.register(Lotacao)
 admin.site.register(LotacaoEspecifica)
 admin.site.register(PageVisit)
+admin.site.register(OrigemPagamento)
 
 
 

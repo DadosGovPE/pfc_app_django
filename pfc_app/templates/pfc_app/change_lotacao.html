@@ -3,29 +3,33 @@
 {% block content %}
 {% include 'parciais/_messages.html' %}
 
-    <div class="d-flex p-2 justify-content-center mb-2"><h1>ALTERAR LOTAÇÃO</h1></div>
-<div class="col-5">
+<div class="d-flex p-2 justify-content-center mb-2"><h1>ALTERAR LOTAÇÃO</h1></div>
+<div class="d-flex flex-column">
+<div class="col-8">
+    <div id="spinner" class="spinner-border htmx-indicator" role="status">
+        <span class="visually-hidden ">Loading...</span>
+    </div>
     <select id="lotacao-select" 
         name="lotacao"
         class="form-select"
         hx-get="{% url 'get_lotacao_especifica' %}"
         hx-trigger="change"
-        hx-target="#lot_especifica">
+        hx-target="#lot_especifica"
+        hx-indicator="#spinner">
         <option value="">Selecione a Lotação</option>
         {% for lotacao in lotacoes %}
             <option value="{{ lotacao.id }}">{{ lotacao.nome }}</option>
         {% endfor %}
     </select>
-
+</div>
     <div id="lot_especifica" class="mt-3">
         {% include 'pfc_app/parciais/lotacao_especifica.html' %}
 
+
+
     </div>
 </div>
-<div id="lista_usuarios">
-    {% include 'pfc_app/parciais/lista_usuarios.html' %}
 
-</div>
 <!-- Modal 
 <button type="button" class="btn btn-primary" hx-get="{% url 'abrir_modal' %}" hx-target="#modal-container" hx-include="[name='usuario_check']">Alterar Lotação</button>
 -->

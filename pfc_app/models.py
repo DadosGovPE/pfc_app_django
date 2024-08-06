@@ -139,6 +139,18 @@ class AjustesPesquisa(models.Model):
     def __str__(self):
         return self.nome
 
+class AjustesHoraAula(models.Model):
+    valor_instrutor_primario = models.PositiveSmallIntegerField()
+    valor_instrutor_secundário = models.PositiveSmallIntegerField()
+    valor_instrutor_coordenador = models.PositiveSmallIntegerField()
+    ano_mes_referencia = models.DateField()
+
+    def __str__(self):
+        return str(self.ano_mes_referencia)
+
+    class Meta:
+        verbose_name_plural = "ajustes horas-aula"
+
 class StatusCurso(models.Model):
     nome = models.CharField(max_length=50)
     
@@ -211,6 +223,13 @@ class Modalidade(models.Model):
     def __str__(self):
         return self.nome
 
+
+
+class OrigemPagamento(models.Model):
+    nome = models.CharField(max_length=400, blank=False, null=False)
+    def __str__(self):
+        return self.nome
+
 class Curso(models.Model):
     TURNO_CHOICES = [
         ('MANHA', 'MANHÃ'),
@@ -260,6 +279,7 @@ class Curso(models.Model):
     observacao = models.TextField(max_length=4000, blank=True, null=True, verbose_name = ("Observação"))
     horario = models.TextField(max_length=400, blank=True, null=True, verbose_name = ("Horário"))
     curso_priorizado = models.ForeignKey(CursoPriorizado, on_delete=models.SET_NULL, blank=True, null=True, related_name='cursos_priorizados')
+    origem_pagamento = models.ForeignKey(OrigemPagamento, on_delete=models.SET_NULL, blank=True, null=True, related_name='cursos_origem')
 
     def publish(self):
         self.published_date = timezone.now()

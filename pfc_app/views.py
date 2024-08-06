@@ -2814,8 +2814,10 @@ def select_lotacao_view(request):
 def get_lotacao_especifica(request):
     lotacao = request.GET.get('lotacao')
     especificacoes = LotacaoEspecifica.objects.filter(lotacao=lotacao)
+    usuarios = User.objects.filter(lotacao_fk=lotacao)
     context = {
         'lotacoes_especificas': especificacoes,
+        'usuarios': usuarios,
         }
     return render(request, 'pfc_app/parciais/lotacao_especifica.html', context)
 

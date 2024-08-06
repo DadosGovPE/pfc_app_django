@@ -1,14 +1,97 @@
 
+<div class="col-8">
+    <select id="lotacao-especifica-select" 
+        name="lotacao-especifica"
+        class="form-select"
+        hx-get="{% url 'listar_usuarios' %}"
+        hx-trigger="change"
+        hx-target="#lista_usuarios"
+        hx-indicator="#spinner">
+        <option value="">Selecione a Lotação Específica</option>
+        {% for lotacao_esp in lotacoes_especificas %}
+            <option value="{{ lotacao_esp.id }}">{{ lotacao_esp.nome }}</option>
+        {% endfor %}
+    </select>
+</div>
 
-<select id="lotacao-especifica-select" 
-    name="lotacao-especifica"
-    class="form-select"
-    hx-get="{% url 'listar_usuarios' %}"
-    hx-trigger="change"
-    hx-target="#lista_usuarios"
-    hx-indicator="#spinner">
-    <option value="">Selecione a Lotação Específica</option>
-    {% for lotacao_esp in lotacoes_especificas %}
-        <option value="{{ lotacao_esp.id }}">{{ lotacao_esp.nome }}</option>
-    {% endfor %}
-</select>
+
+
+<div class="col-12 mb-3" id="lista_usuarios">
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Login</th>
+                <th>Lotação</th>
+                <th>Lotação Específica</th>
+                <th>Ação</th>
+            </tr>
+        </thead>
+        <tbody>
+            
+            {% for usuario in usuarios %}
+            <tr>
+                <td>
+                    # {{ usuario.id }}
+                </td>
+                <td>{{ usuario.nome }}</td>
+                <td>{{ usuario.lotacao_fk }}</td>
+                <td>{{ usuario.lotacao_especifica_fk }}</td>
+                <td>
+                    <input type="hidden" name="usuario_id" value="{{ usuario.id }}">
+                    <input type="checkbox" name="usuario_check" value="{{ usuario.id }}">
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+
+
+    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#alterarLotacaoModal" >Alterar Lotação</button>
+
+    <!-- Modal -->
+    <div class="modal fade" id="alterarLotacaoModal" tabindex="-1" aria-labelledby="alterarLotacaoModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+        <div class="modal-header">
+            <h5 class="modal-title" id="alterarLotacaoModalLabel">Alterar Lotação</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+            <form id="alterar-lotacao-form" action="{% url 'atualizar_lotacao_usuario' %}" method="POST">
+            {% csrf_token %}
+            <div class="m-1">
+            <p>Usuários selecionados:</p>
+            </div>
+            <div id="usuarios-selecionados" class="m-3">
+                <!-- Lista de usuários selecionados será inserida aqui -->
+            </div>
+            <hr>
+            <div class="mb-3">
+                <label for="nova-lotacao" class="form-label">Nova Lotação</label>
+                <select id="nova-lotacao" 
+                    name="nova_lotacao" 
+                    class="form-select"
+                    hx-get="{% url 'get_nova_lotacao_especifica' %}"
+                    hx-trigger="change"
+                    hx-target="#nova_lot_especifica">
+                    <option value="">Selecione a Nova Lotação</option>
+                    {% for lotacao in lotacoes %}
+                        <option value="{{ lotacao.id }}">{{ lotacao.nome }}</option>
+                    {% endfor %}
+                </select>
+
+                <div id="nova_lot_especifica" class="mt-3">
+                    {% include 'pfc_app/parciais/nova_lotacao_especifica.html' %}
+
+                </div>
+
+                </div>
+            <button type="submit" class="btn btn-primary">Salvar Alterações</button>
+            </form>
+        </div>
+        </div>
+    </div>
+    </div>
+</div>
