@@ -9,6 +9,7 @@ from django.contrib.auth.forms import PasswordChangeForm, PasswordResetForm
 from django.contrib.auth.tokens import default_token_generator
 from django.utils.http import urlsafe_base64_encode
 from django.utils import dateformat, timezone
+from django.utils.timezone import now
 from django.urls import reverse
 import random
 import string
@@ -22,11 +23,12 @@ from .models import Curso, Inscricao, StatusInscricao, Avaliacao, \
                     Tema, Subtema, Carreira, Modalidade, Categoria, ItemRelatorio,\
                     PlanoCurso, Trilha, Curadoria, AvaliacaoAberta, CursoPriorizado,\
                     AjustesPesquisa, PesquisaCursosPriorizados, CronogramaExecucao,\
-                    LotacaoEspecifica, Lotacao, PageVisit
+                    LotacaoEspecifica, Lotacao, PageVisit, AjustesHoraAula
 from .forms import AvaliacaoForm, DateFilterForm, UserUpdateForm
 from django.db.models import Count, Q, Sum, F, \
                                 Avg, FloatField, When, BooleanField, \
-                                Exists, OuterRef, Value, Subquery, Min, Max
+                                Exists, OuterRef, Value, Subquery, Min, Max, \
+                                ExpressionWrapper, DecimalField, Case
 from django.db.models.functions import Coalesce, Concat, Cast, ExtractYear
 from django.contrib.postgres.aggregates import StringAgg
 from django.contrib.postgres.expressions import ArraySubquery
@@ -2892,3 +2894,58 @@ def log_time(request):
         return JsonResponse({'status': 'success'})
 
     return JsonResponse({'status': 'error'}, status=400)
+
+
+@login_required
+def gastos(request):
+    # Subquery para obter a última vigência (mais recente) de AjustesHoraAula
+    latest_date_subquery = AjustesHoraAula.objects.order_by(
+        '-ano_mes_referencia').values('ano_mes_referencia')[:1]
+
+    latest_ajuste_subquery = AjustesHoraAula.objects.filter(
+        ano_mes_referencia=Subquery(latest_date_subquery)
+    ).order_by('-ano_mes_referencia')[:1]
+
+    # Consulta principal
+    cursos = Curso.objects.filter(origem_pagamento__isnull=False).annotate(
+        instrutores_count=Count('inscricao', filter=Q(inscricao__condicao_na_acao='DOCENTE')),
+        valor_instrutor_primario=Subquery(
+            latest_ajuste_subquery.values('valor_instrutor_primario')
+        ),
+        valor_instrutor_secundario=Case(
+            When(
+                instrutores_count__gt=1, 
+                then=Subquery(latest_ajuste_subquery.values('valor_instrutor_secundario'))
+            ),
+            default=Value(0),
+            output_field=DecimalField()
+        ),
+        valor_coordenador=Subquery(
+            latest_ajuste_subquery.values('valor_coordenador')
+        ),
+        total_gastos=ExpressionWrapper(
+            F('valor_instrutor_primario') + 
+            Case(
+                When(instrutores_count__gt=1, then=F('valor_instrutor_secundario')),
+                default=Value(0),
+                output_field=DecimalField()
+            ) + 
+            F('valor_coordenador'),
+            output_field=DecimalField()
+        )
+    )
+    # Calcular o total geral gasto
+    total_geral_gasto = cursos.aggregate(total=Sum('total_gastos'))['total'] or 0
+
+    # Calcular o total gasto no ano atual
+    current_year = now().year
+    total_gasto_atual_ano = cursos.filter(
+        data_inicio__year=current_year
+    ).aggregate(total=Sum('total_gastos'))['total'] or 0
+
+    context = {
+        'cursos': cursos,
+        'total_geral_gasto': total_geral_gasto,
+        'total_gasto_atual_ano': total_gasto_atual_ano,
+    }
+    return render(request, 'pfc_app/gastos_com_cursos.html', context)

@@ -141,8 +141,8 @@ class AjustesPesquisa(models.Model):
 
 class AjustesHoraAula(models.Model):
     valor_instrutor_primario = models.PositiveSmallIntegerField()
-    valor_instrutor_secundário = models.PositiveSmallIntegerField()
-    valor_instrutor_coordenador = models.PositiveSmallIntegerField()
+    valor_instrutor_secundario = models.PositiveSmallIntegerField()
+    valor_coordenador = models.PositiveSmallIntegerField()
     ano_mes_referencia = models.DateField()
 
     def __str__(self):

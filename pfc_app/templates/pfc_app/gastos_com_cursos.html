@@ -1,0 +1,56 @@
+{% extends 'base.html' %}
+
+{% block content %}
+{% include 'parciais/_messages.html' %}
+
+
+    <div class="container mt-4">
+        <div class="d-flex p-2 justify-content-center mb-0"><h1>GASTOS COM CURSOS</h1></div>
+        <div class="row mb-4">
+            <div class="col-md-6">
+                <div class="card text-white bg-primary mb-3">
+                    <div class="card-header">Total Geral Gasto</div>
+                    <div class="card-body">
+                        <h5 class="card-title">R$ {{ total_geral_gasto }}</h5>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card text-white bg-success mb-3">
+                    <div class="card-header">Total Gasto no Ano Atual</div>
+                    <div class="card-body">
+                        <h5 class="card-title">R$ {{ total_gasto_atual_ano }}</h5>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>Curso</th>
+                        <th>Origem Pagamento</th>
+                        <th>Gastos Instrutor Primário</th>
+                        <th>Gastos Instrutor Secundário</th>
+                        <th>Gastos Coordenador</th>
+                        <th>Total Gastos</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for curso in cursos %}
+                    <tr>
+                        <td>{{ curso.nome_curso }}</td>
+                        <td>{{ curso.origem_pagamento.nome }}</td>
+                        <td>R$ {{ curso.valor_instrutor_primario }}</td>
+                        <td>R$ {{ curso.valor_instrutor_secundario }}</td>
+                        <td>R$ {{ curso.valor_coordenador }}</td>
+                        <td>R$ {{ curso.total_gastos }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+
+{% endblock %}

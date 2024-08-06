@@ -52,6 +52,7 @@ urlpatterns = [
     path('atualizar-lotacao-usuario/', views.atualizar_lotacao_usuario, name='atualizar_lotacao_usuario'),
     path('abrir-modal/', views.abrir_modal, name='abrir_modal'),
     path('log-time/', views.log_time, name='log_time'),
+    path('gastos/', views.gastos, name='gastos'),
 
 ]   
 
