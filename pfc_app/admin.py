@@ -52,9 +52,12 @@ class CursoNomeTurmaFilter(admin.SimpleListFilter):
             return queryset.filter(curso__id=self.value())
         return queryset
 
+class ArquivoCursoInline(admin.TabularInline):
+    model = ArquivoCurso
+    extra = 1
 
 class CursoAdmin(admin.ModelAdmin):
-    inlines = [ InscricaoInline ]
+    inlines = [ InscricaoInline,  ArquivoCursoInline]
 
     list_display = ('nome_formatado', 'data_inicio', 'data_termino', 
                     'vagas', 'numero_inscritos', 'status', 'curso_priorizado', 'periodo_avaliativo',

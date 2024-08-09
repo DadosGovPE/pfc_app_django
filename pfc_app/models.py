@@ -304,6 +304,17 @@ class Curso(models.Model):
         ordering = ['nome_curso']
     
 
+def curso_arquivo_upload_path(instance, filename):
+    return os.path.join('cursos', 'arquivos', instance.curso.nome_curso, filename)
+
+class ArquivoCurso(models.Model):
+    curso = models.ForeignKey(Curso, related_name='arquivos', on_delete=models.CASCADE)
+    arquivo = models.FileField(upload_to=curso_arquivo_upload_path)
+    descricao = models.CharField(max_length=400, blank=True, null=True)
+
+    def __str__(self):
+        return self.descricao if self.descricao else f"Arquivo do curso {self.curso.nome_curso}"
+    
 
 class PlanoCurso(models.Model):
     curso = models.OneToOneField(Curso, on_delete=models.CASCADE) 

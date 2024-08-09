@@ -2899,38 +2899,79 @@ def log_time(request):
 @login_required
 def gastos(request):
     # Subquery para obter a última vigência (mais recente) de AjustesHoraAula
-    latest_date_subquery = AjustesHoraAula.objects.order_by(
-        '-ano_mes_referencia').values('ano_mes_referencia')[:1]
+    # latest_date_subquery = AjustesHoraAula.objects.order_by(
+    #     '-ano_mes_referencia').values('ano_mes_referencia')[:1]
 
+    # latest_ajuste_subquery = AjustesHoraAula.objects.filter(
+    #     ano_mes_referencia=Subquery(latest_date_subquery)
+    # ).order_by('-ano_mes_referencia')[:1]
     latest_ajuste_subquery = AjustesHoraAula.objects.filter(
-        ano_mes_referencia=Subquery(latest_date_subquery)
+        ano_mes_referencia__lte=OuterRef('data_inicio')
     ).order_by('-ano_mes_referencia')[:1]
+
 
     # Consulta principal
     cursos = Curso.objects.filter(origem_pagamento__isnull=False).annotate(
         instrutores_count=Count('inscricao', filter=Q(inscricao__condicao_na_acao='DOCENTE')),
-        valor_instrutor_primario=Subquery(
-            latest_ajuste_subquery.values('valor_instrutor_primario')
+        valor_instrutor_primario=Case(
+            When(
+                origem_pagamento__nome="Sem Pagamento",
+                then=Value(0)
+            ),
+            default=ExpressionWrapper(
+                Subquery(
+                    latest_ajuste_subquery.values('valor_instrutor_primario')
+                ) * F('ch_curso'),
+                output_field=DecimalField()
+            ),
+            output_field=DecimalField()
         ),
         valor_instrutor_secundario=Case(
             When(
-                instrutores_count__gt=1, 
-                then=Subquery(latest_ajuste_subquery.values('valor_instrutor_secundario'))
+                origem_pagamento__nome="Sem Pagamento",
+                then=Value(0)
             ),
-            default=Value(0),
+            default=ExpressionWrapper(
+                Case(
+                    When(
+                        instrutores_count__gt=1, 
+                        then=Subquery(latest_ajuste_subquery.values('valor_instrutor_secundario'))
+                    ),
+                    default=Value(0),
+                    output_field=DecimalField()
+                ) * F('ch_curso'),
+                output_field=DecimalField()
+            ),
             output_field=DecimalField()
         ),
-        valor_coordenador=Subquery(
-            latest_ajuste_subquery.values('valor_coordenador')
-        ),
-        total_gastos=ExpressionWrapper(
-            F('valor_instrutor_primario') + 
-            Case(
-                When(instrutores_count__gt=1, then=F('valor_instrutor_secundario')),
-                default=Value(0),
+        valor_coordenador=Case(
+            When(
+                origem_pagamento__nome="Sem Pagamento",
+                then=Value(0)
+            ),
+            default=ExpressionWrapper(
+                Subquery(
+                    latest_ajuste_subquery.values('valor_coordenador')
+                ) * F('ch_curso'),
                 output_field=DecimalField()
-            ) + 
-            F('valor_coordenador'),
+            ),
+            output_field=DecimalField()
+        ),
+        total_gastos=Case(
+            When(
+                origem_pagamento__nome="Sem Pagamento",
+                then=Value(0)
+            ),
+            default=ExpressionWrapper(
+                F('valor_instrutor_primario') + 
+                Case(
+                    When(instrutores_count__gt=1, then=F('valor_instrutor_secundario')),
+                    default=Value(0),
+                    output_field=DecimalField()
+                ) + 
+                F('valor_coordenador'),
+                output_field=DecimalField()
+            ),
             output_field=DecimalField()
         )
     )
