@@ -91,7 +91,7 @@ class CursoAdmin(admin.ModelAdmin):
 
 class CustomUserAdmin(UserAdmin):
     #add_form = UserCreationForm
-    form = UsuarioForm
+    # form = UsuarioForm
     model = User
     list_per_page = 20
     # raw_id_fields = ['lotacao_fk', 'lotacao_especifica_fk']
