@@ -30,7 +30,7 @@
                     <p><strong>Horário:</strong> {{curso.horario}}</p>
                 {% endif %}
                 {% if curso.observacao %}
-                    <p><strong>Observação:</strong> {{curso.observacao}}</p>
+                    <p><strong>Observação:</strong> {{curso.observacao|safe}}</p>
                 {% endif %}
                 <button type="button" class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#staticBackdrop">
                     Ver Ementa <i class="fa-solid fa-user-chef"></i>
