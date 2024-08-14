@@ -27,7 +27,7 @@
                 <p><strong>Trilha:</strong> {{curso.trilha}}</p>
                 <p><strong>Descrição do Curso:</strong> {{curso.descricao}}</p>
                 {% if curso.horario %}
-                    <p><strong>Horário:</strong> {{curso.horario}}</p>
+                    <p><strong>Horário:</strong> {{curso.horario|safe}}</p>
                 {% endif %}
                 {% if curso.observacao %}
                     <p><strong>Observação:</strong> {{curso.observacao|safe}}</p>

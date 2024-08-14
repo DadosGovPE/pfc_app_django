@@ -277,7 +277,7 @@ class Curso(models.Model):
     periodo_avaliativo = models.BooleanField(default=False)
     eh_evento = models.BooleanField(default=False, verbose_name = ("É evento"))
     observacao = models.TextField(max_length=4000, blank=True, null=True, verbose_name = ("Observação"))
-    horario = models.TextField(max_length=400, blank=True, null=True, verbose_name = ("Horário"))
+    horario = models.TextField(max_length=4000, blank=True, null=True, verbose_name = ("Horário"))
     curso_priorizado = models.ForeignKey(CursoPriorizado, on_delete=models.SET_NULL, blank=True, null=True, related_name='cursos_priorizados')
     origem_pagamento = models.ForeignKey(OrigemPagamento, on_delete=models.SET_NULL, blank=True, null=True, related_name='cursos_origem')
 
