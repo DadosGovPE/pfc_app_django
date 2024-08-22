@@ -2049,6 +2049,7 @@ def draw_logos_curadoria(c: canvas.Canvas, width, height):
     c.drawImage(seplag_path, x_seplag, y_seplag, width=logo_width_seplag, height=logo_height_seplag, mask='auto')
     c.drawImage(pfc_path, x_pfc, y_pfc, width=logo_width, height=logo_height, mask='auto')
 
+
 @login_required
 def gerar_curadoria(request, ano, mes):
     # Ano e mês são presumivelmente passados como inteiros, se não, converta-os.
@@ -2194,7 +2195,13 @@ def gerar_curadoria(request, ano, mes):
 
         
         
-        if y_table-h_pfc > 40 and y_table-h > 40:
+        # if y_table-h_pfc > 40 and y_table-h > 40:
+        #     p.setFillColorRGB(rgb_normalized[0], rgb_normalized[1], rgb_normalized[2])
+        #     p.circle(60, y_table + 20, 10, stroke=0, fill=1)
+        #     p.setFillColorRGB(0, 0, 0)
+        #     p.drawString(75, y_table + 15, trilha.nome)
+
+        if y_table - (h_pfc + h) > 40:
             p.setFillColorRGB(rgb_normalized[0], rgb_normalized[1], rgb_normalized[2])
             p.circle(60, y_table + 20, 10, stroke=0, fill=1)
             p.setFillColorRGB(0, 0, 0)
@@ -2202,7 +2209,7 @@ def gerar_curadoria(request, ano, mes):
 
         if len(data_pfc) > 1:
             
-            if y_table-h_pfc <= 40:
+            if y_table - (h_pfc + h) <= 40:
                 draw_logos_curadoria(p, width, height)
                 p.setFont("Helvetica", 26)
                 mes_escolhido = MONTHS[int(mes)-1][1]
