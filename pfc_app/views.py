@@ -23,7 +23,7 @@ from .models import Curso, Inscricao, StatusInscricao, Avaliacao, \
                     Tema, Subtema, Carreira, Modalidade, Categoria, ItemRelatorio,\
                     PlanoCurso, Trilha, Curadoria, AvaliacaoAberta, CursoPriorizado,\
                     AjustesPesquisa, PesquisaCursosPriorizados, CronogramaExecucao,\
-                    LotacaoEspecifica, Lotacao, PageVisit, AjustesHoraAula
+                    LotacaoEspecifica, Lotacao, PageVisit, AjustesHoraAula, StatusCurso
 from .forms import AvaliacaoForm, DateFilterForm, UserUpdateForm
 from django.db.models import Count, Q, Sum, F, \
                                 Avg, FloatField, When, BooleanField, \
@@ -2561,8 +2561,9 @@ def generate_bda_pdf(request, ano, mes):
     ano_referencia = ano
     mes_referencia = mes
     total_cursos_priorizados = CursoPriorizado.objects.filter(Q(mes_competencia__year=ano_referencia,)).count()
+    status_curso = StatusCurso.objects.get(nome='CANCELADO')
     
-    cursos = Curso.objects.filter(data_inicio__month=mes_referencia, curso_priorizado__isnull=False)
+    cursos = Curso.objects.filter(data_inicio__month=mes_referencia, curso_priorizado__isnull=False).exclude(status=status_curso)
     curadorias = Curadoria.objects.filter(mes_competencia__month=mes_referencia, curso_priorizado__isnull=False)
     
     # Caminho da imagem
@@ -2616,7 +2617,7 @@ def generate_bda_pdf(request, ano, mes):
             
         ])
 
-    col_widths = [150, 200, 80, 50]  # Define larguras fixas para as colunas
+    col_widths = [145, 195, 75, 65]  # Define larguras fixas para as colunas
     # Cria a tabela
     table = Table(data, colWidths=col_widths)
     table.setStyle(TableStyle([
