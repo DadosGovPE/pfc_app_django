@@ -35,6 +35,12 @@
                 <button type="button" class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#staticBackdrop">
                     Ver Ementa <i class="fa-solid fa-user-chef"></i>
                 </button>
+                {% if curso.material_curso is None %}
+                    <p></p>
+                {% else %}
+                    <p><a href="{{curso.material_curso}}" class="btn btn-primary mt-3" target="_blank"><i class="bi bi-journals"></i> MATERIAL DO CURSO</a></p>
+                {% endif %}
+                
             </div>
     </div>
     <div class="row mb-2">

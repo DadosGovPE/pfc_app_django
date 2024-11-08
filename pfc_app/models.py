@@ -280,6 +280,9 @@ class Curso(models.Model):
     horario = models.TextField(max_length=4000, blank=True, null=True, verbose_name = ("Horário"))
     curso_priorizado = models.ForeignKey(CursoPriorizado, on_delete=models.SET_NULL, blank=True, null=True, related_name='cursos_priorizados')
     origem_pagamento = models.ForeignKey(OrigemPagamento, on_delete=models.SET_NULL, blank=True, null=True, related_name='cursos_origem')
+    material_curso = models.CharField(max_length=400, blank=True, null=True)
+    is_externo = models.BooleanField(default=False)
+
 
     def publish(self):
         self.published_date = timezone.now()

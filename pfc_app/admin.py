@@ -65,7 +65,8 @@ class CursoAdmin(admin.ModelAdmin):
     fields = ['nome_curso', 'ementa_curso', 'modalidade', 'tipo_reconhecimento', 'ch_curso', 'vagas',
                'categoria', 'trilha', 'curso_priorizado', 'descricao', ('data_inicio', 'data_termino'), 'turno', 'turma',
                'inst_certificadora', 'inst_promotora', 'coordenador', 'origem_pagamento', 'status', 'periodo_avaliativo', 'eh_evento',
-               'horario', 'observacao', ]
+               'is_externo', 'material_curso', 'horario', 'observacao', 
+               ]
     list_filter = (CursoNomeTurmaFilter, 'data_inicio', 'data_termino', 'periodo_avaliativo', 'origem_pagamento',)
     list_editable = ('status', 'periodo_avaliativo', 'curso_priorizado',)
     autocomplete_fields = ['curso_priorizado']
