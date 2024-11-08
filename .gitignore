@@ -85,5 +85,6 @@ target/
 __pycache__/
 local_settings.py
 
+*.pdf
 .env
 db.sqlite3
