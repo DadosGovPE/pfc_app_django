@@ -925,7 +925,7 @@ def generate_single_pdf(request, inscricao_id):
     imagem_relative_path = 'Certificado-FUNDO.png'
     assinatura_relative_path = 'upload/certificado/assinatura.jpg'
     igpe_relative_path = 'igpe.png'
-    egape_relative_path = 'Egape.png'
+    ed_corp_relative_path = 'educacao_corporativa_h.png'
     pfc_relative_path = 'retangulartransp.png'
     seplag_relative_path = 'seplagtransparente.png'
 
@@ -933,7 +933,7 @@ def generate_single_pdf(request, inscricao_id):
     imagem_path = os.path.join(settings.MEDIA_ROOT, imagem_relative_path)
     assinatura_path = os.path.join(settings.MEDIA_ROOT, assinatura_relative_path)
     igpe_path = os.path.join(settings.MEDIA_ROOT, igpe_relative_path)
-    egape_path = os.path.join(settings.MEDIA_ROOT, egape_relative_path)
+    ed_corp_path = os.path.join(settings.MEDIA_ROOT, ed_corp_relative_path)
     pfc_path = os.path.join(settings.MEDIA_ROOT, pfc_relative_path)
     seplag_path = os.path.join(settings.MEDIA_ROOT, seplag_relative_path)
 
@@ -946,7 +946,7 @@ def generate_single_pdf(request, inscricao_id):
     c.drawImage(igpe_path, 50, 20, width=63, height=50, preserveAspectRatio=True, mask='auto')
     c.drawImage(seplag_path, 63+50+30, 20, width=196, height=50, preserveAspectRatio=True, mask='auto')
     c.drawImage(pfc_path, 63+30+50+196, 20, width=196, height=50, preserveAspectRatio=True, mask='auto')
-    c.drawImage(egape_path, 63+50+30+196+196, 20, width=196, height=50, preserveAspectRatio=True, mask='auto')
+    c.drawImage(ed_corp_path, 63+50+30+196+166, 20, width=196, height=50, preserveAspectRatio=True, mask='auto')
     
     p_title.wrapOn(c, 500, 100)
     p_title.drawOn(c, width-800, height-100)
