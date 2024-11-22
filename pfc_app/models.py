@@ -64,7 +64,14 @@ class LotacaoEspecifica(models.Model):
             models.Index(fields=['nome']),
         ]
         ordering = ['nome']
+
+class Carreira(models.Model):
+    nome = models.CharField(max_length=80)
+    sigla = models.CharField(max_length=20)
+    def __str__(self):
+        return self.nome+f' ({self.sigla})'
     
+
 class User(AbstractUser):
     data_criacao = models.DateTimeField(auto_now_add=True)
     data_atualizacao = models.DateTimeField(auto_now=True)
@@ -86,6 +93,7 @@ class User(AbstractUser):
     lotacao_especifica_fk = models.ForeignKey(LotacaoEspecifica, on_delete=models.SET_NULL, null=True, blank=True, related_name='users_especifica', verbose_name = ("Lotação Específica"))
     classificacao_lotacao = models.CharField(max_length=400, blank=True, null=True)
     pesquisa_cursos_priorizados = models.ManyToManyField(PesquisaCursosPriorizados, blank=True)
+    carreira = models.ForeignKey(Carreira, on_delete=models.SET_NULL, blank=True, null=True)
 
     is_ativo = models.BooleanField(default=True)
     role = models.CharField(max_length=40, default="USER")
@@ -452,12 +460,6 @@ class StatusValidacao(models.Model):
     class Meta:
         verbose_name_plural = "status validações"
 
-
-class Carreira(models.Model):
-    nome = models.CharField(max_length=80)
-    sigla = models.CharField(max_length=20)
-    def __str__(self):
-        return self.nome+f' ({self.sigla})'
 
 
 class Curadoria(models.Model):

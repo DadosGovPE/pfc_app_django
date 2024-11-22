@@ -102,7 +102,7 @@ class CustomUserAdmin(UserAdmin):
     list_display = ('nome', 'cpf', 'lotacao_fk', 'lotacao_especifica_fk', 'is_externo', )
     fieldsets = (
         ('Geral', {'fields': ('username', 'email', 'password', 'first_name', 'last_name', 
-                           'cpf', 'nome', 'telefone', 'lotacao_fk', 'lotacao_especifica_fk', 'lotacao_especifica_2',
+                           'cpf', 'nome', 'telefone', 'carreira', 'lotacao_fk', 'lotacao_especifica_fk', 'lotacao_especifica_2',
                            'classificacao_lotacao', 'cargo', 'nome_cargo', 'categoria', 'grupo_ocupacional',
                            'origem', 'simbologia', 'tipo_atuacao',
                            'role', 'is_externo', 'avatar', 'pesquisa_cursos_priorizados')}),
@@ -112,7 +112,7 @@ class CustomUserAdmin(UserAdmin):
         (None, {
             'classes': ('wide',),
             'fields': ('username', 'email', 'password1', 'password2', 'first_name', 'last_name', 
-                       'cpf', 'nome', 'telefone', 'lotacao_fk', 'lotacao_especifica_fk', 'lotacao_especifica_2',
+                       'cpf', 'nome', 'telefone', 'carreira', 'lotacao_fk', 'lotacao_especifica_fk', 'lotacao_especifica_2',
                        'classificacao_lotacao', 'cargo', 'nome_cargo', 'categoria', 'grupo_ocupacional', 
                        'origem', 'simbologia', 'tipo_atuacao',
                        'role', 'is_staff', 'is_active', 'is_superuser', 'is_externo', 
