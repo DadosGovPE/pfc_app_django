@@ -1030,6 +1030,10 @@ def generate_all_reconhecimento(request, validacao_id):
         else:
             texto_competencia = ""
 
+        texto_carreira = 'Gestor Governamental'
+        if user.carreira:
+            texto_carreira = user.carreira
+
 
         tag_mapping = {
             "[nome_completo]": validacao.usuario.nome,
@@ -1045,7 +1049,9 @@ def generate_all_reconhecimento(request, validacao_id):
             "[ch_solicitada]": validacao.ch_solicitada,
             "[data_analise]": dateformat.format(datetime.now(), 'd \d\e F \d\e Y'),
             "[responsavel_analise]": validacao.responsavel_analise,
-            "[competencias]": texto_competencia
+            "[competencias]": texto_competencia,
+            "[carreira]": texto_carreira,
+            
         }
 
 # Substitua as tags pelo valor correspondente no texto
