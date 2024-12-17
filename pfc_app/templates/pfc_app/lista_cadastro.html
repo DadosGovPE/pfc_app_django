@@ -1,0 +1,58 @@
+{% extends 'base.html' %}
+{% load filtros %}
+
+{% block content %}
+{% include 'parciais/_messages.html' %}
+    <div class="d-flex p-2 justify-content-center mb-4"><h1>LISTA DE SOLICITAÇÃO DE CADASTRO</h1></div>
+    <form method="GET" action="" class="row g-3">
+        {% csrf_token %}
+        
+        <div class="col-md-3 form-floating mb-3">
+            
+            <input type="date" class="form-control" name="data_inicio"  id="id_data_inicio" value="{{ values.data_inicio }}">
+            <label for="id_data_inicio" >De</label>
+        </div>
+        <div class="col-md-3 col-md-3 form-floating mb-3">
+            
+            <input type="date" class="form-control" name="data_fim"  id="id_data_fim" value="{{ values.data_fim }}">
+            <label for="{{ form.data_fim.id_for_label }}" >Até</label>
+            
+        </div>
+        <div class="col-md-4 form-floating mb-3 d-flex align-items-center">
+            <button type="submit" class="btn btn-primary">FILTRAR DATA DE SOLICITAÇÃO</button>
+        </div>
+    </form>
+
+    <div class="table-responsive">
+        <table class="table">
+            <thead>
+            <tr>
+                <th scope="col">Nome</th>
+                <th scope="col">cpf</th>
+                <th scope="col">Email</th>
+                <th scope="col">Celular</th>
+                <th scope="col">Origem</th>
+                <th scope="col">Criar User</th>
+            </tr>
+            </thead>
+            <tbody>
+                {% for usuario in lista_usuarios %}
+
+
+                
+                <tr>
+                    <th scope="row">{{ usuario.nome }}</th>
+                    <td>{{ usuario.cpf }}</td>
+                    <td>{{ usuario.email }}</td>
+                    <td>{{ usuario.celular }}</td>
+                    <td>{{ usuario.orgao_origem }}</td>
+
+                    <td>checkbox aqui</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+      </div>
+
+    {% endblock %}

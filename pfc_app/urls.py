@@ -53,6 +53,7 @@ urlpatterns = [
     path('abrir-modal/', views.abrir_modal, name='abrir_modal'),
     path('log-time/', views.log_time, name='log_time'),
     path('gastos/', views.gastos, name='gastos'),
+    path('user-cadastro/', views.user_cadastro, name='user_cadastro'),
 
 ]   
 

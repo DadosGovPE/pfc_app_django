@@ -23,7 +23,8 @@ from .models import Curso, Inscricao, StatusInscricao, Avaliacao, \
                     Tema, Subtema, Carreira, Modalidade, Categoria, ItemRelatorio,\
                     PlanoCurso, Trilha, Curadoria, AvaliacaoAberta, CursoPriorizado,\
                     AjustesPesquisa, PesquisaCursosPriorizados, CronogramaExecucao,\
-                    LotacaoEspecifica, Lotacao, PageVisit, AjustesHoraAula, StatusCurso
+                    LotacaoEspecifica, Lotacao, PageVisit, AjustesHoraAula, StatusCurso,\
+                    UserCadastro
 from .forms import AvaliacaoForm, DateFilterForm, UserUpdateForm
 from django.db.models import Count, Q, Sum, F, \
                                 Avg, FloatField, When, BooleanField, \
@@ -322,6 +323,31 @@ def usuarios_sem_ch(request):
         'filtro': filtro,
     }
     return render(request, 'pfc_app/usuarios_sem_ch.html', context )
+
+@login_required
+def user_cadastro(request):
+    data_hoje = datetime.now()
+    data_hoje = data_hoje.strftime("%Y-%m-%d")
+    form = DateFilterForm(request.GET)
+
+    
+    lista_usuarios =[]
+    if form.is_valid():
+        data_inicio = form.cleaned_data['data_inicio']
+        data_fim = form.cleaned_data['data_fim']
+        if data_inicio and  data_fim:
+            lista_usuarios = UserCadastro.objects.filter(data_solicitacao__gte=data_inicio, data_solicitacao__lte=data_fim)
+            print(data_inicio)
+            print(data_fim)
+
+    
+    context = {
+        'form': form,
+        'values': request.GET if request.GET else {'data_inicio': data_hoje, 'data_fim': data_hoje},
+        'lista_usuarios': lista_usuarios
+    }
+
+    return render(request, 'pfc_app/lista_cadastro.html' ,context)
 
 @login_required
 def carga_horaria(request):

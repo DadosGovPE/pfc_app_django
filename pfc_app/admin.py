@@ -262,6 +262,11 @@ class AvaliacaoAbertaAdmin(admin.ModelAdmin):
     participante_nome.admin_order_field = 'participante__nome'
     participante_nome.short_description = 'Nome do Participante'
 
+
+class UserCadastroAdmin(admin.ModelAdmin):
+    list_display = ('nome', 'data_solicitacao', )
+    # list_editable = ('ch_solicitada', 'ch_confirmada', 'data_termino_curso', 'status',)
+
 # Register your models here.
 admin.site.register(Curso, CursoAdmin)
 admin.site.register(User, CustomUserAdmin)
@@ -294,7 +299,7 @@ admin.site.register(Lotacao)
 admin.site.register(LotacaoEspecifica)
 admin.site.register(PageVisit)
 admin.site.register(OrigemPagamento)
-admin.site.register(UserCadastro)
+admin.site.register(UserCadastro, UserCadastroAdmin)
 
 
 

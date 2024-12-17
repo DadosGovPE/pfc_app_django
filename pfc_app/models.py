@@ -147,7 +147,10 @@ class UserCadastro(models.Model):
     email = models.EmailField(default='a@b.com', null=False, blank=False, unique=True)
     celular = models.CharField(max_length=40, blank=True, null=True)
     orgao_origem = models.CharField(max_length=400, blank=True, null=True)
-    data_solicitacao = models.DateTimeField(auto_now_add=True)
+    data_solicitacao = models.DateField(auto_now_add=True)
+
+    def __str__(self):
+        return self.nome
 
 
 class AjustesPesquisa(models.Model):
