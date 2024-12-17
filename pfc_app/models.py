@@ -95,7 +95,7 @@ class User(AbstractUser):
     pesquisa_cursos_priorizados = models.ManyToManyField(PesquisaCursosPriorizados, blank=True)
     carreira = models.ForeignKey(Carreira, on_delete=models.SET_NULL, blank=True, null=True)
 
-    is_ativo = models.BooleanField(default=True)
+    is_ativo = models.BooleanField(default=True, verbose_name = ("Está ativo"))
     role = models.CharField(max_length=40, default="USER")
     is_externo = models.BooleanField(default=False, verbose_name = ("É externo"))
     avatar = models.ImageField(null=True, blank=True)
@@ -138,7 +138,18 @@ class User(AbstractUser):
             os.remove(self.avatar.path)
 
             # Defina o campo avatar como vazio para garantir que o arquivo não seja salvo novamente
-             
+
+
+class UserCadastro(models.Model):
+    nome = models.CharField(max_length=400, blank=False, null=False)
+    cpf = models.CharField(max_length=11, blank=False, null=False, unique=True)
+    username = models.CharField(max_length=400, blank=False, null=False)
+    email = models.EmailField(default='a@b.com', null=False, blank=False, unique=True)
+    celular = models.CharField(max_length=40, blank=True, null=True)
+    orgao_origem = models.CharField(max_length=400, blank=True, null=True)
+    data_solicitacao = models.DateTimeField(auto_now_add=True)
+
+
 class AjustesPesquisa(models.Model):
     nome = models.CharField(max_length=50)
     is_aberta = models.BooleanField(default=False)

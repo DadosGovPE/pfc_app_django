@@ -294,6 +294,7 @@ admin.site.register(Lotacao)
 admin.site.register(LotacaoEspecifica)
 admin.site.register(PageVisit)
 admin.site.register(OrigemPagamento)
+admin.site.register(UserCadastro)
 
 
 
