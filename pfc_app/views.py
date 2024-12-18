@@ -186,7 +186,7 @@ def registrar(request):
               'ncdseplag@gmail.com', 
               ['pfc.seplag@gmail.com', 'g.trindade@gmail.com'])
     
-    UserCadastro.objects.create_user(
+    UserCadastro.objects.create(
         nome = nome,
         cpf = cpf,
         username = email,
