@@ -397,8 +397,8 @@ def processar_checkboxes(request):
                             f'\n '
                             f'\n '
                             f'\n '
-                            f'Atenciosamente, \n'
-                            f'Time PFC \n', 
+                            f'Atenciosamente, \n '
+                            f'Time PFC \n ', 
                             'ncdseplag@gmail.com', 
                             [f'{usuario_cadastro.email}', ])
                 time.sleep(1)
