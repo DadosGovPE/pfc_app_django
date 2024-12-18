@@ -391,8 +391,15 @@ def processar_checkboxes(request):
                 )
                 usuarios_criados.append(usuario_cadastro.nome)
                 send_mail('Solicitação de cadastro', 
-                            f"Boa tarde {usuario_cadastro.nome.split(' ')[0]}. Informo que seu cadastro no APP do PFC foi efetuado com sucesso.\n Para acessar o sistema, o login é o seu CPF e a senha inicial do primeiro acesso é 123@mudar (pode ser alterada na área de alteração de senha).\n \n Atenciosamente, \n Time PFC", 
-                            'ncdseplag@gmail.com', 
+                            f"Boa tarde {usuario_cadastro.nome.split(' ')[0]},\n "
+                            f"Informo que seu cadastro no APP do PFC foi efetuado com sucesso.\n "
+                            f"Para acessar o sistema, o login é o seu CPF e a senha inicial do primeiro acesso é 123@mudar (pode ser alterada na área de alteração de senha).\n "
+                            f"\n "
+                            f"\n "
+                            f"\n "
+                            f"Atenciosamente, \n "
+                            f"Time PFC \n ", 
+                            "ncdseplag@gmail.com", 
                             [f'{usuario_cadastro.email}', ])
                 time.sleep(1)
         # Mensagens de sucesso e erro
