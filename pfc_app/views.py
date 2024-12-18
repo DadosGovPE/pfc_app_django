@@ -185,8 +185,16 @@ def registrar(request):
               f'Órgão de origem: {orgao_origem}\n ', 
               'ncdseplag@gmail.com', 
               ['pfc.seplag@gmail.com', 'g.trindade@gmail.com'])
-
     
+    UserCadastro.objects.create_user(
+        nome = nome,
+        cpf = cpf,
+        username = email,
+        email = email,
+        celular = telefone,
+        orgao_origem = orgao_origem,
+    )
+
     messages.success(request, f'Solicitação enviada com sucesso. Aguarde suas credenciais!')
         
     return redirect('login')
@@ -358,7 +366,7 @@ def processar_checkboxes(request):
         
         if not usuarios_selecionados:
             messages.error(request, "Nenhum usuário foi selecionado.")
-            return redirect(user_cadastro)
+            return redirect(f"{reverse('user_cadastro')}?data_inicio={data_inicio}&data_fim={data_fim}")
 
         # Listas para controle de sucesso e erro
         usuarios_criados = []
