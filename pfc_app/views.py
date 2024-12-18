@@ -339,8 +339,8 @@ def user_cadastro(request):
     data_hoje = data_hoje.strftime("%Y-%m-%d")
     form = DateFilterForm(request.GET)
 
-    
-    lista_usuarios =[]
+    lista_usuarios = UserCadastro.objects.filter(data_solicitacao=data_hoje)
+    #lista_usuarios =[]
     if form.is_valid():
         data_inicio = form.cleaned_data['data_inicio']
         data_fim = form.cleaned_data['data_fim']
