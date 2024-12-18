@@ -23,36 +23,70 @@
         </div>
     </form>
 
-    <div class="table-responsive">
-        <table class="table">
-            <thead>
-            <tr>
-                <th scope="col">Nome</th>
-                <th scope="col">cpf</th>
-                <th scope="col">Email</th>
-                <th scope="col">Celular</th>
-                <th scope="col">Origem</th>
-                <th scope="col">Criar User</th>
-            </tr>
-            </thead>
-            <tbody>
-                {% for usuario in lista_usuarios %}
+    <form id='meuFormulario' method="POST" action="{% url 'processar_checkboxes' %}" >
+        {% csrf_token %}
+        <!-- Campos ocultos para os filtros de data -->
+        <input type="hidden" name="data_inicio" value="{{ values.data_inicio }}">
+        <input type="hidden" name="data_fim" value="{{ values.data_fim }}">
 
-
-                
+        <div class="table-responsive">
+            <table class="table">
+                <thead>
                 <tr>
-                    <th scope="row">{{ usuario.nome }}</th>
-                    <td>{{ usuario.cpf }}</td>
-                    <td>{{ usuario.email }}</td>
-                    <td>{{ usuario.celular }}</td>
-                    <td>{{ usuario.orgao_origem }}</td>
-
-                    <td>checkbox aqui</td>
+                    <th scope="col">Nome</th>
+                    <th scope="col">cpf</th>
+                    <th scope="col">Email</th>
+                    <th scope="col">Celular</th>
+                    <th scope="col">Origem</th>
+                    <th scope="col">Criar User</th>
                 </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+                </thead>
+                <tbody>
+                    {% for usuario in lista_usuarios %}
 
-      </div>
 
+                    
+                    <tr>
+                        <th scope="row">{{ usuario.nome }}</th>
+                        <td>{{ usuario.cpf }}</td>
+                        <td>{{ usuario.email }}</td>
+                        <td>{{ usuario.celular }}</td>
+                        <td>{{ usuario.orgao_origem }}</td>
+
+                        <td><input type="checkbox" name="criar_user" value="{{ usuario.cpf }}" id="checkbox_{{ usuario.cpf }}"></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+
+        </div>
+        <div class="mt-3">
+            <button type="submit" class="btn btn-success">Processar Seleção</button>
+        </div>
+    </form>
+
+    <!-- Modal -->
+<div class="modal fade" id="loadingModal" tabindex="-1" aria-labelledby="loadingModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-body text-center">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Enviando emails...</span>
+                </div>
+                <p class="mt-3">Enviando emails...</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+
+    document.addEventListener('DOMContentLoaded', function() {
+            var loadingModal = new bootstrap.Modal(document.getElementById('loadingModal'));
+    
+            document.getElementById('meuFormulario').addEventListener('submit', function() {
+                loadingModal.show();
+            });
+        });
+    </script>
     {% endblock %}

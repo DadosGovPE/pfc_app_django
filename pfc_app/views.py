@@ -70,6 +70,7 @@ import re
 from django.core.files.storage import default_storage
 from django.core.files.base import ContentFile
 import json
+import time
 from logging import getLogger
 logger = getLogger('django')
 
@@ -337,8 +338,6 @@ def user_cadastro(request):
         data_fim = form.cleaned_data['data_fim']
         if data_inicio and  data_fim:
             lista_usuarios = UserCadastro.objects.filter(data_solicitacao__gte=data_inicio, data_solicitacao__lte=data_fim)
-            print(data_inicio)
-            print(data_fim)
 
     
     context = {
@@ -348,6 +347,77 @@ def user_cadastro(request):
     }
 
     return render(request, 'pfc_app/lista_cadastro.html' ,context)
+
+def processar_checkboxes(request):
+    if request.method == "POST":
+        # Obter valores dos filtros de data
+        data_inicio = request.POST.get('data_inicio', '')
+        data_fim = request.POST.get('data_fim', '')
+        # Obter IDs dos usuários marcados nos checkboxes
+        usuarios_selecionados = request.POST.getlist('criar_user')
+        
+        if not usuarios_selecionados:
+            messages.error(request, "Nenhum usuário foi selecionado.")
+            return redirect(user_cadastro)
+
+        # Listas para controle de sucesso e erro
+        usuarios_criados = []
+        usuarios_nao_criados = []
+
+        for usuario_cpf in usuarios_selecionados:
+            # Obter o usuário da tabela intermediária UserCadastro
+            try:
+                usuario_cadastro = UserCadastro.objects.get(cpf=usuario_cpf)
+            except UserCadastro.DoesNotExist:
+                messages.error(request, f"Usuário com CPF {usuario_cpf} não encontrado.")
+                continue
+
+            # Verificar se o usuário já existe na tabela principal User
+            if User.objects.filter(cpf=usuario_cadastro.cpf).exists():
+                usuarios_nao_criados.append(usuario_cadastro.nome)
+            else:
+                # Criar o novo usuário na tabela principal User
+                User.objects.create_user(
+                    cpf = usuario_cadastro.cpf,
+                    username=usuario_cadastro.email.split('@')[0],
+                    password='123@mudar',  # Substitua por uma lógica de geração de senha
+                    email=usuario_cadastro.email,
+                    nome=usuario_cadastro.nome,
+                    telefone = usuario_cadastro.celular,
+                    origem = usuario_cadastro.orgao_origem,
+                    lotacao = usuario_cadastro.orgao_origem,
+                    lotacao_especifica = usuario_cadastro.orgao_origem,
+                    is_externo = True,
+                )
+                usuarios_criados.append(usuario_cadastro.nome)
+                send_mail('Solicitação de cadastro', 
+                            f'Boa tarde {usuario_cadastro.nome.split(' ')[0]},\n '
+                            f'Informo que seu cadastro no APP do PFC foi efetuado com sucesso.\n '
+                            f'Para acessar o sistema, o login é o seu CPF e a senha inicial do primeiro acesso é 123@mudar (pode ser alterada na área de alteração de senha).\n '
+                            f'\n '
+                            f'\n '
+                            f'\n '
+                            f'Atenciosamente, \n'
+                            f'Time PFC ', 
+                            'ncdseplag@gmail.com', 
+                            [f'{usuario_cadastro.email}', ])
+                time.sleep(1)
+        # Mensagens de sucesso e erro
+        if usuarios_criados:
+            messages.success(
+                request,
+                f"Usuários criados com sucesso: {', '.join(usuarios_criados)}."
+            )
+        if usuarios_nao_criados:
+            messages.error(
+                request,
+                f"Usuários não criados (já existentes): {', '.join(usuarios_nao_criados)}."
+            )
+
+        return redirect(f"{reverse('user_cadastro')}?data_inicio={data_inicio}&data_fim={data_fim}") 
+
+    # Redireciona caso o método não seja POST
+    return redirect(user_cadastro) 
 
 @login_required
 def carga_horaria(request):
