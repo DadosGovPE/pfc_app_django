@@ -12,14 +12,14 @@
             <input type="date" class="form-control" name="data_inicio"  id="id_data_inicio" value="{{ values.data_inicio }}">
             <label for="id_data_inicio" >De</label>
         </div>
-        <div class="col-md-3 col-md-3 form-floating mb-3">
+        <div class="col-md-3 form-floating mb-3">
             
             <input type="date" class="form-control" name="data_fim"  id="id_data_fim" value="{{ values.data_fim }}">
             <label for="{{ form.data_fim.id_for_label }}" >Até</label>
             
         </div>
         <div class="col-md-4 form-floating mb-3 d-flex align-items-center">
-            <button type="submit" class="btn btn-primary">FILTRAR POR TÉRMINO DO CURSO</button>
+            <button type="submit" class="btn btn-primary btn-lg fs-5">FILTRAR POR TÉRMINO DO CURSO</button>
         </div>
     </form>
     <div class="row d-flex">
@@ -57,10 +57,19 @@
                     <h5 class="card-title">Cursos PFC: {{ carga_horaria_pfc }} hora{{ carga_horaria_pfc|custom_pluralize:'s'}} </h5>
                     <h5 class="card-title">Carga Horária Externa Validada: {{ carga_horaria_validada }} hora{{ carga_horaria_validada|custom_pluralize:'s'}} </h5>
                 </div>
+                <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#listaIndeferimentoModal">
+                    VER SOLICITAÇÕES INDEFERIDAS
+                </button>
             </div>
         </div>
+        
+           
+        
         <div class="col-md-7 col-12 mt-3 overflow-scroll border rounded" style="height: 50vh;">
-            <div class="d-flex py-2 justify-content-center mb-5" ><h3>LISTA DE CURSOS</h3></div>
+            <div class="d-flex py-2 justify-content-around mb-5" >
+                <h3>LISTA DE CURSOS</h3>
+                
+            </div>
                 <div class="row">
                     <div class="col-6 border-end px-2">
                         <div class="text-center"><h5>CURSOS PFC</h5></div>
@@ -106,5 +115,46 @@
         </div>
     </div>
         
-    
+<!-- Estrutura do Modal -->
+<div class="modal fade" id="listaIndeferimentoModal" tabindex="-1" aria-labelledby="listaIndeferimentoModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="listaIndeferimentoModalLabel">Lista de Indeferimentos</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="table-responsive">
+                    <table class="table table-bordered table-striped">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>CURSO</th>
+                                <th>CARGA HORÁRIA</th>
+                                <th>JUSTIFICATIVA</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for validacao in validacoes_indeferidas %}
+                                <tr>
+                                    <td>{{ forloop.counter }}</td> <!-- Número da linha -->
+                                    <td>{{ validacao.nome_curso }}</td> <!-- Campo 'descricao' -->
+                                    <td>{{ validacao.ch_solicitada }}</td> <!-- Campo 'data', formatado -->
+                                    <td>{{ validacao.requerimento_ch.da_fundamentacao }}</td> <!-- Campo 'detalhes' -->
+                                </tr>
+                            {% empty %}
+                                <tr>
+                                    <td colspan="4" class="text-center">Nenhuma validação indeferida encontrada.</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}

@@ -340,7 +340,7 @@ def user_cadastro(request):
     form = DateFilterForm(request.GET)
 
     lista_usuarios = UserCadastro.objects.filter(data_solicitacao=data_hoje)
-    #lista_usuarios =[]
+    
     if form.is_valid():
         data_inicio = form.cleaned_data['data_inicio']
         data_fim = form.cleaned_data['data_fim']
@@ -441,6 +441,7 @@ def carga_horaria(request):
   try:
     status_validacao_deferida = StatusValidacao.objects.get(nome='DEFERIDA')
     status_validacao_deferida_parc = StatusValidacao.objects.get(nome='DEFERIDA PARCIALMENTE')
+    status_validacao_indeferida = StatusValidacao.objects.get(nome='INDEFERIDA')
   except:
     novo_status_deferida = StatusValidacao(nome="DEFERIDA")
     novo_status_deferida_parc = StatusValidacao(nome="DEFERIDA PARCIALMENTE")
@@ -452,6 +453,8 @@ def carga_horaria(request):
   validacoes = Validacao_CH.objects.filter(usuario=request.user, 
                                            status__in=[status_validacao_deferida, 
                                                        status_validacao_deferida_parc])
+  validacoes_indeferidas = Validacao_CH.objects.filter(usuario=request.user, 
+                                           status__in=[status_validacao_indeferida]).order_by('-analisado_em')
   
   ## Calculo para verificar se o usuario ja está inscrito em um dado curso
 
@@ -494,6 +497,7 @@ def carga_horaria(request):
   context = {
       'inscricoes_pfc': cursos_feitos_pfc,
       'validacoes_externas': validacoes,
+      'validacoes_indeferidas': validacoes_indeferidas,
       'carga_horaria_pfc': carga_horaria_pfc,
       'carga_horaria_validada': validacoes_ch,
       'carga_horaria_total': carga_horaria_total,
