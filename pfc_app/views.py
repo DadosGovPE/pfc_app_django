@@ -301,8 +301,9 @@ def usuarios_sem_ch(request):
         ).values('total_ch')[:1]
     
     validacoes = Validacao_CH.objects.filter(
-            usuario=OuterRef('pk'),
-            status__nome='DEFERIDA'
+            Q(status__nome='DEFERIDA') | Q(status__nome='DEFERIDA PARCIALMENTE'),
+            usuario=OuterRef('pk')
+            
         ).values('usuario').annotate(
             total_ch=Sum('ch_confirmada')
         ).values('total_ch')[:1]
@@ -320,7 +321,7 @@ def usuarios_sem_ch(request):
                             total_ch__lt=60)
 
     # Select the fields you need for the table
-    users = users.values('nome', 'email', 'lotacao', 'lotacao_especifica', 'total_ch', 'ch_faltante')
+    users = users.values('id', 'nome', 'email', 'lotacao', 'lotacao_especifica', 'total_ch', 'ch_faltante')
 
     filtro = UserFilter(request.GET, queryset=users)
     users = filtro.qs
