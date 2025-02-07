@@ -49,7 +49,7 @@ class CursoNomeTurmaFilter(admin.SimpleListFilter):
 
     def queryset(self, request, queryset):
         if self.value():
-            return queryset.filter(curso__id=self.value())
+            return queryset.filter(id=self.value())
         return queryset
 
 class ArquivoCursoInline(admin.TabularInline):
