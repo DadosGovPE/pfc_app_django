@@ -2703,8 +2703,8 @@ def generate_bda_pdf(request, ano, mes):
     total_cursos_priorizados = CursoPriorizado.objects.filter(Q(mes_competencia__year=ano_referencia,)).count()
     status_curso = StatusCurso.objects.get(nome='CANCELADO')
     
-    cursos = Curso.objects.filter(data_inicio__month=mes_referencia, curso_priorizado__isnull=False).exclude(status=status_curso)
-    curadorias = Curadoria.objects.filter(mes_competencia__month=mes_referencia, curso_priorizado__isnull=False)
+    cursos = Curso.objects.filter(data_inicio__month=mes_referencia, data_inicio__year=ano_referencia ,curso_priorizado__isnull=False).exclude(status=status_curso)
+    curadorias = Curadoria.objects.filter(mes_competencia__month=mes_referencia, mes_competencia__year=ano_referencia, curso_priorizado__isnull=False)
     
     # Caminho da imagem
     image_path = os.path.join(settings.MEDIA_ROOT, 'igpe.png')
@@ -2914,12 +2914,14 @@ def estatistica_bda(request):
 
     cursos_priorizados_ids = Curso.objects.filter(curso_priorizado__isnull=False, data_inicio__year=current_year).values_list('curso_priorizado_id', flat=True)
     curadorias_priorizadas_ids = Curadoria.objects.filter(curso_priorizado__isnull=False, mes_competencia__year=current_year).values_list('curso_priorizado_id', flat=True)
-
+    print(len(curadorias_priorizadas_ids))
     cursos_nao_ofertados_count = CursoPriorizado.objects.filter(
         ~Q(id__in=cursos_priorizados_ids) & ~Q(id__in=curadorias_priorizadas_ids) & Q(mes_competencia__year=current_year)
     ).count()
     total_cursos_priorizados = CursoPriorizado.objects.filter(Q(mes_competencia__year=current_year)).count()
     cursos_priorizados_ofertados = total_cursos_priorizados - cursos_nao_ofertados_count
+    print(f'Total cursos priorizados: {total_cursos_priorizados}')
+    print(f'Total cursos nao odertados: {cursos_nao_ofertados_count}')
     
     total_ofertado_percent = ((total_cursos_priorizados - cursos_nao_ofertados_count) / total_cursos_priorizados * 100) if total_cursos_priorizados else 0
     
