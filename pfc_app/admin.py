@@ -35,6 +35,10 @@ class PlanoCursoAdmin(admin.ModelAdmin):
     inlines = [CronogramaExecucaoInline]
     list_display = ('curso',)
 
+class TemaAdmin(admin.ModelAdmin):
+    list_display = ['nome', 'evento',]
+    list_editable = ('evento',)
+
 class SubtemaAdmin(admin.ModelAdmin):
     list_display = ['nome', 'tema', 'cor']
     list_filter = ('tema',)
@@ -276,7 +280,7 @@ admin.site.register(StatusInscricao)
 admin.site.register(StatusValidacao)
 admin.site.register(Avaliacao, AvaliacaoAdmin)
 admin.site.register(AvaliacaoAberta, AvaliacaoAbertaAdmin)
-admin.site.register(Tema)
+admin.site.register(Tema, TemaAdmin)
 admin.site.register(Subtema, SubtemaAdmin)
 admin.site.register(Validacao_CH, Validacao_CHAdmin)
 admin.site.register(Certificado)

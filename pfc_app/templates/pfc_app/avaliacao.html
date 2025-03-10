@@ -3,7 +3,11 @@
 {% block content %}
 {% include 'parciais/_messages.html' %}
 
-<div class="d-flex p-2 justify-content-center mb-0"><h1>Avaliação do Curso: {{curso}}</h1></div>
+{% if curso.eh_evento %}
+  <div class="d-flex p-2 justify-content-center mb-0"><h1>Avaliação do Evento: {{curso}}</h1></div>
+{% else %}
+  <div class="d-flex p-2 justify-content-center mb-0"><h1>Avaliação do Curso: {{curso}}</h1></div>
+{% endif %}
 <div class="d-flex justify-content-center">
   <div class="col-md-6 p-2 text-center mb-0 border border-danger rounded">
   <p class="text-danger">Dê notas aos temas abaixo</p>

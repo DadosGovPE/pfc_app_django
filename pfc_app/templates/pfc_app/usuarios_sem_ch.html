@@ -58,7 +58,29 @@
                             <label for="id_modalidade">Busque pela lotação específica</label>
                         </div>
                     </div>
-
+                    <div class="col-md-3 col-12">
+                        <div class="form-floating mb-3">
+                            <input type="date" 
+                                   class="form-control" 
+                                   style="background-color: #f5f5f5;" 
+                                   name="inicio" 
+                                   id="id_inicio" 
+                                   value="{{ request.GET.inicio|default:'' }}">
+                            <label for="id_inicio">Data de início</label>
+                        </div>
+                    </div>
+                    <!-- Campo de data de fim -->
+                    <div class="col-md-3 col-12">
+                        <div class="form-floating mb-3">
+                            <input type="date" 
+                                   class="form-control" 
+                                   style="background-color: #f5f5f5;" 
+                                   name="fim" 
+                                   id="id_fim" 
+                                   value="{{ request.GET.fim|default:'' }}">
+                            <label for="id_fim">Data de fim</label>
+                        </div>
+                    </div>
                     <button class='btn btn-primary' type='submit'>
                         Filtrar
                     </button>

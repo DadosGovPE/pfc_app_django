@@ -292,21 +292,40 @@ def cursos(request):
 
 @login_required
 def usuarios_sem_ch(request):
+        # Inicialize o filtro para capturar as datas
+    filtro = UserFilter(request.GET, queryset=User.objects.all())
+
+    # Capturar os valores das datas
+    data_inicio = request.GET.get('inicio')  # Use .get() para evitar o erro
+    data_fim = request.GET.get('fim')       # Use .get() para evitar o erro
+
     inscricoes = Inscricao.objects.filter(
             participante=OuterRef('pk'),
             concluido=True,
             curso__status__nome='FINALIZADO'
-        ).values('participante').annotate(
-            total_ch=Sum('ch_valida')
-        ).values('total_ch')[:1]
+    )
+    if data_inicio:
+        inscricoes = inscricoes.filter(curso__data_termino__gte=data_inicio)  # Substitua 'data' pelo campo correto
+    if data_fim:
+        inscricoes = inscricoes.filter(curso__data_termino__lte=data_fim)  # Substitua 'data' pelo campo correto
+
+    inscricoes = inscricoes.values('participante').annotate(
+        total_ch=Sum('ch_valida')
+    ).values('total_ch')[:1]
     
     validacoes = Validacao_CH.objects.filter(
             Q(status__nome='DEFERIDA') | Q(status__nome='DEFERIDA PARCIALMENTE'),
             usuario=OuterRef('pk')
             
-        ).values('usuario').annotate(
-            total_ch=Sum('ch_confirmada')
-        ).values('total_ch')[:1]
+        )
+    if data_inicio:
+        validacoes = validacoes.filter(data_termino_curso__gte=data_inicio)  # Substitua 'data' pelo campo correto
+    if data_fim:
+        validacoes = validacoes.filter(data_termino_curso__lte=data_fim)  # Substitua 'data' pelo campo correto
+
+    validacoes = validacoes.values('usuario').annotate(
+        total_ch=Sum('ch_confirmada')
+    ).values('total_ch')[:1]
     
     # Filter users with a total load less than 60
     users = User.objects.annotate(
@@ -646,12 +665,18 @@ def inscricao_existente(request):
 @login_required
 def avaliacao(request, curso_id):
     # Checa se o curso existe
-    temas = Tema.objects.all()
     try:
       curso = Curso.objects.get(pk=curso_id)
     except:
        messages.error(request, f"Curso não encontrado!")
        return redirect('lista_cursos')
+    
+    if curso.eh_evento:
+        temas = Tema.objects.filter(evento=True)
+        subtemas = Subtema.objects.filter(tema__evento = True)
+    else:
+        temas = Tema.objects.filter(evento=False)
+        subtemas = Subtema.objects.filter(tema__evento = False)
     
     # Se existe, checa se o status está como "FINALIZADO"
     if curso.status.nome != "FINALIZADO":
@@ -675,7 +700,7 @@ def avaliacao(request, curso_id):
             messages.error(request, f"Avaliação já realizada!")
             return redirect('inscricoes')
         
-        subtemas = Subtema.objects.all()
+        
         for subtema in subtemas:
             #print("id: "+subtema.id)
             avaliacao = Avaliacao(curso=curso, participante=request.user,

@@ -1,5 +1,5 @@
 import django_filters
-
+from django_filters import DateFilter
 from .models import *
 
 class UserFilter(django_filters.FilterSet):
@@ -19,6 +19,10 @@ class UserFilter(django_filters.FilterSet):
     lotacao_choices = [(choice, choice) for choice in lotacao_values]
     lotacao = django_filters.ChoiceFilter(
         choices=lotacao_choices)
+    
+    # # Campos de data
+    # inicio = DateFilter(label='Data de início (>=)', required=False)
+    # fim = DateFilter(label='Data de fim (<=)', required=False)
     
     class Meta:
         model = User

@@ -412,6 +412,8 @@ notas=(('1', '1'), ('2', '2'), ('3', '3'), ('4', '4'), ('5', '5'),('0', 'N/A'))
 
 class Tema(models.Model):
     nome = models.CharField(max_length=100)
+    evento = models.BooleanField(default=False)
+    
     class Meta:
         verbose_name = "Avaliação-Tema"
 
@@ -435,6 +437,7 @@ class Avaliacao(models.Model):
     
     subtema = models.ForeignKey(Subtema, blank=False, null=False, on_delete=models.CASCADE)
     nota = models.TextField(choices=notas, default=None, blank=False, null=False)
+
     # conteudo_estrutura_acao_capacitacao = models.TextField(choices=notas, default=None, blank=False, null=False)
     # interface_grafica_acao_capacitacao = models.TextField(choices=notas, default=None, blank=False, null=False)
     # nota_atributo4 = models.TextField(choices=notas, default=None, blank=False, null=False)
