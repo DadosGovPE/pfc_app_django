@@ -771,7 +771,7 @@ def validar_ch(request):
             messages.error(request, 'Carreira não encontrada')
             return redirect('validar_ch')
         
-        avaliacao = Validacao_CH(usuario=request.user, arquivo_pdf=arquivo_pdf, 
+        validacao = Validacao_CH(usuario=request.user, arquivo_pdf=arquivo_pdf, 
                                  nome_curso=nome_curso, ch_solicitada=ch_solicitada, 
                                  data_termino_curso=data_termino, data_inicio_curso = data_inicio,
                                  instituicao_promotora=instituicao_promotora, ementa=ementa, 
@@ -780,20 +780,20 @@ def validar_ch(request):
                                  conhecimento_previo=conhecimento_previo, 
                                  conhecimento_posterior=conhecimento_posterior,
                                  voce_indicaria=voce_indicaria, modalidade=modalidade)
-        avaliacao.save()
+        validacao.save()
 
          # Renomeando o arquivo PDF
-        caminho_antigo = avaliacao.arquivo_pdf.path
-        novo_nome_arquivo = f"{avaliacao.id}-{request.user.nome}.pdf"
+        caminho_antigo = validacao.arquivo_pdf.path
+        novo_nome_arquivo = f"{validacao.numero_sequencial}-{request.user.nome}.pdf"
         pasta_destino = os.path.dirname(caminho_antigo)
         caminho_novo = os.path.join(pasta_destino, novo_nome_arquivo)
 
         # Renomeando o arquivo no sistema de arquivos
         os.rename(caminho_antigo, caminho_novo)
 
-        # Atualizando o campo arquivo_pdf do objeto avaliacao
-        avaliacao.arquivo_pdf.name = os.path.join('uploads', request.user.username, novo_nome_arquivo)
-        avaliacao.save()
+        # Atualizando o campo arquivo_pdf do objeto validacao
+        validacao.arquivo_pdf.name = os.path.join('uploads', request.user.username, novo_nome_arquivo)
+        validacao.save()
 
         # Redirecionar ou fazer algo após o envio bem-sucedido
         messages.success(request, 'Arquivo enviado com sucesso!')
@@ -1203,7 +1203,7 @@ def generate_all_reconhecimento(request, validacao_id):
         rodape_custom = rodape
         local_data_custom = local_data
         rodape2_custom = rodape2
-        pdf_filename = os.path.join(output_folder, f"{validacao_id}-{user.username}-requerimento.pdf")
+        pdf_filename = os.path.join(output_folder, f"{validacao.numero_sequencial}-{user.username}-requerimento.pdf")
         # Crie o PDF usando ReportLab
 
         style_body = ParagraphStyle('body',
@@ -1232,7 +1232,7 @@ def generate_all_reconhecimento(request, validacao_id):
         width, height = A4
         print(width)
         print(height)
-        numero_doc = 'N° ' + str(validacao_id)+'/'+str(validacao.analisado_em.year)
+        numero_doc = 'N° ' + str(validacao.numero_sequencial)+'/'+str(validacao.analisado_em.year)
         c = canvas.Canvas(pdf_filename, pagesize=A4)
         p_title=Paragraph("ANÁLISE PARA RECONHECIMENTO DE CARGA HORÁRIA", style_title)
         p_numero = Paragraph(numero_doc, style_numero)

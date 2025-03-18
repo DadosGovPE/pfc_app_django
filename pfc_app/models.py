@@ -9,6 +9,7 @@ from django.conf import settings
 from django.utils import timezone
 from datetime import datetime
 from simple_history.models import HistoricalRecords
+from django.utils.timezone import now
 
 # Create your models here.
 class PesquisaCursosPriorizados(models.Model):
@@ -535,11 +536,25 @@ class Validacao_CH(models.Model):
     conhecimento_posterior = models.TextField(choices=notas, blank=False, null=False)
     voce_indicaria = models.TextField(choices=notas, blank=False, null=False)
     modalidade = models.ForeignKey(Modalidade, on_delete=models.SET_NULL, blank=True, null=True)
+    ano = models.IntegerField(default=now().year, blank=True, null=True)  # Armazena o ano da validação
+    numero_sequencial = models.IntegerField(blank=True, null=True)  # Número que será reiniciado a cada ano
+     
 
+    def save(self, *args, **kwargs):
+        if not self.id:  # Apenas ao criar um novo registro
+            self.numero_sequencial = self.get_proximo_numero()
+        super().save(*args, **kwargs)
+
+    def get_proximo_numero(self):
+        """ Obtém o próximo número sequencial para o ano atual """
+        ultimo = Validacao_CH.objects.filter(ano=self.ano).order_by('-numero_sequencial').first()
+        return (ultimo.numero_sequencial + 1) if ultimo else 1
+    
     def __str__(self):
         return self.usuario.username
 
     class Meta:
+        unique_together = ('ano', 'numero_sequencial')  # Garante unicidade
         verbose_name_plural = "validações de CH"
 
 
