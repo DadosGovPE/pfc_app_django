@@ -547,7 +547,7 @@ class Validacao_CH(models.Model):
 
     def get_proximo_numero(self):
         """ Obtém o próximo número sequencial para o ano atual """
-        ultimo = Validacao_CH.objects.filter(ano=self.ano).order_by('-numero_sequencial').first()
+        ultimo = Validacao_CH.objects.filter(ano=self.ano, numero_sequencial__isnull=False).order_by('-numero_sequencial').first()
         return (ultimo.numero_sequencial + 1) if ultimo else 1
     
     def __str__(self):

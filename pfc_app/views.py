@@ -1233,6 +1233,7 @@ def generate_all_reconhecimento(request, validacao_id):
         print(width)
         print(height)
         numero_doc = 'N° ' + str(validacao.numero_sequencial)+'/'+str(validacao.analisado_em.year)
+        print(numero_doc)
         c = canvas.Canvas(pdf_filename, pagesize=A4)
         p_title=Paragraph("ANÁLISE PARA RECONHECIMENTO DE CARGA HORÁRIA", style_title)
         p_numero = Paragraph(numero_doc, style_numero)
