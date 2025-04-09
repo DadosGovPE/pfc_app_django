@@ -2565,9 +2565,9 @@ def curadoria_html(request, ano, mes):
 @login_required
 def estatistica_lnt(request):
     if request.method == 'GET':
-        ano_referencia = datetime.now().year
+        ano_referencia = int(datetime.now().year)
     elif request.method == 'POST':
-        ano_referencia = request.POST.get('ano')
+        ano_referencia = int(request.POST.get('ano'))
 
     todos_anos = CursoPriorizado.objects.dates('mes_competencia', 'year', order='ASC').distinct()
 
@@ -2912,8 +2912,10 @@ def duplicar_plano_curso(request):
 @login_required
 def estatistica_bda(request):
     current_year = datetime.now().year
+    status_cancelado = StatusCurso.objects.get(nome='CANCELADO')
+    status_a_iniciar = StatusCurso.objects.get(nome='A INICIAR')
 
-    cursos_priorizados_ids = Curso.objects.filter(curso_priorizado__isnull=False, data_inicio__year=current_year).values_list('curso_priorizado_id', flat=True)
+    cursos_priorizados_ids = Curso.objects.filter(curso_priorizado__isnull=False, data_inicio__year=current_year).exclude(status__nome__in=['CANCELADO', 'A INICIAR']).values_list('curso_priorizado_id', flat=True)
     curadorias_priorizadas_ids = Curadoria.objects.filter(curso_priorizado__isnull=False, mes_competencia__year=current_year).values_list('curso_priorizado_id', flat=True)
     print(len(curadorias_priorizadas_ids))
     cursos_nao_ofertados_count = CursoPriorizado.objects.filter(

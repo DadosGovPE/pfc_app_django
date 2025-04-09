@@ -65,7 +65,7 @@
                 <div class="form-floating flex-grow-1 me-2">
                     <select class="form-control" style="background-color: #f5f5f5;" name="ano" id="id_ano">
                         {% for ano in todos_anos %}
-                            <option value="{{ ano }}">{{ ano }}</option>
+                            <option value="{{ ano }}" {% if ano == ano_referencia %}selected{% endif %}>{{ ano }}</option>
                         {% endfor %}
                     </select>
                     <label for="id_ano">Escolha o ano</label>
