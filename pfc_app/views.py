@@ -299,11 +299,31 @@ def usuarios_sem_ch(request):
     data_inicio = request.GET.get('inicio')  # Use .get() para evitar o erro
     data_fim = request.GET.get('fim')       # Use .get() para evitar o erro
 
+    # Se data_inicio ou data_fim não forem fornecidos, definir padrões
+    hoje = date.today()
+    if not data_inicio:
+        if hoje >= date(hoje.year, 3, 1):
+            ano_inicio = hoje.year
+        else:
+            ano_inicio = hoje.year - 1
+        data_inicio = date(ano_inicio, 3, 1)
+
+    if not data_fim:
+        data_fim = hoje
+    
+    # Transformar para string se necessário (por exemplo, se o filtro espera string no formato 'YYYY-MM-DD')
+    if isinstance(data_inicio, date):
+        data_inicio = data_inicio.strftime('%Y-%m-%d')
+    if isinstance(data_fim, date):
+        data_fim = data_fim.strftime('%Y-%m-%d')
+
+
     inscricoes = Inscricao.objects.filter(
             participante=OuterRef('pk'),
             concluido=True,
             curso__status__nome='FINALIZADO'
     )
+
     if data_inicio:
         inscricoes = inscricoes.filter(curso__data_termino__gte=data_inicio)  # Substitua 'data' pelo campo correto
     if data_fim:
@@ -350,6 +370,8 @@ def usuarios_sem_ch(request):
     context = {
         'usuarios_sem_ch': users,
         'filtro': filtro,
+        'data_inicio': data_inicio,
+        'data_fim': data_fim,
     }
     return render(request, 'pfc_app/usuarios_sem_ch.html', context )
 
