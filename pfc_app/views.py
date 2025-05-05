@@ -2924,9 +2924,24 @@ def duplicar_plano_curso(request):
         
         messages.success(request, f'Plano de Curso duplicado com sucesso!')
         return redirect('duplicar_plano_curso')
-    planos = PlanoCurso.objects.all()
+    # planos = PlanoCurso.objects.all()
+    planos = sorted(
+            PlanoCurso.objects.select_related('curso').all(),
+            key=lambda p: (p.curso.data_termino.year if p.curso.data_termino else 0, p.curso.nome_curso),
+            reverse=True
+            )
+
     # Listar cursos sem plano de curso associado
-    cursos_disponiveis = Curso.objects.filter(planocurso__isnull=True)
+    # cursos_disponiveis = Curso.objects.filter(planocurso__isnull=True)
+
+    cursos_disponiveis = sorted(
+                    Curso.objects.filter(planocurso__isnull=True),
+                    key=lambda c: (
+                        c.data_termino.year if c.data_termino else 0,
+                        c.nome_formatado_ano
+                    ),
+                    reverse=True
+                    )
     return render(request, 
                   'pfc_app/duplicar_plano_curso.html', 
                   {'planos': planos, 'cursos_disponiveis': cursos_disponiveis})
