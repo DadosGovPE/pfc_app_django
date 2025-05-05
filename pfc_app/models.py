@@ -322,6 +322,13 @@ class Curso(models.Model):
         if self.turma != 'TURMA1':
             return f"{self.nome_curso} - {turma_display}"
         return self.nome_curso
+    @property
+    def nome_formatado_ano(self):
+        ano = self.data_termino.year
+        turma_display = dict(self.TURMA_CHOICES).get(self.turma, self.turma)
+        if self.turma != 'TURMA1':
+            return f"{ano} - {self.nome_curso} - {turma_display}"
+        return f"{ano} - {self.nome_curso}"
     class Meta:
         indexes = [
             models.Index(fields=['nome_curso']),
