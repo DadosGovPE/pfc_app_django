@@ -1555,13 +1555,16 @@ def assinatura_ata(curso):
             col_widths = [400]
             instrutor_elements = [instrutor_elements]
         
-        instrutor_table = Table(instrutor_elements, colWidths=col_widths)
-        instrutor_table.setStyle(TableStyle([
-            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-            ('VALIGN', (0, 0), (-1, -1), 'TOP')
-        ]))
-        # Combinar as tabelas de assinaturas verticalmente
-        elements = [Spacer(1, 20), coordinator_table, Spacer(1, 40), instrutor_table]
+        if docentes:
+            instrutor_table = Table(instrutor_elements, colWidths=col_widths)
+            instrutor_table.setStyle(TableStyle([
+                ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+                ('VALIGN', (0, 0), (-1, -1), 'TOP')
+            ]))
+            # Combinar as tabelas de assinaturas verticalmente
+            elements = [Spacer(1, 20), coordinator_table, Spacer(1, 40), instrutor_table]
+        else:
+            elements = [Spacer(1, 20), coordinator_table, Spacer(1, 40)]
     else:
         elements = [Spacer(1, 20), coordinator_table, Spacer(1, 40)]
     return (
