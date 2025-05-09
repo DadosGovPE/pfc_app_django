@@ -61,6 +61,11 @@
                 
                   <i class="fa-solid fa-circle-check"
                   style="color: lightgreen;"></i>  INSCRIÇÃO EM FILA
+                {% elif curso.status_inscricao == "PENDENTE" %}
+                  <a href="#" class="btn btn-secondary position-relative">
+                  
+                    <i class="bi bi-exclamation-diamond-fill"
+                    style="color: lightgreen;"></i>  INSCRIÇÃO PENDENTE
                 {% else %}
                 <a href="#" class="btn btn-secondary position-relative" data-bs-toggle="modal" data-bs-target="#staticBackdrop{{ forloop.counter }}">
                   <i class="fa-solid fa-circle-check"
