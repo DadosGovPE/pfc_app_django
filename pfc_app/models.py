@@ -396,6 +396,7 @@ class Inscricao(models.Model):
     status = models.ForeignKey(StatusInscricao, on_delete=models.PROTECT)
     concluido = models.BooleanField(default=False)
     inscrito_em = models.DateTimeField(auto_now_add=True)#auto_now_add=True,
+    instrutor_principal = models.BooleanField(default=False, verbose_name = ("Instrutor principal?"))
 
     class Meta:
         verbose_name_plural = "inscrições"

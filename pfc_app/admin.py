@@ -152,9 +152,9 @@ class CustomUserAdmin(UserAdmin):
 
 
 class InscricaoAdmin(admin.ModelAdmin):
-    list_display = ('curso', 'participante', 'participante_username', 'condicao_na_acao', 'ch_valida', 'status', 'concluido', )
-    list_filter = ('participante', 'status', 'curso' , 'condicao_na_acao',) #CursoNomeTurmaFilter
-    list_editable = ('condicao_na_acao', 'status', 'concluido',)
+    list_display = ('curso', 'participante', 'participante_username', 'instrutor_principal', 'condicao_na_acao', 'ch_valida', 'status', 'concluido', )
+    list_filter = ('participante', 'status', 'curso' , 'condicao_na_acao','instrutor_principal',) #CursoNomeTurmaFilter
+    list_editable = ('condicao_na_acao', 'status', 'concluido','instrutor_principal',)
     
     def participante_username(self, obj):
         return obj.participante.username if obj.participante else 'N/A'
