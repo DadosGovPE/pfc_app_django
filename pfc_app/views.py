@@ -137,7 +137,8 @@ def registrar(request):
     }
     
     # Validar nome
-    nome_regex = r'^(?!\d+$)[a-zA-Z0-9\s]+$'
+    nome_regex = r'^[a-zA-ZÀ-ÿ\s]+$'
+
     if not re.match(nome_regex, nome):
         messages.error(request, f'{nome}, por favor, insira um nome válido (não são aceitos nomes com apenas números).')
         return render(request, 'pfc_app/registrar.html', context)
