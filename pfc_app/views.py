@@ -1493,7 +1493,7 @@ def draw_logos(curso, canvas, doc):
 def docentes_curso(curso):
 
     # Obtém as inscrições que são de 'DOCENTE' para este curso específico
-    inscricoes_docentes = Inscricao.objects.filter(curso=curso, condicao_na_acao='DOCENTE')
+    inscricoes_docentes = Inscricao.objects.filter(curso=curso, condicao_na_acao='DOCENTE', status__nome='APROVADA')
 
     # Extrai os participantes (Users) dessas inscrições
     participantes_docentes = [inscricao.participante for inscricao in inscricoes_docentes]
