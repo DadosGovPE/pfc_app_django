@@ -560,7 +560,7 @@ def inscricoes(request):
            Avaliacao.objects.filter(participante=request.user, curso=OuterRef('curso'))
             
         )
-    ).filter(participante=request.user)
+    ).filter(participante=request.user).order_by('-curso__data_termino')
     
     context = {
         'inscricoes': inscricoes_do_usuario,

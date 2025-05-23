@@ -8,6 +8,7 @@
         <thead>
           <tr>
             <th scope="col">ID</th>
+            <th scope="col" class="text-center">ANO DE TÉRMINO</th>
             <th scope="col" class="text-center">NOME DO CURSO</th>
             <th scope="col" class="text-center">STATUS DO CURSO</th>
             <th scope="col" class="text-center">CARGA HORÁRIA</th>
@@ -22,6 +23,7 @@
             {% for inscricao in inscricoes %}
                 <tr>
                     <th scope="row">{{ inscricao.id }}</th>
+                    <td class="text-center">{{ inscricao.curso.data_termino|date:"Y" }}</td>
                     <td>{{ inscricao.curso.nome_curso }}</td>
                     <td class="text-center">{{ inscricao.curso.status.nome }}</td>
                     <td class="text-center">{{ inscricao.ch_valida }}</td>
