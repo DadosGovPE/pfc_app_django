@@ -24,7 +24,11 @@
                 <tr>
                     <th scope="row">{{ inscricao.id }}</th>
                     <td class="text-center">{{ inscricao.curso.data_termino|date:"Y" }}</td>
-                    <td>{{ inscricao.curso.nome_curso }}</td>
+                    <td>
+                        <a href="{% url 'detail_curso' inscricao.curso.id %}" style="color: black;">
+                            <strong> {{ inscricao.curso.nome_curso }} </strong>
+                        </a>
+                    </td>
                     <td class="text-center">{{ inscricao.curso.status.nome }}</td>
                     <td class="text-center">{{ inscricao.ch_valida }}</td>
                     {% if  inscricao.concluido %}
