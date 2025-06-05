@@ -70,6 +70,7 @@ import re
 from django.core.files.storage import default_storage
 from django.core.files.base import ContentFile
 import json
+from collections import defaultdict
 import time
 from logging import getLogger
 logger = getLogger('django')
@@ -2652,11 +2653,18 @@ def listar_cursos_priorizados(request):
         messages.error(request, f'Pesquisa de priorização fechada!')
         return redirect('lista_cursos')
 
-    cursos = PesquisaCursosPriorizados.objects.filter(ano_ref=ajustes.ano_ref)
+    cursos = PesquisaCursosPriorizados.objects.filter(ano_ref=ajustes.ano_ref).select_related('trilha')
     user_cursos = request.user.pesquisa_cursos_priorizados.all()
 
+    trilhas = Trilha.objects.order_by('ordem_relatorio')
+    cursos_por_trilha = defaultdict(list)
+
+    for curso in cursos:
+        cursos_por_trilha[curso.trilha].append(curso)
+
     context = {
-        'cursos': cursos,
+        'trilhas': trilhas,
+        'cursos_por_trilha': cursos_por_trilha,
         'user_cursos': user_cursos,
         'ano_ref': ajustes.ano_ref
     }

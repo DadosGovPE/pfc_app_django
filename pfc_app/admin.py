@@ -281,6 +281,12 @@ intermediario = User.pesquisa_cursos_priorizados.through
 intermediario._meta.verbose_name = "Relação Usuário - Curso Priorizado"
 intermediario._meta.verbose_name_plural = "Relações Usuário - Cursos Priorizados"
 
+class PesquisaCursosAdmin(admin.ModelAdmin):
+    list_display = ('nome', 'trilha', 'forma_atendimento', 'ano_ref')
+    list_editable = ('trilha', 'forma_atendimento')
+    list_filter = ('trilha', 'forma_atendimento', 'ano_ref')
+    search_fields = ('nome',)
+
 # Register your models here.
 
 admin.site.register(Curso, CursoAdmin)
@@ -309,7 +315,7 @@ admin.site.register(Curadoria, CuradoriaAdmin)
 admin.site.register(CursoPriorizado, CursoPriorizadoAdmin)
 admin.site.register(AjustesPesquisa)
 admin.site.register(AjustesHoraAula)
-admin.site.register(PesquisaCursosPriorizados)
+admin.site.register(PesquisaCursosPriorizados, PesquisaCursosAdmin)
 admin.site.register(Lotacao)
 admin.site.register(LotacaoEspecifica)
 admin.site.register(PageVisit)

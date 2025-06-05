@@ -13,7 +13,14 @@ from django.utils.timezone import now
 
 # Create your models here.
 class PesquisaCursosPriorizados(models.Model):
+    FORMA_CHOICES = [
+        ('PFC', 'PFC'),
+        ('Curadoria', 'Curadoria'),
+    ]
+
     nome = models.CharField(max_length=200, blank=False, null=False)
+    forma_atendimento = models.CharField(max_length=10, choices=FORMA_CHOICES,  blank=True, null=True)
+    trilha = models.ForeignKey("Trilha", on_delete=models.SET_NULL, blank=True, null=True, related_name='pesquisa_cursos_priorizados')
     ano_ref = models.IntegerField(default=datetime.now().year)
     def __str__(self):
         return self.nome

@@ -1,21 +1,31 @@
 {% extends 'base.html' %}
+{% load form_extras %}  {# para o filtro get_item #}
 
 {% block content %}
 {% include 'parciais/_messages.html' %}
 
-<div class="d-flex p-2 justify-content-center mb-2"><h1>PESQUISA DE PRIORIZAÇÃO DE CURSOS - {{ano_ref}}</h1></div>
-<form method="POST" action="{% url 'votar_cursos' %}">
-    {% csrf_token %}
-    <ul>
-        {% for curso in cursos %}
-            <li>
-                <input type="checkbox" name="cursos" value="{{ curso.id }}" 
-                {% if curso in user_cursos %}checked{% endif %}>
-                {{ curso.nome }}
-            </li>
-        {% endfor %}
-    </ul>
-    <button class="btn btn-success " type="submit">Votar</button>
-</form>
+<div class="d-flex p-2 justify-content-center mb-2">
+  <h1>PESQUISA DE PRIORIZAÇÃO DE CURSOS - {{ ano_ref }}</h1>
+</div>
 
+<form method="POST" action="{% url 'votar_cursos' %}">
+  {% csrf_token %}
+
+  {% for trilha in trilhas %}
+    <div class="mb-4">
+      <h4>{{ trilha.nome }}</h4>
+      <ul>
+        {% for curso in cursos_por_trilha|get_item:trilha %}
+          <li>
+            <input type="checkbox" name="cursos" value="{{ curso.id }}"
+                   {% if curso in user_cursos %}checked{% endif %}>
+            {{ curso.nome }} {% if curso.forma_atendimento %} {% endif %}
+          </li>
+        {% endfor %}
+      </ul>
+    </div>
+  {% endfor %}
+
+  <button class="btn btn-success" type="submit">Votar</button>
+</form>
 {% endblock %}
