@@ -271,7 +271,18 @@ class UserCadastroAdmin(admin.ModelAdmin):
     list_display = ('nome', 'data_solicitacao', )
     # list_editable = ('ch_solicitada', 'ch_confirmada', 'data_termino_curso', 'status',)
 
+
+class UserPesquisaCursosAdmin(admin.ModelAdmin):
+    list_display = ['user', 'pesquisacursospriorizados']
+    search_fields = ['user__nome', 'pesquisacursospriorizados__nome']
+
+intermediario = User.pesquisa_cursos_priorizados.through
+
+intermediario._meta.verbose_name = "Relação Usuário - Curso Priorizado"
+intermediario._meta.verbose_name_plural = "Relações Usuário - Cursos Priorizados"
+
 # Register your models here.
+
 admin.site.register(Curso, CursoAdmin)
 admin.site.register(User, CustomUserAdmin)
 admin.site.register(Inscricao, InscricaoAdmin)
@@ -304,6 +315,7 @@ admin.site.register(LotacaoEspecifica)
 admin.site.register(PageVisit)
 admin.site.register(OrigemPagamento)
 admin.site.register(UserCadastro, UserCadastroAdmin)
+admin.site.register(User.pesquisa_cursos_priorizados.through, UserPesquisaCursosAdmin)
 
 
 
