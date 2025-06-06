@@ -9,3 +9,4 @@ def ajustes_pesquisa_context(request):
     return {
         'is_aberta': ajustes.is_aberta,
     }
+

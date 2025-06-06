@@ -55,6 +55,7 @@ urlpatterns = [
     path('gastos/', views.gastos, name='gastos'),
     path('user-cadastro/', views.user_cadastro, name='user_cadastro'),
     path('cria-users/', views.processar_checkboxes, name='processar_checkboxes'),
+    path('pesquisas/', include('pesquisas.urls')),
     
 
 ]   
