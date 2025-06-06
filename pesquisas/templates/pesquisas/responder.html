@@ -1,0 +1,61 @@
+{% extends 'base.html' %}
+{% block content %}
+  <h2>{{ pesquisa.titulo }}</h2>
+
+  <form method="post">
+    {% csrf_token %}
+
+    <!-- PERGUNTAS AGRUPADAS -->
+{% for grupo in grupos %}
+<div class="mb-4 p-3 border rounded shadow-sm bg-light">
+  <h5 class="mb-3">{{ grupo.titulo }}</h5>
+  {% if ja_respondeu %}
+    <fieldset disabled>
+  {% endif %}
+  {% for pergunta in grupo.perguntas.all %}
+    <div class="mb-3 ms-3">
+      <label><strong>{{ pergunta.texto }}</strong></label><br>
+      {% if pergunta.tipo == 'RADIO' %}
+        {% for i in "12345" %}
+          <label class="me-2">
+            <input type="radio" name="pergunta_{{ pergunta.id }}" value="{{ i }}" required> {{ i }}
+          </label>
+        {% endfor %}
+      {% else %}
+        <textarea name="pergunta_{{ pergunta.id }}" class="form-control" rows="3"></textarea>
+      {% endif %}
+    </div>
+  {% endfor %}
+  {% if ja_respondeu %}
+    </fieldset>
+  {% endif %}
+</div>
+
+{% endfor %}
+
+    <!-- PERGUNTAS SEM GRUPO -->
+    {% for pergunta in perguntas_sem_grupo %}
+      {% if ja_respondeu %}
+        <fieldset disabled>
+      {% endif %}
+      <div class="mb-3">
+        <label><strong>{{ pergunta.texto }}</strong></label><br>
+        {% if pergunta.tipo == 'RADIO' %}
+          {% for i in "12345" %}
+            <label><input type="radio" name="pergunta_{{ pergunta.id }}" value="{{ i }}" required> {{ i }}</label>
+          {% endfor %}
+        {% else %}
+          <textarea name="pergunta_{{ pergunta.id }}" class="form-control" rows="3"></textarea>
+        {% endif %}
+      </div>
+      {% if ja_respondeu %}
+        </fieldset>
+      {% endif %}
+    {% endfor %}
+    {% if ja_respondeu %}
+      <button type="submit" class="btn btn-secondary" disabled>Você já votou</button>
+    {% else %}
+      <button type="submit" class="btn btn-primary">Enviar</button>
+    {% endif %}
+  </form>
+{% endblock %}

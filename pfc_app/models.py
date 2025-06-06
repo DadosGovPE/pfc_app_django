@@ -631,3 +631,10 @@ class PageVisit(models.Model):
 
     def __str__(self):
         return f'{self.user.username} visited {self.url} for {self.time_spent} ms'
+    
+
+####################################
+# APP DE PESQUISA - CRIA PESQUISAS #
+####################################
+
+

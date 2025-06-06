@@ -54,6 +54,7 @@ INSTALLED_APPS = [
     'explorer',
     'django_filters',
     'simple_history',
+    'pesquisas',
 ]
 
 MIDDLEWARE = [
