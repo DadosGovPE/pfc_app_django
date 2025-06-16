@@ -3192,3 +3192,5 @@ def gastos(request):
         'total_gasto_atual_ano': total_gasto_atual_ano,
     }
     return render(request, 'pfc_app/gastos_com_cursos.html', context)
+
+

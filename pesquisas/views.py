@@ -1,7 +1,10 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from .models import Pesquisa, Resposta
+from .models import Pesquisa, Resposta, GrupoPerguntas, Pergunta
+from django.contrib import messages 
+from django.contrib.auth.decorators import login_required
+from django.utils import timezone
 
 from .models import Resposta
 
@@ -47,3 +50,43 @@ def responder_pesquisa(request, pesquisa_id):
         'ja_respondeu': ja_respondeu,
     }
     return render(request, 'pesquisas/responder.html', context)
+
+
+@login_required
+def escolher_e_duplicar_pesquisa(request):
+    if request.method == 'POST':
+        pesquisa_id = request.POST.get('pesquisa_id')
+        if not pesquisa_id:
+            messages.error(request, "Selecione uma pesquisa para duplicar.")
+            return redirect('duplicar_pesquisa_form')
+
+        pesquisa_original = get_object_or_404(Pesquisa, pk=pesquisa_id)
+
+        nova_pesquisa = Pesquisa.objects.create(
+            titulo=f"{pesquisa_original.titulo} (Cópia)",
+            data_inicio=timezone.now().date(),
+            data_fim=pesquisa_original.data_fim,
+            is_aberta=False
+        )
+
+        grupos_map = {}
+        for grupo in pesquisa_original.grupos.all():
+            novo_grupo = GrupoPerguntas.objects.create(
+                pesquisa=nova_pesquisa,
+                titulo=grupo.titulo
+            )
+            grupos_map[grupo.id] = novo_grupo
+
+        for pergunta in pesquisa_original.perguntas.all():
+            Pergunta.objects.create(
+                pesquisa=nova_pesquisa,
+                grupo=grupos_map.get(pergunta.grupo_id),
+                texto=pergunta.texto,
+                tipo=pergunta.tipo
+            )
+
+        messages.success(request, f"Pesquisa '{pesquisa_original.titulo}' duplicada com sucesso.")
+        return redirect('duplicar_pesquisa_form')  # ajuste para o nome correto
+
+    pesquisas = Pesquisa.objects.all()
+    return render(request, 'pesquisas/duplicar_pesquisa.html', {'pesquisas': pesquisas})

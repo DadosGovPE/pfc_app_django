@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+
+{% block content %}
+{% include 'parciais/_messages.html' %}
+<div class="container mt-5">
+    <h2>Duplicar Pesquisa</h2>
+    <form method="post">
+        {% csrf_token %}
+        <div class="mb-3">
+            <label for="pesquisa_id" class="form-label">Escolha uma pesquisa:</label>
+            <select name="pesquisa_id" id="pesquisa_id" class="form-select" required>
+                <option value="">-- Selecione --</option>
+                {% for pesquisa in pesquisas %}
+                    <option value="{{ pesquisa.id }}">{{ pesquisa.titulo }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <button type="submit" class="btn btn-primary">Duplicar Pesquisa</button>
+    </form>
+</div>
+{% endblock %}

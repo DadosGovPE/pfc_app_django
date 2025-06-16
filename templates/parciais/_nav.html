@@ -44,6 +44,8 @@
                                 <li><hr class="dropdown-divider"></li>
                                 <li><a class="dropdown-item" href="{% url 'duplicar_plano_curso' %}">Duplicar Plano de Curso</a></li>
                                 <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item" href="{% url 'duplicar_pesquisa_form' %}">Duplicar Pesquisa</a></li>
+                                <li><hr class="dropdown-divider"></li>
                                 <li><a class="dropdown-item" href="{% url 'estatistica_bda' %}">Gerar PDF do BDA</a></li>
                                 <li><hr class="dropdown-divider"></li>
                                 <li><a class="dropdown-item" href="{% url 'gastos' %}">Gastos dos Cursos</a></li>
@@ -164,7 +166,7 @@
                             <li><a class="dropdown-item disabled" style="color: gray;" href="{% url 'listar_cursos_priorizados' %}">Pesquisa de priorização</a></li>
                             {% endif %}
                             <li><hr class="dropdown-divider"></li>
-                            {% if pesquisas_abertas %}
+                            {% if pesquisas_abertas and not user.is_externo %}
                                 {% for pesquisa in pesquisas_abertas %}
                                     <li><a class="dropdown-item" href="{% url 'responder_pesquisa' pesquisa.id %}">{{pesquisa.titulo}}</a></li>
                                     <li><hr class="dropdown-divider"></li>
