@@ -41,7 +41,7 @@ def responder_pesquisa(request, pesquisa_id):
                 )
 
         messages.success(request, 'Obrigado por responder!')
-        return redirect('pagina_sucesso')
+        return redirect('lista_cursos')
 
     context = {
         'pesquisa': pesquisa,
