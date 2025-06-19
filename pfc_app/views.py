@@ -2533,11 +2533,21 @@ def curadoria_html_show(request):
     # Gera uma lista de anos desde o ano mínimo até o ano máximo
     available_years = list(range(min_year, max_year + 1))
     
+    # Obtém o último mês com base na maior data de mes_competencia
+    ultimo_mes_curadoria = None
+    if Curadoria.objects.exists():
+        ultima_data = Curadoria.objects.aggregate(
+            ultima=Max('mes_competencia')
+        )['ultima']
+        if ultima_data:
+            ultimo_mes_curadoria = ultima_data.month
     
     context = {
         'cursos': cursos,
-        'anos': available_years,
+        'anos': sorted(available_years, reverse=True),
         'meses': MONTHS,
+        'ano_atual': current_year,
+        'mes_atual': ultimo_mes_curadoria,
     }
 
     if request.method == 'POST':
