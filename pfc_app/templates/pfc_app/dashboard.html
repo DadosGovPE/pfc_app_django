@@ -4,38 +4,87 @@
 {% block content %}
 {% include 'parciais/_messages.html' %}
 
-
-<div class="container d-flex justify-content-center bg-gradient pt-3" 
-        style="background-color: rgb(112,44,249); height: 20vh; margin-bottom: -5vh;">
-    <h1 style="color: #fdfdfd">Dashboard</h1>
+<div class="d-flex p-2 justify-content-center mb-2">
+    <h1>DASHBOARD</h1>
 </div>
 
 <div class="container">
-    <div class="row d-flex justify-content-between align-items-start">
+    <div class="row">
+        <div class="col-md-4">
+            <div class="kpi-box">
+                <div class="kpi-title">Cursos Ofertados</div>
+                <div class="kpi-value">{{ total_cursos }}</div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="kpi-box">
+                <div class="kpi-title">Inscrições Realizadas</div>
+                <div class="kpi-value">{{ total_inscricoes }}</div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="kpi-box">
+                <div class="kpi-title">Horas-aula Entregues</div>
+                <div class="kpi-value">{{ total_horas_aula }}</div>
+            </div>
+        </div>
+    </div>
 
-        <div class="col-md-3  col-12  border rounded zoom my-2" 
-            style="height: 15vh; background-color: rgb(250,250,250, 0.8);">
-            <div class="row d-flex justify-content-center align-items-center" style="height:100%;">
-                <img class="img-fluid " src="{% static 'naruto.png' %}" alt="" style="height: 100%; width: auto;">
-                <div class="col"><h5>240 horas-aula entregues</h5></div>
-            </div>    
+    <div class="row mt-5">
+        <div class="col-md-6">
+            <canvas id="cursosPorMesChart"></canvas>
         </div>
-        <div class="col-md-3  col-12  border rounded zoom my-2" 
-            style="height: 15vh; background-color: rgb(250,250,250, 0.8);">
-            <div class="row d-flex justify-content-center align-items-center" style="height:100%;">
-                <img class="img-fluid " src="{% static 'nerd-diploma.png' %}" alt="" 
-                    style="height: 100%; width: auto;">
-                <div class="col"><h5>40 inscrições concluídas</h5></div>
-            </div>    
+        <div class="col-md-6">
+            <canvas id="inscricoesPorMesChart"></canvas>
         </div>
-        <div class="col-md-3  col-12  border rounded zoom my-2" 
-            style="height: 15vh; background-color: rgb(250,250,250, 0.8);">
-            <div class="row d-flex justify-content-center align-items-center" style="height:100%;">
-                <img class="img-fluid " src="{% static 'quadro.png' %}" alt="" style="height: 100%; width: auto;">
-                <div class="col"><h5>10 cursos ministrados</h5></div>
-            </div>    
-        </div>
-        
     </div>
 </div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    const meses = {{ meses|safe }};
+    const cursosPorMes = {{ cursos_por_mes|safe }};
+    const inscricoesPorMes = {{ inscricoes_por_mes|safe }};
+
+    new Chart(
+        document.getElementById('cursosPorMesChart').getContext('2d'),
+        {
+            type: 'bar',
+            data: {
+                labels: meses,
+                datasets: [{
+                    label: 'Cursos por mês',
+                    data: cursosPorMes,
+                    backgroundColor: 'rgba(54, 162, 235, 0.6)'
+                }]
+            },
+            options: {
+                scales: {
+                    y: { beginAtZero: true }
+                }
+            }
+        }
+    );
+
+    new Chart(
+        document.getElementById('inscricoesPorMesChart').getContext('2d'),
+        {
+            type: 'bar',
+            data: {
+                labels: meses,
+                datasets: [{
+                    label: 'Inscrições por mês',
+                    data: inscricoesPorMes,
+                    backgroundColor: 'rgba(255, 99, 132, 0.6)'
+                }]
+            },
+            options: {
+                scales: {
+                    y: { beginAtZero: true }
+                }
+            }
+        }
+    );
+</script>
+
 {% endblock %}
