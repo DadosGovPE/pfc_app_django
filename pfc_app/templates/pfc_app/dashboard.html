@@ -38,6 +38,11 @@
             <canvas id="inscricoesPorMesChart"></canvas>
         </div>
     </div>
+    <div class="row mt-5">
+        <div class="col-md-12">
+            <canvas id="cursosInscricoesPorAnoChart"></canvas>
+        </div>
+    </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -45,6 +50,9 @@
     const meses = {{ meses|safe }};
     const cursosPorMes = {{ cursos_por_mes|safe }};
     const inscricoesPorMes = {{ inscricoes_por_mes|safe }};
+    const anos = {{ anos|safe }};
+    const cursosPorAno = {{ cursos_por_ano|safe }};
+    const inscricoesPorAno = {{ inscricoes_por_ano|safe }};
 
     new Chart(
         document.getElementById('cursosPorMesChart').getContext('2d'),
@@ -81,6 +89,34 @@
             options: {
                 scales: {
                     y: { beginAtZero: true }
+                }
+            }
+        }
+    );
+
+    new Chart(
+        document.getElementById('cursosInscricoesPorAnoChart').getContext('2d'),
+        {
+            type: 'bar',
+            data: {
+                labels: anos,
+                datasets: [
+                    {
+                        label: 'Cursos',
+                        data: cursosPorAno,
+                        backgroundColor: 'rgba(54, 162, 235, 0.6)'
+                    },
+                    {
+                        label: 'Inscrições',
+                        data: inscricoesPorAno,
+                        backgroundColor: 'rgba(255, 99, 132, 0.6)'
+                    }
+                ]
+            },
+            options: {
+                scales: {
+                    x: { stacked: true },
+                    y: { beginAtZero: true, stacked: true }
                 }
             }
         }
