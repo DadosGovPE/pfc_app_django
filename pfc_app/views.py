@@ -120,6 +120,26 @@ def dashboard(request):
 
     meses = [name for _, name in MONTHS]
 
+    cursos_por_ano_qs = (
+        Curso.objects
+        .annotate(a=ExtractYear('data_inicio'))
+        .values('a')
+        .annotate(c=Count('id'))
+        .order_by('a')
+    )
+    inscricoes_por_ano_qs = (
+        Inscricao.objects
+        .annotate(a=ExtractYear('curso__data_inicio'))
+        .values('a')
+        .annotate(c=Count('id'))
+        .order_by('a')
+    )
+    cursos_por_ano_dict = {item['a']: item['c'] for item in cursos_por_ano_qs}
+    inscricoes_por_ano_dict = {item['a']: item['c'] for item in inscricoes_por_ano_qs}
+    anos = sorted(set(cursos_por_ano_dict) | set(inscricoes_por_ano_dict))
+    cursos_por_ano = [cursos_por_ano_dict.get(ano, 0) for ano in anos]
+    inscricoes_por_ano = [inscricoes_por_ano_dict.get(ano, 0) for ano in anos]
+
     context = {
         'total_cursos': total_cursos,
         'total_inscricoes': total_inscricoes,
@@ -127,6 +147,9 @@ def dashboard(request):
         'meses': json.dumps(meses),
         'cursos_por_mes': json.dumps(cursos_por_mes),
         'inscricoes_por_mes': json.dumps(inscricoes_por_mes),
+        'anos': json.dumps(anos),
+        'cursos_por_ano': json.dumps(cursos_por_ano),
+        'inscricoes_por_ano': json.dumps(inscricoes_por_ano),
     }
     return render(request, 'pfc_app/dashboard.html', context)
 
