@@ -90,11 +90,13 @@ MONTHS = [
 # Create your views here.
 @login_required
 def dashboard(request):
+    """Renderiza a página inicial do sistema."""
     return render(request, 'pfc_app/presentation.html')
     return render(request, 'pfc_app/dashboard.html')
 
 
 def login(request):
+    """Autentica o usuário e inicia a sessão."""
     if request.method != 'POST':
         if request.user.is_authenticated:
             return redirect('lista_cursos')
@@ -116,6 +118,7 @@ def login(request):
     return render(request, 'pfc_app/login.html')
 
 def registrar(request):
+    """Recebe solicitação de cadastro de novos usuários."""
     if request.method != 'POST':
         return render(request, 'pfc_app/registrar.html')
 
@@ -203,12 +206,14 @@ def registrar(request):
     # return render(request, 'pfc_app/login.html')
 
 def logout(request):
+    """Encerra a sessão do usuário e redireciona para o login."""
     auth.logout(request)
     return redirect('login')
 
 
 @login_required
 def update_profile(request):
+    """Permite que o usuário edite seu perfil."""
     if request.method == 'POST':
         form = UserUpdateForm(request.POST, request.FILES, instance=request.user)
         if form.is_valid():
@@ -230,7 +235,13 @@ def update_profile(request):
 
 @login_required
 def cursos(request):
-  logger.info(f'cursos: {request.user.cpf}') 
+  """Lista cursos abertos e dados de inscrições.
+
+  Usa subqueries para computar o número de inscritos e se o usuário
+  já está inscrito em cada curso. Também monta listas de participantes
+  e docentes usando ``ArraySubquery`` para melhorar a performance.
+  """
+  logger.info(f'cursos: {request.user.cpf}')
   lista_cursos = Curso.objects.all()
   data_atual = date.today()
   status_inscricao=Subquery(
@@ -294,6 +305,11 @@ def cursos(request):
 
 @login_required
 def usuarios_sem_ch(request):
+        """Lista usuários sem carga horária mínima.
+
+        Realiza subqueries para calcular a soma de horas concluídas em
+        inscrições e validações, filtrando por período informado.
+        """
         # Inicialize o filtro para capturar as datas
     filtro = UserFilter(request.GET, queryset=User.objects.all())
 
@@ -379,6 +395,7 @@ def usuarios_sem_ch(request):
 
 @login_required
 def user_cadastro(request):
+    """Lista solicitações de cadastro pendentes."""
     data_hoje = datetime.now()
     data_hoje = data_hoje.strftime("%Y-%m-%d")
     form = DateFilterForm(request.GET)
@@ -401,6 +418,7 @@ def user_cadastro(request):
     return render(request, 'pfc_app/lista_cadastro.html' ,context)
 
 def processar_checkboxes(request):
+    """Cria usuários a partir das solicitações selecionadas."""
     if request.method == "POST":
         # Obter valores dos filtros de data
         data_inicio = request.POST.get('data_inicio', '')
@@ -473,6 +491,11 @@ def processar_checkboxes(request):
 
 @login_required
 def carga_horaria(request):
+  """Exibe relatório de carga horária do usuário.
+
+  Soma horas de cursos finalizados e validações externas utilizando
+  subqueries para cálculo do total de horas no período filtrado.
+  """
   form = DateFilterForm(request.GET)
   inscricoes_do_usuario = Inscricao.objects.filter(
      ~Q(status__nome='CANCELADA'),
@@ -554,12 +577,11 @@ def carga_horaria(request):
 
 @login_required
 def inscricoes(request):
-    #inscricoes_do_usuario = Inscricao.objects.filter(participante=request.user)
-
+    """Mostra todas as inscrições do usuário e se já foram avaliadas."""
     inscricoes_do_usuario = Inscricao.objects.annotate(
         curso_avaliado=Exists(
            Avaliacao.objects.filter(participante=request.user, curso=OuterRef('curso'))
-            
+
         )
     ).filter(participante=request.user).order_by('-curso__data_termino')
     
@@ -575,6 +597,7 @@ class CursoDetailView(LoginRequiredMixin, DetailView):
    model = Curso
 
    def get_context_data(self, **kwargs):
+        """Adiciona informações extras para a página de detalhes do curso."""
         context = super().get_context_data(**kwargs)
         
         # Recupere o usuário docente relacionado ao curso atual
@@ -603,6 +626,7 @@ class CursoDetailView(LoginRequiredMixin, DetailView):
 
 @login_required
 def cancelar_inscricao(request, inscricao_id):
+    """Cancela a inscrição do usuário em um curso."""
     try:
       inscricao = Inscricao.objects.get(pk=inscricao_id)
     except:
@@ -623,6 +647,7 @@ def cancelar_inscricao(request, inscricao_id):
 
 @login_required
 def inscrever(request, curso_id):
+    """Realiza inscrição do usuário em um curso, colocando em fila se lotado."""
     curso = Curso.objects.get(pk=curso_id)
     status_id_aprovada = StatusInscricao.objects.get(nome='APROVADA')
     status_id_pendente = StatusInscricao.objects.get(nome='PENDENTE')
@@ -681,13 +706,16 @@ def inscrever(request, curso_id):
        return redirect('detail_curso', pk=curso_id)
     
 def sucesso_inscricao(request):
+    """Página simples exibida após inscrição bem sucedida."""
     return render(request, 'pfc_app/sucesso_inscricao.html')
 
 def inscricao_existente(request):
+    """Informativo quando usuário tenta se inscrever mais de uma vez."""
     return render(request, 'pfc_app/inscricao_existente.html')
 
 @login_required
 def avaliacao(request, curso_id):
+    """Formulário de avaliação de curso finalizado."""
     # Checa se o curso existe
     try:
       curso = Curso.objects.get(pk=curso_id)
@@ -763,6 +791,7 @@ def avaliacao(request, curso_id):
 
 @login_required
 def validar_ch(request):
+    """Envia solicitação de validação de carga horária externa."""
     if request.method == 'POST':
         status_validacao = StatusValidacao.objects.get(nome="EM ANÁLISE")
         arquivo_pdf = request.FILES['arquivo_pdf']
@@ -840,10 +869,12 @@ def validar_ch(request):
 
 
 def download_all_pdfs(request):
+    """Página para seleção de certificados em lote."""
     return render(request, 'pfc_app/download_all_pdfs.html')
 
 @login_required
 def generate_all_pdfs(request, curso_id, unico=0):
+    """Gera certificados PDF para todos os inscritos no curso."""
     try:
       curso = Curso.objects.get(pk=curso_id)
     except:
@@ -995,6 +1026,7 @@ def generate_all_pdfs(request, curso_id, unico=0):
 
 @login_required
 def generate_single_pdf(request, inscricao_id):
+    """Gera o PDF de certificado para uma inscrição específica."""
     try:
       inscricao = Inscricao.objects.get(pk=inscricao_id)
     except:
@@ -1135,6 +1167,7 @@ def generate_single_pdf(request, inscricao_id):
 
 @login_required
 def generate_all_reconhecimento(request, validacao_id):
+    """Gera documentos de reconhecimento de carga horária."""
     try:
       validacao = Validacao_CH.objects.get(pk=validacao_id)
     except:
@@ -1392,6 +1425,7 @@ def generate_all_reconhecimento(request, validacao_id):
 
 
 def reset_password_request(request):
+    """Gera nova senha para o usuário e envia por e-mail."""
     if request.method == 'POST':
         form = PasswordResetForm(request.POST)
         if form.is_valid():
@@ -1426,6 +1460,7 @@ def reset_password_request(request):
 
 @login_required
 def change_password(request):
+    """Permite ao usuário alterar sua senha atual."""
     if request.method == 'POST':
         form = PasswordChangeForm(request.user, request.POST)
         if form.is_valid():
@@ -1444,6 +1479,7 @@ def change_password(request):
     return render(request, 'pfc_app/change_password.html', {'form': form})
 
 def draw_logos_infos(curso, canvas, doc):
+    """Desenha logos e informações do curso nas páginas da ata."""
     draw_logos(curso, canvas, doc)
         # Coordenadas para o logo (ajuste conforme necessário)
     logo_width = 50
@@ -1473,6 +1509,7 @@ def draw_logos_infos(curso, canvas, doc):
     paragraph.drawOn(canvas, x_text, y_text - required_height)
 
 def draw_logos(curso, canvas, doc):
+    """Insere logos padrão no cabeçalho das páginas."""
     # Coordenadas para o logo (ajuste conforme necessário)
     logo_width = 50
     logo_height = 50
@@ -1492,6 +1529,7 @@ def draw_logos(curso, canvas, doc):
     canvas.drawImage(pfc_path, x_pfc, y_pfc, width=logo_width, height=logo_height, mask='auto')
 
 def docentes_curso(curso):
+    """Retorna a lista de docentes aprovados para o curso."""
 
     # Obtém as inscrições que são de 'DOCENTE' para este curso específico
     inscricoes_docentes = Inscricao.objects.filter(curso=curso, condicao_na_acao='DOCENTE', status__nome='APROVADA')
@@ -1514,6 +1552,7 @@ def create_signature_line(width=200, height=1):
     return d
 
 def assinatura_ata(curso):
+    """Monta a tabela de assinaturas utilizada na ata."""
     # Obtém a folha de estilos padrão do ReportLab
     styles = getSampleStyleSheet()
 
@@ -1576,6 +1615,7 @@ def assinatura_ata(curso):
 
 @login_required
 def gerar_ata(request, curso_id):
+    """Gera a ata de frequência do curso em formato PDF."""
     response = HttpResponse(content_type='application/pdf')
     response['Content-Disposition'] = 'attachment; filename="Ata.pdf"'
     curso = Curso.objects.get(pk=curso_id)
@@ -1641,6 +1681,7 @@ def gerar_ata(request, curso_id):
     return response
 
 def adjust_lightness(color, amount):
+    """Ajusta a luminosidade de uma cor."""
     try:
         c = mc.cnames[color]
     except:
@@ -1649,6 +1690,7 @@ def adjust_lightness(color, amount):
     return colorsys.hls_to_rgb(c[0], max(0, min(1, amount * c[1])), c[2])
 
 def draw_logos_relatorio(c: canvas.Canvas, width, height):
+    """Desenha os logos no relatório de avaliação."""
     # Coordenadas para o logo (ajuste conforme necessário)
     logo_width = 50
     logo_width_seplag = 150
@@ -1677,6 +1719,7 @@ def draw_logos_relatorio(c: canvas.Canvas, width, height):
 
 
 def capa_relatorio(c: canvas.Canvas, width, height, plano_curso: PlanoCurso):
+    """Cria a capa do relatório com logos e título."""
     draw_logos_relatorio(c, width, height)
     x_position = (width) / 2
     y_position = (height) / 2
@@ -1692,6 +1735,7 @@ def capa_relatorio(c: canvas.Canvas, width, height, plano_curso: PlanoCurso):
 
 
 def pagina_dados_curso(c: canvas.Canvas, width, height, curso_id):
+    """Insere dados gerais do curso na primeira página do relatório."""
     
     plano_curso = PlanoCurso.objects.get(curso_id = curso_id)
     capa_relatorio(c, width, height, plano_curso)
@@ -1821,6 +1865,7 @@ def pagina_dados_curso(c: canvas.Canvas, width, height, curso_id):
     c.showPage()
 
 def pagina_fotos(c: canvas.Canvas, width, height):
+    """Adiciona ao relatório imagens enviadas pelo usuário."""
     style_body = ParagraphStyle('body',
                                     fontName = 'Helvetica-Bold',
                                     fontSize=12,
@@ -1866,6 +1911,7 @@ def pagina_fotos(c: canvas.Canvas, width, height):
 
 @login_required
 def gerar_relatorio(request, curso_id):
+    """Gera relatório em PDF com gráficos das avaliações do curso."""
     avaliacoes = Avaliacao.objects.filter(curso_id=curso_id).select_related('subtema', 'subtema__tema')
     medias_notas_por_tema = Avaliacao.objects.filter(~Q(nota='0'), curso_id=curso_id ).annotate(
     nota_numerica=Cast('nota', FloatField())
@@ -2142,6 +2188,7 @@ def gerar_relatorio(request, curso_id):
 
 
 def salva_fotos(fotos):
+    """Salva temporariamente as fotos enviadas para o relatório."""
     upload_dir = os.path.join(settings.BASE_DIR, 'tmp')
     # Verificar se o diretório existe, se não, criá-lo
     if not os.path.exists(upload_dir):
@@ -2158,6 +2205,7 @@ def salva_fotos(fotos):
 
 @login_required
 def relatorio(request):
+    """Formulário para geração do relatório de avaliação."""
     cursos = Curso.objects.order_by('-data_inicio').filter(
         status__nome = 'FINALIZADO', planocurso__isnull=False)
     
@@ -2178,6 +2226,7 @@ def relatorio(request):
     return render(request, 'pfc_app/relatorio.html' ,context)
 
 def hex_to_rgb_normalizado(hex_color):
+    """Converte uma cor hexadecimal para tupla RGB normalizada."""
     # Remover o prefixo '#' se houver
     if hex_color.startswith('#'):
         hex_color = hex_color[1:]
@@ -2191,6 +2240,7 @@ def hex_to_rgb_normalizado(hex_color):
     return (r / 255, g / 255, b / 255)
 
 def draw_logos_curadoria(c: canvas.Canvas, width, height):
+    """Desenha logos usados no relatório de curadoria."""
     # Coordenadas para o logo (ajuste conforme necessário)
     logo_width = 50
     logo_width_seplag = 150
@@ -2220,6 +2270,7 @@ def draw_logos_curadoria(c: canvas.Canvas, width, height):
 
 @login_required
 def gerar_curadoria(request, ano, mes):
+    """Gera PDF com a agenda mensal de cursos e curadorias."""
     # Ano e mês são presumivelmente passados como inteiros, se não, converta-os.
     ano = int(ano)
     mes = int(mes)
@@ -2435,6 +2486,7 @@ def gerar_curadoria(request, ano, mes):
 
 @login_required
 def curadoria(request):
+    """Formulário para gerar agenda mensal da curadoria."""
     current_year = datetime.now().year
     if Curadoria.objects.exists():
         year_range_curadoria = Curadoria.objects.aggregate(
@@ -2493,6 +2545,7 @@ def curadoria(request):
 
 @login_required
 def curadoria_html_show(request):
+    """Exibe o formulário de seleção para a agenda em HTML."""
     current_year = datetime.now().year
     if Curadoria.objects.exists():
         year_range_curadoria = Curadoria.objects.aggregate(
@@ -2562,6 +2615,7 @@ def curadoria_html_show(request):
 
 @login_required
 def curadoria_html(request, ano, mes):
+    """Renderiza a agenda mensal de curadoria em HTML."""
 
     ano = int(ano)
     mes = int(mes)
@@ -2601,6 +2655,7 @@ def curadoria_html(request, ano, mes):
 
 @login_required
 def estatistica_lnt(request):
+    """Mostra estatísticas da Lista de Necessidades de Treinamento."""
     if request.method == 'GET':
         ano_referencia = int(datetime.now().year)
     elif request.method == 'POST':
@@ -2651,6 +2706,7 @@ def estatistica_lnt(request):
 
 @login_required
 def listar_cursos_priorizados(request):
+    """Exibe os cursos disponíveis na pesquisa de priorização."""
     # Supondo que você deseja que o ano de referência padrão seja o ano atual
     ano_atual = datetime.now().year
 
@@ -2682,6 +2738,7 @@ def listar_cursos_priorizados(request):
 
 @login_required
 def votar_cursos(request):
+    """Registra as escolhas do usuário na pesquisa de priorização."""
     if request.method == 'POST':
         try:
             cursos_ids = request.POST.getlist('cursos')
@@ -2695,6 +2752,7 @@ def votar_cursos(request):
 
 @login_required
 def cursos_mais_votados(request):
+    """Exibe e atualiza a lista dos cursos mais votados."""
     ano_referencia_pesquisa = AjustesPesquisa.objects.get(nome='padrao').ano_ref
     data_referencia = datetime(ano_referencia_pesquisa, 1, 1).date()
     if request.method == 'POST':
@@ -2743,6 +2801,7 @@ def get_month_name(month_number):
 
 @login_required
 def generate_bda_pdf(request, ano, mes):
+    """Gera relatório PDF de cursos priorizados do BDA."""
     ano_referencia = ano
     mes_referencia = mes
     total_cursos_priorizados = CursoPriorizado.objects.filter(Q(mes_competencia__year=ano_referencia,)).count()
@@ -2892,6 +2951,7 @@ def generate_bda_pdf(request, ano, mes):
 
 
 def draw_igpe_logo(canvas, doc):
+    """Desenha o logo do IGPE no cabeçalho do documento."""
     # Coordenadas para o logo (ajuste conforme necessário)
     logo_width = 50
     logo_height = 50
@@ -2910,6 +2970,7 @@ def draw_igpe_logo(canvas, doc):
 
 @login_required
 def duplicar_plano_curso(request):
+    """Permite duplicar um plano de curso existente."""
     
     
     if request.method == 'POST':
@@ -2970,6 +3031,7 @@ def duplicar_plano_curso(request):
 
 @login_required
 def estatistica_bda(request):
+    """Mostra estatísticas do BDA para o ano corrente."""
     current_year = datetime.now().year
     status_cancelado = StatusCurso.objects.get(nome='CANCELADO')
     status_a_iniciar = StatusCurso.objects.get(nome='A INICIAR')
@@ -3017,6 +3079,7 @@ def estatistica_bda(request):
     return render (request, 'pfc_app/estatistica_bda.html', context)
 
 def select_lotacao_view(request):
+    """Tela inicial para seleção de lotação a ser alterada."""
     lotacoes = Lotacao.objects.all()
     #lotacoes_especificas = LotacaoEspecifica.objects.all()
     context = {
@@ -3026,6 +3089,7 @@ def select_lotacao_view(request):
     return render(request, 'pfc_app/change_lotacao.html', context)
 
 def get_lotacao_especifica(request):
+    """Retorna partial com lotações específicas da lotação atual."""
     lotacao = request.GET.get('lotacao')
     especificacoes = LotacaoEspecifica.objects.filter(lotacao=lotacao)
     usuarios = User.objects.filter(lotacao_fk=lotacao)
@@ -3036,6 +3100,7 @@ def get_lotacao_especifica(request):
     return render(request, 'pfc_app/parciais/lotacao_especifica.html', context)
 
 def get_nova_lotacao_especifica(request):
+    """Busca lotações específicas para a nova lotação escolhida."""
     nova_lotacao = request.GET.get('nova_lotacao')
     especificacoes = LotacaoEspecifica.objects.filter(lotacao=nova_lotacao)
 
@@ -3045,6 +3110,7 @@ def get_nova_lotacao_especifica(request):
     return render(request, 'pfc_app/parciais/nova_lotacao_especifica.html', context)
 
 def listar_usuarios(request):
+    """Lista usuários filtrados pela lotação específica."""
     lotacao_especifica = request.GET.get('lotacao-especifica')
     usuarios = User.objects.filter(lotacao_especifica_fk=lotacao_especifica)
     lotacoes = Lotacao.objects.all()
@@ -3057,6 +3123,7 @@ def listar_usuarios(request):
     return render(request, 'pfc_app/parciais/lista_usuarios.html', context)
 
 def atualizar_lotacao_usuario(request):
+    """Atualiza a lotação dos usuários selecionados."""
     usuario_ids = request.POST.getlist('usuario_ids')
     print(usuario_ids)
     nova_lotacao_id = request.POST.get('nova_lotacao')
@@ -3079,6 +3146,7 @@ def atualizar_lotacao_usuario(request):
         return redirect('change_lotacao')
 
 def abrir_modal(request):
+    """Abre modal para confirmar alteração de lotação."""
     usuario_ids = request.GET.getlist('usuario_check')
     usuarios = User.objects.filter(id__in=usuario_ids)
     lotacoes = Lotacao.objects.all()
@@ -3094,6 +3162,7 @@ def abrir_modal(request):
 
 @csrf_exempt
 def log_time(request):
+    """Registra tempo de permanência em cada página."""
     if request.method == 'POST':
         data = json.loads(request.body)
         url = data.get('url')
@@ -3110,6 +3179,7 @@ def log_time(request):
 
 @login_required
 def gastos(request):
+    """Calcula gastos estimados com instrutores e coordenação."""
     # Subquery para obter a última vigência (mais recente) de AjustesHoraAula
     # latest_date_subquery = AjustesHoraAula.objects.order_by(
     #     '-ano_mes_referencia').values('ano_mes_referencia')[:1]
