@@ -305,12 +305,12 @@ def cursos(request):
 
 @login_required
 def usuarios_sem_ch(request):
-        """Lista usuários sem carga horária mínima.
+    """Lista usuários sem carga horária mínima.
 
-        Realiza subqueries para calcular a soma de horas concluídas em
-        inscrições e validações, filtrando por período informado.
-        """
-        # Inicialize o filtro para capturar as datas
+    Realiza subqueries para calcular a soma de horas concluídas em
+    inscrições e validações, filtrando por período informado.
+    """
+    # Inicialize o filtro para capturar as datas
     filtro = UserFilter(request.GET, queryset=User.objects.all())
 
     # Capturar os valores das datas
@@ -1238,7 +1238,7 @@ def generate_all_reconhecimento(request, validacao_id):
             "[data_termino]": validacao.data_termino_curso.strftime("%d/%m/%Y"),
             "[ch_valida]": validacao.ch_confirmada,
             "[ch_solicitada]": validacao.ch_solicitada,
-            "[data_analise]": dateformat.format(datetime.now(), 'd \d\e F \d\e Y'),
+            "[data_analise]": dateformat.format(datetime.now(), r'd \d\e F \d\e Y'),
             "[responsavel_analise]": validacao.responsavel_analise,
             "[competencias]": texto_competencia,
             "[carreira]": texto_carreira,
