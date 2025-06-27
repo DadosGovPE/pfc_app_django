@@ -30,7 +30,7 @@ from django.db.models import Count, Q, Sum, F, \
                                 Avg, FloatField, When, BooleanField, \
                                 Exists, OuterRef, Value, Subquery, Min, Max, \
                                 ExpressionWrapper, DecimalField, Case
-from django.db.models.functions import Coalesce, Concat, Cast, ExtractYear
+from django.db.models.functions import Coalesce, Concat, Cast, ExtractYear, ExtractMonth
 from django.contrib.postgres.aggregates import StringAgg
 from django.contrib.postgres.expressions import ArraySubquery
 from datetime import date, datetime
@@ -90,9 +90,45 @@ MONTHS = [
 # Create your views here.
 @login_required
 def dashboard(request):
-    """Renderiza a página inicial do sistema."""
-    return render(request, 'pfc_app/presentation.html')
-    return render(request, 'pfc_app/dashboard.html')
+    """Exibe informações resumidas do sistema."""
+    total_cursos = Curso.objects.count()
+    total_inscricoes = Inscricao.objects.count()
+    total_horas_aula = Curso.objects.aggregate(total=Sum('ch_curso'))['total'] or 0
+
+    current_year = datetime.now().year
+    cursos_por_mes_qs = (
+        Curso.objects.filter(data_inicio__year=current_year)
+        .annotate(m=ExtractMonth('data_inicio'))
+        .values('m')
+        .annotate(c=Count('id'))
+        .order_by('m')
+    )
+    cursos_por_mes = [0] * 12
+    for item in cursos_por_mes_qs:
+        cursos_por_mes[item['m'] - 1] = item['c']
+
+    inscricoes_por_mes_qs = (
+        Inscricao.objects.filter(curso__data_inicio__year=current_year)
+        .annotate(m=ExtractMonth('curso__data_inicio'))
+        .values('m')
+        .annotate(c=Count('id'))
+        .order_by('m')
+    )
+    inscricoes_por_mes = [0] * 12
+    for item in inscricoes_por_mes_qs:
+        inscricoes_por_mes[item['m'] - 1] = item['c']
+
+    meses = [name for _, name in MONTHS]
+
+    context = {
+        'total_cursos': total_cursos,
+        'total_inscricoes': total_inscricoes,
+        'total_horas_aula': total_horas_aula,
+        'meses': json.dumps(meses),
+        'cursos_por_mes': json.dumps(cursos_por_mes),
+        'inscricoes_por_mes': json.dumps(inscricoes_por_mes),
+    }
+    return render(request, 'pfc_app/dashboard.html', context)
 
 
 def login(request):
