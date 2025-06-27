@@ -38,89 +38,84 @@
             <canvas id="inscricoesPorMesChart"></canvas>
         </div>
     </div>
-    <div class="row mt-5">
-        <div class="col-md-12">
-            <canvas id="cursosInscricoesPorAnoChart"></canvas>
-        </div>
-    </div>
+    
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
 <script>
     const meses = {{ meses|safe }};
-    const cursosPorMes = {{ cursos_por_mes|safe }};
-    const inscricoesPorMes = {{ inscricoes_por_mes|safe }};
     const anos = {{ anos|safe }};
-    const cursosPorAno = {{ cursos_por_ano|safe }};
-    const inscricoesPorAno = {{ inscricoes_por_ano|safe }};
+    const cursosPorAnoMes = {{ cursos_por_ano_mes|safe }};
+    const inscricoesPorAnoMes = {{ inscricoes_por_ano_mes|safe }};
 
-    new Chart(
-        document.getElementById('cursosPorMesChart').getContext('2d'),
-        {
-            type: 'bar',
-            data: {
-                labels: meses,
-                datasets: [{
-                    label: 'Cursos por mês',
-                    data: cursosPorMes,
-                    backgroundColor: 'rgba(54, 162, 235, 0.6)'
-                }]
-            },
-            options: {
-                scales: {
-                    y: { beginAtZero: true }
+    // Paleta de cores fixa
+    const coresFixas = [
+        'rgba(54, 162, 235, 0.6)',   // Azul
+        'rgba(255, 99, 132, 0.6)',   // Vermelho
+        'rgba(255, 206, 86, 0.6)',   // Amarelo
+        'rgba(75, 192, 192, 0.6)',   // Verde água
+        'rgba(153, 102, 255, 0.6)',  // Roxo
+        'rgba(255, 159, 64, 0.6)',   // Laranja
+        'rgba(100, 100, 100, 0.6)'   // Cinza escuro
+    ];
+
+    const cursosDatasets = anos.map((ano, idx) => ({
+        label: `Cursos ${ano}`,
+        data: cursosPorAnoMes[ano],
+        stack: 'Cursos',
+        backgroundColor: coresFixas[idx % coresFixas.length]
+    }));
+
+    const inscricoesDatasets = anos.map((ano, idx) => ({
+        label: `Inscrições ${ano}`,
+        data: inscricoesPorAnoMes[ano],
+        stack: 'Inscrições',
+        backgroundColor: coresFixas[idx % coresFixas.length]
+    }));
+
+    new Chart(document.getElementById('cursosPorMesChart').getContext('2d'), {
+        type: 'bar',
+        data: {
+            labels: meses,
+            datasets: cursosDatasets
+        },
+        options: {
+            plugins: {
+                title: {
+                    display: true,
+                    text: 'Cursos por Mês (por Ano)'
                 }
+            },
+            responsive: true,
+            scales: {
+                x: { stacked: true },
+                y: { beginAtZero: true, stacked: true }
             }
         }
-    );
+    });
 
-    new Chart(
-        document.getElementById('inscricoesPorMesChart').getContext('2d'),
-        {
-            type: 'bar',
-            data: {
-                labels: meses,
-                datasets: [{
-                    label: 'Inscrições por mês',
-                    data: inscricoesPorMes,
-                    backgroundColor: 'rgba(255, 99, 132, 0.6)'
-                }]
-            },
-            options: {
-                scales: {
-                    y: { beginAtZero: true }
+    new Chart(document.getElementById('inscricoesPorMesChart').getContext('2d'), {
+        type: 'bar',
+        data: {
+            labels: meses,
+            datasets: inscricoesDatasets
+        },
+        options: {
+            plugins: {
+                title: {
+                    display: true,
+                    text: 'Inscrições por Mês (por Ano)'
                 }
+            },
+            responsive: true,
+            scales: {
+                x: { stacked: true },
+                y: { beginAtZero: true, stacked: true }
             }
         }
-    );
-
-    new Chart(
-        document.getElementById('cursosInscricoesPorAnoChart').getContext('2d'),
-        {
-            type: 'bar',
-            data: {
-                labels: anos,
-                datasets: [
-                    {
-                        label: 'Cursos',
-                        data: cursosPorAno,
-                        backgroundColor: 'rgba(54, 162, 235, 0.6)'
-                    },
-                    {
-                        label: 'Inscrições',
-                        data: inscricoesPorAno,
-                        backgroundColor: 'rgba(255, 99, 132, 0.6)'
-                    }
-                ]
-            },
-            options: {
-                scales: {
-                    x: { stacked: true },
-                    y: { beginAtZero: true, stacked: true }
-                }
-            }
-        }
-    );
+    });
 </script>
+
+
 
 {% endblock %}

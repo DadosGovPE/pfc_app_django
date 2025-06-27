@@ -72,8 +72,11 @@ from django.core.files.base import ContentFile
 import json
 from collections import defaultdict
 import time
+from collections import defaultdict
+from django.db.models.functions import TruncMonth
 from logging import getLogger
 logger = getLogger('django')
+
 
 
 
@@ -88,70 +91,52 @@ MONTHS = [
 
 
 # Create your views here.
+
+
 @login_required
 def dashboard(request):
-    """Exibe informações resumidas do sistema."""
     total_cursos = Curso.objects.count()
     total_inscricoes = Inscricao.objects.count()
     total_horas_aula = Curso.objects.aggregate(total=Sum('ch_curso'))['total'] or 0
 
-    current_year = datetime.now().year
-    cursos_por_mes_qs = (
-        Curso.objects.filter(data_inicio__year=current_year)
-        .annotate(m=ExtractMonth('data_inicio'))
-        .values('m')
-        .annotate(c=Count('id'))
-        .order_by('m')
-    )
-    cursos_por_mes = [0] * 12
-    for item in cursos_por_mes_qs:
-        cursos_por_mes[item['m'] - 1] = item['c']
-
-    inscricoes_por_mes_qs = (
-        Inscricao.objects.filter(curso__data_inicio__year=current_year)
-        .annotate(m=ExtractMonth('curso__data_inicio'))
-        .values('m')
-        .annotate(c=Count('id'))
-        .order_by('m')
-    )
-    inscricoes_por_mes = [0] * 12
-    for item in inscricoes_por_mes_qs:
-        inscricoes_por_mes[item['m'] - 1] = item['c']
-
-    meses = [name for _, name in MONTHS]
-
-    cursos_por_ano_qs = (
+    # Cursos por mês e ano
+    cursos_qs = (
         Curso.objects
-        .annotate(a=ExtractYear('data_inicio'))
-        .values('a')
-        .annotate(c=Count('id'))
-        .order_by('a')
+        .annotate(ano=ExtractYear('data_inicio'), mes=ExtractMonth('data_inicio'))
+        .values('ano', 'mes')
+        .annotate(total=Count('id'))
     )
-    inscricoes_por_ano_qs = (
+
+    inscricoes_qs = (
         Inscricao.objects
-        .annotate(a=ExtractYear('curso__data_inicio'))
-        .values('a')
-        .annotate(c=Count('id'))
-        .order_by('a')
+        .annotate(ano=ExtractYear('curso__data_inicio'), mes=ExtractMonth('curso__data_inicio'))
+        .values('ano', 'mes')
+        .annotate(total=Count('id'))
     )
-    cursos_por_ano_dict = {item['a']: item['c'] for item in cursos_por_ano_qs}
-    inscricoes_por_ano_dict = {item['a']: item['c'] for item in inscricoes_por_ano_qs}
-    anos = sorted(set(cursos_por_ano_dict) | set(inscricoes_por_ano_dict))
-    cursos_por_ano = [cursos_por_ano_dict.get(ano, 0) for ano in anos]
-    inscricoes_por_ano = [inscricoes_por_ano_dict.get(ano, 0) for ano in anos]
+
+    cursos_por_ano_mes = defaultdict(lambda: [0] * 12)
+    inscricoes_por_ano_mes = defaultdict(lambda: [0] * 12)
+
+    for item in cursos_qs:
+        cursos_por_ano_mes[item['ano']][item['mes'] - 1] = item['total']
+
+    for item in inscricoes_qs:
+        inscricoes_por_ano_mes[item['ano']][item['mes'] - 1] = item['total']
+
+    anos = sorted(set(cursos_por_ano_mes) | set(inscricoes_por_ano_mes))
+    meses = [name for _, name in MONTHS]
 
     context = {
         'total_cursos': total_cursos,
         'total_inscricoes': total_inscricoes,
         'total_horas_aula': total_horas_aula,
         'meses': json.dumps(meses),
-        'cursos_por_mes': json.dumps(cursos_por_mes),
-        'inscricoes_por_mes': json.dumps(inscricoes_por_mes),
         'anos': json.dumps(anos),
-        'cursos_por_ano': json.dumps(cursos_por_ano),
-        'inscricoes_por_ano': json.dumps(inscricoes_por_ano),
+        'cursos_por_ano_mes': json.dumps({ano: cursos_por_ano_mes[ano] for ano in anos}),
+        'inscricoes_por_ano_mes': json.dumps({ano: inscricoes_por_ano_mes[ano] for ano in anos}),
     }
     return render(request, 'pfc_app/dashboard.html', context)
+
 
 
 def login(request):
@@ -172,7 +157,7 @@ def login(request):
     else:
         auth.login(request, user)
         messages.success(request, f'Oi, {user.nome.split(" ")[0].capitalize()}!')
-        return redirect('home')
+        return redirect('dashboard')
 
     return render(request, 'pfc_app/login.html')
 

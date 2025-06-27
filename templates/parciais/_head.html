@@ -11,9 +11,11 @@
 <link rel="apple-touch-icon" href="{% static 'PFC-NOVO-180x180.png' %}">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <script src="https://unpkg.com/htmx.org@2.0.1" integrity="sha384-QWGpdj554B4ETpJJC9z+ZHJcA/i59TyjxEPXiiUgN2WmTyV5OEZWCD6gQhgkdpB/" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     {% load bootstrap5 %}
     {% bootstrap_css %}
+    {% bootstrap_javascript %}
 <style>
 .zoom {
         transition: transform 0.2s ease-in-out, box-shadow 0.3s ease-in-out; /* Adiciona transição à transformação e à sombra */
