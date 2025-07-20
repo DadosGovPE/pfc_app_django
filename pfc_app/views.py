@@ -3318,3 +3318,78 @@ def gastos(request):
     return render(request, 'pfc_app/gastos_com_cursos.html', context)
 
 
+# from django.http import JsonResponse
+# from django.views.decorators.csrf import csrf_exempt
+# from .models import User, Inscricao
+
+from datetime import date
+
+@csrf_exempt
+def carga_horaria_por_cpf(request):
+    cpf = request.GET.get("cpf")
+
+    if not cpf or len(cpf) != 11:
+        return JsonResponse({"erro": "CPF inválido"}, status=400)
+
+    try:
+        usuario = User.objects.get(cpf=cpf)
+
+        # Definindo 1º de março do ano atual
+        hoje = timezone.now().date()
+        ano_base = hoje.year
+        data_corte = date(ano_base, 3, 1)
+
+        # Caso ainda estejamos antes de 01/03, use 01/03 do ano anterior
+        if hoje < data_corte:
+            data_corte = date(ano_base - 1, 3, 1)
+
+        inscricoes = Inscricao.objects.filter(
+            ~Q(status__nome='CANCELADA'),
+            ~Q(status__nome='EM FILA'),
+            Q(curso__status__nome='FINALIZADO'),
+            Q(concluido=True),
+            participante=usuario,
+            curso__data_termino__gte=data_corte
+        )
+
+        carga_pfc = sum(i.ch_valida or 0 for i in inscricoes)
+
+        status_validacoes = StatusValidacao.objects.filter(
+            nome__in=["DEFERIDA", "DEFERIDA PARCIALMENTE"]
+        )
+
+        validacoes = Validacao_CH.objects.filter(usuario=request.user, 
+                                                 data_termino_curso__gte=data_corte,
+                                           status__in=status_validacoes)
+        
+        carga_validacoes = sum(i.ch_confirmada or 0 for i in validacoes)
+
+        carga_total = carga_pfc + carga_validacoes
+
+        return JsonResponse({
+            "nome": usuario.nome,
+            "cpf": usuario.cpf,
+            "carga_horaria_total": carga_total,
+            "periodo": f"{data_corte.strftime('%d/%m/%Y')} até hoje"
+        })
+
+    except User.DoesNotExist:
+        return JsonResponse({"erro": "Usuário não encontrado"}, status=404)
+
+
+
+# from django.utils import timezone
+# from .models import Curso
+
+@csrf_exempt
+def cursos_disponiveis(request):
+    hoje = timezone.now().date()
+    cursos = Curso.objects.filter(data_inicio__gte=hoje).order_by("data_inicio")[:10]
+
+    lista = [{
+        "nome": curso.nome_formatado,
+        "data_inicio": curso.data_inicio,
+        "ch": curso.ch_curso
+    } for curso in cursos]
+
+    return JsonResponse({"cursos": lista})
