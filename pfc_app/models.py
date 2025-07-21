@@ -320,9 +320,10 @@ class Curso(models.Model):
 
     def __str__(self):
         turma_display = dict(self.TURMA_CHOICES).get(self.turma, self.turma)
+        ano = self.data_termino.year if self.data_termino else '----'
         if self.turma != 'TURMA1':
-            return f"{self.nome_curso} - {turma_display}"
-        return self.nome_curso
+            return f"({ano}) - {self.nome_curso} - {turma_display}"
+        return f"({ano}) - {self.nome_curso}"
     @property
     def nome_formatado(self):
         turma_display = dict(self.TURMA_CHOICES).get(self.turma, self.turma)
