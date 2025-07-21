@@ -3358,7 +3358,7 @@ def carga_horaria_por_cpf(request):
             nome__in=["DEFERIDA", "DEFERIDA PARCIALMENTE"]
         )
 
-        validacoes = Validacao_CH.objects.filter(usuario=request.user, 
+        validacoes = Validacao_CH.objects.filter(usuario=usuario, 
                                                  data_termino_curso__gte=data_corte,
                                            status__in=status_validacoes)
         
@@ -3390,7 +3390,8 @@ def cursos_disponiveis(request):
         "nome": curso.nome_formatado,
         "data_inicio": curso.data_inicio,
         "data_termino": curso.data_termino,
-        "ch": curso.ch_curso
+        "ch": curso.ch_curso,
+        "link": f"https://www.pfc.seplag.pe.gov.br/curso_detail/{curso.id}"
     } for curso in cursos]
 
     return JsonResponse({"cursos": lista})
