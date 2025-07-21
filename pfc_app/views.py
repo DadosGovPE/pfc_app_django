@@ -2312,7 +2312,6 @@ def draw_logos_curadoria(c: canvas.Canvas, width, height):
     c.drawImage(pfc_path, x_pfc, y_pfc, width=logo_width, height=logo_height, mask='auto')
 
 
-@login_required
 def gerar_curadoria(request, ano, mes):
     """Gera PDF com a agenda mensal de cursos e curadorias."""
     # Ano e mês são presumivelmente passados como inteiros, se não, converta-os.
