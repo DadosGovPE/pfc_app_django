@@ -3389,7 +3389,8 @@ def cursos_disponiveis(request):
     lista = [{
         "nome": curso.nome_formatado,
         "data_inicio": curso.data_inicio,
-        "ch": curso.ch_curso
+        "ch": curso.ch_curso,
+        "link": f"https://www.pfc.seplag.pe.gov.br/curso_detail/{curso.id}"
     } for curso in cursos]
 
     return JsonResponse({"cursos": lista})
