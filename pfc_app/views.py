@@ -3389,6 +3389,7 @@ def cursos_disponiveis(request):
     lista = [{
         "nome": curso.nome_formatado,
         "data_inicio": curso.data_inicio,
+        "data_termino": curso.data_termino,
         "ch": curso.ch_curso
     } for curso in cursos]
 
