@@ -3358,7 +3358,7 @@ def carga_horaria_por_cpf(request):
             nome__in=["DEFERIDA", "DEFERIDA PARCIALMENTE"]
         )
 
-        validacoes = Validacao_CH.objects.filter(usuario=request.user, 
+        validacoes = Validacao_CH.objects.filter(usuario=usuario, 
                                                  data_termino_curso__gte=data_corte,
                                            status__in=status_validacoes)
         
