@@ -60,6 +60,7 @@ urlpatterns = [
     ##API
     path('api/carga-horaria/', views.carga_horaria_por_cpf, name='api_carga_horaria'),
     path('api/cursos-disponiveis/', views.cursos_disponiveis, name='cursos_disponiveis'),
+    path("api/emendas/", views.buscar_parlamentares, name="buscar_emendas"),
     
 
 ]   

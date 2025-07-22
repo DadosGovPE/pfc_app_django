@@ -3394,3 +3394,43 @@ def cursos_disponiveis(request):
     } for curso in cursos]
 
     return JsonResponse({"cursos": lista})
+
+
+import pandas as pd
+import unicodedata
+
+
+@csrf_exempt
+def buscar_parlamentares(request):
+    nome_param = request.GET.get("nome", "").strip()
+
+    if not nome_param:
+        return JsonResponse({"erro": "Parâmetro 'nome' é obrigatório."}, status=400)
+
+    # Função para remover acentos e deixar em minúsculas
+    def normalizar(texto):
+        if pd.isna(texto):
+            return ""
+        return unicodedata.normalize('NFKD', texto).encode('ASCII', 'ignore').decode().lower()
+
+    try:
+        caminho_csv = os.path.join(settings.BASE_DIR, "media", "emendas.csv")
+        df = pd.read_csv(caminho_csv)
+
+        # Normaliza os nomes no dataframe
+        df["parlamentar_normalizado"] = df["PARLAMENTAR"].apply(normalizar)
+
+        # Normaliza o nome de busca
+        nome_normalizado = normalizar(nome_param)
+
+        # Filtra onde o nome buscado está contido
+        df_filtrado = df[df["parlamentar_normalizado"].str.contains(nome_normalizado, na=False)]
+
+        # Remove duplicados
+        parlamentares_unicos = df_filtrado[["PARLAMENTAR", "ID_PARLAMENTAR"]].drop_duplicates()
+
+        return JsonResponse({"resultados": parlamentares_unicos.to_dict(orient="records")})
+    
+    except Exception as e:
+        return JsonResponse({"erro": str(e)}, status=500)
+
