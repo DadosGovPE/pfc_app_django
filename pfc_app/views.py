@@ -3434,3 +3434,39 @@ def buscar_parlamentares(request):
     except Exception as e:
         return JsonResponse({"erro": str(e)}, status=500)
 
+
+
+import locale
+
+locale.setlocale(locale.LC_ALL, 'pt_BR.UTF-8')  # Formato brasileiro
+
+def resumo_emendas(request, id_parlamentar):
+    caminho_csv = os.path.join('media', 'emendas.csv')
+    df = pd.read_csv(caminho_csv, encoding='utf-8')
+
+    df_filtrado = df[df['ID_PARLAMENTAR'] == id_parlamentar]
+
+    if df_filtrado.empty:
+        return JsonResponse({'erro': 'Parlamentar não encontrado'}, status=404)
+
+    nome = df_filtrado['PARLAMENTAR'].iloc[0]
+
+    def parse_valor(valor):
+        if pd.isna(valor):
+            return 0.0
+        valor = str(valor).replace('.', '').replace(',', '.')
+        try:
+            return float(valor)
+        except ValueError:
+            return 0.0
+
+    investimento_total = df_filtrado['INVESTIMENTO PREVISTO 2025'].apply(parse_valor).sum()
+    liquidado_total = df_filtrado['LIQUIDAÇÃO 2025'].apply(parse_valor).sum()
+    impedimentos = df_filtrado[df_filtrado['IMPEDIMENTO TÉCNICO'].str.upper() == 'SIM'].shape[0]
+
+    return JsonResponse({
+        'nome': nome,
+        'investimento_total': f"R$ {investimento_total:,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.'),
+        'liquidado_total': f"R$ {liquidado_total:,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.'),
+        'impedimentos': impedimentos,
+    }, json_dumps_params={"ensure_ascii": False})
