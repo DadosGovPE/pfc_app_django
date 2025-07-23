@@ -3436,10 +3436,6 @@ def buscar_parlamentares(request):
 
 
 
-import locale
-
-locale.setlocale(locale.LC_ALL, 'pt_BR.UTF-8')  # Formato brasileiro
-
 def resumo_emendas(request, id_parlamentar):
     caminho_csv = os.path.join('media', 'emendas.csv')
     df = pd.read_csv(caminho_csv, encoding='utf-8')
@@ -3462,7 +3458,9 @@ def resumo_emendas(request, id_parlamentar):
 
     investimento_total = df_filtrado['INVESTIMENTO PREVISTO 2025'].apply(parse_valor).sum()
     liquidado_total = df_filtrado['LIQUIDAÇÃO 2025'].apply(parse_valor).sum()
-    impedimentos = df_filtrado[df_filtrado['IMPEDIMENTO TÉCNICO'].str.upper() == 'SIM'].shape[0]
+
+    # Garantir que valores nulos não quebrem .str.upper()
+    impedimentos = df_filtrado[df_filtrado['IMPEDIMENTO TÉCNICO'].fillna('').str.upper() == 'SIM'].shape[0]
 
     return JsonResponse({
         'nome': nome,
@@ -3470,3 +3468,4 @@ def resumo_emendas(request, id_parlamentar):
         'liquidado_total': f"R$ {liquidado_total:,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.'),
         'impedimentos': impedimentos,
     }, json_dumps_params={"ensure_ascii": False})
+
