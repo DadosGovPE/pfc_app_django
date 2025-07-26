@@ -62,6 +62,8 @@ urlpatterns = [
     path('api/cursos-disponiveis/', views.cursos_disponiveis, name='cursos_disponiveis'),
     path("api/emendas/", views.buscar_parlamentares, name="buscar_emendas"),
     path('api/emendas/resumo/<str:id_parlamentar>/', views.resumo_emendas, name='resumo_emendas'),
+    path('api/emendas/top-deputados/', views.top_deputados_emendas, name='top_deputados_emendas'),
+    path('api/emendas/top-municipios/', views.top_municipios_emendas, name='top_municipios_emendas'),
 
 ]   
 

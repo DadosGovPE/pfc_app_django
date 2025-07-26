@@ -3469,3 +3469,62 @@ def resumo_emendas(request, id_parlamentar):
         'impedimentos': impedimentos,
     }, json_dumps_params={"ensure_ascii": False})
 
+
+
+def top_deputados_emendas(request):
+    caminho_csv = os.path.join('media', 'emendas.csv')
+    df = pd.read_csv(caminho_csv, encoding='utf-8')
+
+    # Função para converter valores monetários
+    def parse_valor(valor):
+        if pd.isna(valor):
+            return 0.0
+        valor = str(valor).replace('.', '').replace(',', '.')
+        try:
+            return float(valor)
+        except ValueError:
+            return 0.0
+
+    df['valor'] = df['INVESTIMENTO PREVISTO 2025'].apply(parse_valor)
+    df_group = df.groupby(['PARLAMENTAR'])['valor'].sum().reset_index()
+
+    df_group = df_group.sort_values(by='valor', ascending=False).head(10)
+
+    resultado = [
+        {
+            'nome': row['PARLAMENTAR'],
+            'total_emendas': f"{row['valor']:,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.')
+        }
+        for _, row in df_group.iterrows()
+    ]
+
+    return JsonResponse({'top10': resultado}, json_dumps_params={'ensure_ascii': False})
+
+
+def top_municipios_emendas(request):
+    caminho_csv = os.path.join('media', 'emendas.csv')
+    df = pd.read_csv(caminho_csv, encoding='utf-8')
+
+    def parse_valor(valor):
+        if pd.isna(valor):
+            return 0.0
+        valor = str(valor).replace('.', '').replace(',', '.')
+        try:
+            return float(valor)
+        except ValueError:
+            return 0.0
+
+    df['valor'] = df['INVESTIMENTO PREVISTO 2025'].apply(parse_valor)
+    df_group = df.groupby(['MUNICÍPIOS'])['valor'].sum().reset_index()
+
+    df_group = df_group.sort_values(by='valor', ascending=False).head(10)
+
+    resultado = [
+        {
+            'municipio': row['MUNICÍPIOS'],
+            'total_emendas': f"{row['valor']:,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.')
+        }
+        for _, row in df_group.iterrows()
+    ]
+
+    return JsonResponse({'top10': resultado}, json_dumps_params={'ensure_ascii': False})
