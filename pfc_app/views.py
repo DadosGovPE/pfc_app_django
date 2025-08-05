@@ -3485,7 +3485,7 @@ def top_deputados_emendas(request):
         except ValueError:
             return 0.0
 
-    df['valor'] = df['INVESTIMENTO PREVISTO 2025'].apply(parse_valor)
+    df['valor'] = df['LIQUIDAÇÃO 2025'].apply(parse_valor)
     df_group = df.groupby(['PARLAMENTAR'])['valor'].sum().reset_index()
 
     df_group = df_group.sort_values(by='valor', ascending=False).head(10)
@@ -3514,7 +3514,7 @@ def top_municipios_emendas(request):
         except ValueError:
             return 0.0
 
-    df['valor'] = df['INVESTIMENTO PREVISTO 2025'].apply(parse_valor)
+    df['valor'] = df['LIQUIDAÇÃO 2025'].apply(parse_valor)
     df_group = df.groupby(['MUNICÍPIOS'])['valor'].sum().reset_index()
 
     df_group = df_group.sort_values(by='valor', ascending=False).head(10)
