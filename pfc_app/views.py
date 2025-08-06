@@ -3434,6 +3434,41 @@ def buscar_parlamentares(request):
     except Exception as e:
         return JsonResponse({"erro": str(e)}, status=500)
 
+@csrf_exempt
+def buscar_municipios(request):
+    nome_param = request.GET.get("nome", "").strip()
+
+    if not nome_param:
+        return JsonResponse({"erro": "Parâmetro 'nome' é obrigatório."}, status=400)
+
+    # Função para remover acentos e deixar em minúsculas
+    def normalizar(texto):
+        if pd.isna(texto):
+            return ""
+        return unicodedata.normalize('NFKD', texto).encode('ASCII', 'ignore').decode().lower()
+
+    try:
+        caminho_csv = os.path.join(settings.BASE_DIR, "media", "emendas.csv")
+        df = pd.read_csv(caminho_csv)
+
+        # Normaliza os nomes no dataframe
+        df["municipio_normalizado"] = df["MUNICÍPIOS"].apply(normalizar)
+
+        # Normaliza o nome de busca
+        nome_normalizado = normalizar(nome_param)
+
+        # Filtra onde o nome buscado está contido
+        df_filtrado = df[df["municipio_normalizado"].str.contains(nome_normalizado, na=False)]
+
+        # Remove duplicados
+        municipios_unicos = df_filtrado[["municipio_normalizado", "CD_MUNICIPIO"]].drop_duplicates()
+        municipios_unicos["municipio_normalizado"] = municipios_unicos["municipio_normalizado"].str.title()
+
+
+        return JsonResponse({"resultados": municipios_unicos.to_dict(orient="records")})
+    
+    except Exception as e:
+        return JsonResponse({"erro": str(e)}, status=500)
 
 
 def resumo_emendas(request, id_parlamentar):
@@ -3446,6 +3481,39 @@ def resumo_emendas(request, id_parlamentar):
         return JsonResponse({'erro': 'Parlamentar não encontrado'}, status=404)
 
     nome = df_filtrado['PARLAMENTAR'].iloc[0]
+
+    def parse_valor(valor):
+        if pd.isna(valor):
+            return 0.0
+        valor = str(valor).replace('.', '').replace(',', '.')
+        try:
+            return float(valor)
+        except ValueError:
+            return 0.0
+
+    investimento_total = df_filtrado['INVESTIMENTO PREVISTO 2025'].apply(parse_valor).sum()
+    liquidado_total = df_filtrado['LIQUIDAÇÃO 2025'].apply(parse_valor).sum()
+
+    # Garantir que valores nulos não quebrem .str.upper()
+    impedimentos = df_filtrado[df_filtrado['IMPEDIMENTO TÉCNICO'].fillna('').str.upper() == 'SIM'].shape[0]
+
+    return JsonResponse({
+        'nome': nome,
+        'investimento_total': f"R$ {investimento_total:,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.'),
+        'liquidado_total': f"R$ {liquidado_total:,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.'),
+        'impedimentos': impedimentos,
+    }, json_dumps_params={"ensure_ascii": False})
+
+
+def resumo_emendas_municipios(request, cd_mun):
+    caminho_csv = os.path.join('media', 'emendas.csv')
+    df = pd.read_csv(caminho_csv, encoding='utf-8')
+    df_filtrado = df[df['CD_MUNICIPIO'] == cd_mun]
+
+    if df_filtrado.empty:
+        return JsonResponse({'erro': 'Município não encontrado'}, status=404)
+
+    nome = df_filtrado['MUNICÍPIOS'].iloc[0]
 
     def parse_valor(valor):
         if pd.isna(valor):
