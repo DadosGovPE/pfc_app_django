@@ -32,7 +32,7 @@ if os.getenv('ENVIROMENT')=='DEV':
 else:
     DEBUG = False
 
-CSRF_TRUSTED_ORIGINS = ['https://*.seplag.pe.gov.br', 'https://*.127.0.0.1','http://10.238.75.122' ,'https://10.238.75.122', '10.238.75.122']
+CSRF_TRUSTED_ORIGINS = ['https://*.seplag.pe.gov.br', 'https://*.127.0.0.1','http://10.238.75.122' ,'https://10.238.75.122', '10.238.75.122', '200.238.99.10']
 ALLOWED_HOSTS = ['*']
 CSRF_COOKIE_SECURE = False
 
