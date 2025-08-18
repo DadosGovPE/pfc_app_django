@@ -6,7 +6,20 @@
     <div class="d-flex p-2 justify-content-center mb-4"><h1>MINHA CARGA HORÁRIA</h1></div>
     <form method="GET" action="" class="row g-3">
         {% csrf_token %}
-        
+        {% if usuarios %}
+            <div class="col-md-4 form-floating mb-3">
+                <select class="form-select" name="usuario_id" id="id_usuario_id">
+                    {% for u in usuarios %}
+                        <option value="{{ u.id }}" {% if u.id == usuario_alvo.id %}selected{% endif %}>
+                            {{ u.get_full_name|default:u.username }}
+                        </option>
+                    {% endfor %}
+                </select>
+                <label for="id_usuario_id">Usuário</label>
+            </div>
+        {% endif %}
+
+
         <div class="col-md-3 form-floating mb-3">
             
             <input type="date" class="form-control" name="data_inicio"  id="id_data_inicio" value="{{ values.data_inicio }}">

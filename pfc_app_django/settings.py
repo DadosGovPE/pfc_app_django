@@ -32,7 +32,7 @@ if os.getenv('ENVIROMENT')=='DEV':
 else:
     DEBUG = False
 
-CSRF_TRUSTED_ORIGINS = ['https://*.seplag.pe.gov.br','http://*.seplag.pe.gov.br', 'https://*.127.0.0.1','http://10.238.75.122' ,'https://10.238.75.122', '10.238.75.122', '200.238.99.10']
+CSRF_TRUSTED_ORIGINS = ['https://*.seplag.pe.gov.br','http://*.seplag.pe.gov.br', 'https://*.127.0.0.1','http://10.238.75.122' ,'https://10.238.75.122']
 ALLOWED_HOSTS = ['*']
 CSRF_COOKIE_SECURE = False
 
@@ -113,6 +113,13 @@ DATABASES = {
         'PASSWORD': os.getenv('DJANGO_DATABASE_PW'),
         'HOST': os.getenv('DJANGO_DATABASE_HOST'),
         'PORT': os.getenv('DJANGO_DATABASE_PORT'),
+    }
+}
+
+CACHES = {
+    "default": {
+        "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+        "LOCATION": "unique-snowflake",
     }
 }
 

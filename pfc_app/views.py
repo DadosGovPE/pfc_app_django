@@ -73,6 +73,7 @@ import json
 from collections import defaultdict
 import time
 from collections import defaultdict
+from django.core.cache import cache
 from django.db.models.functions import TruncMonth
 from logging import getLogger
 logger = getLogger('django')
@@ -541,12 +542,30 @@ def carga_horaria(request):
   subqueries para cálculo do total de horas no período filtrado.
   """
   form = DateFilterForm(request.GET)
+
+  # por padrão, mostra do próprio usuário
+  usuario_alvo = request.user  
+  
+  usuarios = None
+  if request.user.role=='ADMIN' or request.user.is_superuser:
+    usuarios = cache.get("lista_usuarios")
+    if usuarios is None:
+        usuarios = list(User.objects.all().order_by("nome"))  # força materializar
+        cache.set("lista_usuarios", usuarios, timeout=60*60*24)  # guarda por 24h
+
+    usuario_id = request.GET.get("usuario_id")
+    if usuario_id:
+        try:
+            usuario_alvo = User.objects.get(id=usuario_id)
+        except User.DoesNotExist:
+            usuario_alvo = request.user
+
   inscricoes_do_usuario = Inscricao.objects.filter(
      ~Q(status__nome='CANCELADA'),
      ~Q(status__nome='EM FILA'),
      Q(curso__status__nome='FINALIZADO'),
      Q(concluido=True),
-     participante=request.user
+     participante=usuario_alvo
      
      )
   try:
@@ -561,10 +580,10 @@ def carga_horaria(request):
     status_validacao_deferida = StatusValidacao.objects.get(nome='DEFERIDA')
     status_validacao_deferida_parc = StatusValidacao.objects.get(nome='DEFERIDA PARCIALMENTE')
 
-  validacoes = Validacao_CH.objects.filter(usuario=request.user, 
+  validacoes = Validacao_CH.objects.filter(usuario=usuario_alvo, 
                                            status__in=[status_validacao_deferida, 
                                                        status_validacao_deferida_parc])
-  validacoes_indeferidas = Validacao_CH.objects.filter(usuario=request.user, 
+  validacoes_indeferidas = Validacao_CH.objects.filter(usuario=usuario_alvo, 
                                            status__in=[status_validacao_indeferida]).order_by('-analisado_em')
   
   ## Calculo para verificar se o usuario ja está inscrito em um dado curso
@@ -603,6 +622,7 @@ def carga_horaria(request):
   carga_horaria_pfc = inscricoes_do_usuario.aggregate(Sum('ch_valida'))['ch_valida__sum'] or 0
   validacoes_ch = validacoes.aggregate(Sum('ch_confirmada'))['ch_confirmada__sum'] or 0
   carga_horaria_total = carga_horaria_pfc + validacoes_ch
+  
 
 
   context = {
@@ -614,6 +634,8 @@ def carga_horaria(request):
       'carga_horaria_total': carga_horaria_total,
       'form': form,
       'values': request.GET if request.GET else {'data_inicio': f'{ano_atual}-03-01', 'data_fim': data_hoje},
+      'usuarios': usuarios,
+      'usuario_alvo': usuario_alvo,
   }
 
   return render(request, 'pfc_app/carga_horaria.html' ,context)
