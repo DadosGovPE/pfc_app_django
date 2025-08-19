@@ -3649,9 +3649,15 @@ def resumo_emendas_municipio(request, cd_mun: int):
             'liquidado_total': moeda_pt(liquidado_total),
             'impedimentos': int(impedimentos),
             # payload para o n8n enviar como documento
-            'csv_filename': f"emendas_municipio_{nome}_2025.csv",
-            'csv_mimetype': "text/csv",
-            'csv_b64': csv_b64,
+            # 'csv_filename': f"emendas_municipio_{nome}_2025.csv",
+            # 'csv_mimetype': "text/csv",
+            # 'csv_b64': csv_b64,
+            'csv': {
+                'filename': f"emendas_municipio_{nome}_2025.csv",
+                'mimetype': 'text/csv',
+                'encoding': 'base64',
+                'content': csv_b64
+            }
         },
         json_dumps_params={"ensure_ascii": False}
     )
