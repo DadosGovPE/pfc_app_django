@@ -1,6 +1,7 @@
 from django.shortcuts import render,redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_POST
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib import messages, auth
 from django.conf import settings
@@ -13,10 +14,11 @@ from django.utils.timezone import now
 from django.urls import reverse
 import random
 import string
+import uuid
 from django.utils.encoding import force_bytes
 from django.contrib.auth import update_session_auth_hash
 from django.db import IntegrityError
-from django.http import HttpResponse, JsonResponse
+from django.http import HttpResponse, JsonResponse, HttpResponseBadRequest
 from django.template import loader
 from .models import Curso, Inscricao, StatusInscricao, Avaliacao, \
                     Validacao_CH, StatusValidacao, User, Certificado,\
@@ -3661,3 +3663,49 @@ def top_municipios_emendas(request):
     ]
 
     return JsonResponse({'top10': resultado}, json_dumps_params={'ensure_ascii': False})
+
+
+@csrf_exempt
+@require_POST
+def upload_emendas_csv(request):
+    """
+    Recebe um CSV (campo 'file' ou 'csv') e salva em MEDIA_ROOT como 'emendas.csv'.
+    - Se já existir, sobrescreve (sem criar backup).
+    - Escrita atômica: grava em temp e faz os.replace.
+    """
+    upload = request.FILES.get('file') or request.FILES.get('csv')
+    if not upload:
+        return HttpResponseBadRequest('Arquivo não enviado. Use o campo "file" (multipart/form-data).')
+
+    if not upload.name.lower().endswith('.csv'):
+        return HttpResponseBadRequest('Arquivo deve ser .csv')
+
+    media_root = getattr(settings, 'MEDIA_ROOT')
+    os.makedirs(media_root, exist_ok=True)
+
+    final_path = os.path.join(media_root, 'emendas.csv')
+    tmp_path = os.path.join(media_root, f'.emendas.csv.tmp-{uuid.uuid4().hex}')
+
+    try:
+        # grava no temporário
+        with open(tmp_path, 'wb') as dest:
+            for chunk in upload.chunks():
+                dest.write(chunk)
+
+        # substitui de forma atômica (sobrescreve se existir)
+        os.replace(tmp_path, final_path)
+
+    except Exception as e:
+        # limpeza do temporário se algo falhar
+        try:
+            if os.path.exists(tmp_path):
+                os.remove(tmp_path)
+        except Exception:
+            pass
+        return JsonResponse({"ok": False, "error": f"Falha ao salvar: {e}"}, status=500)
+
+    return JsonResponse({
+        "ok": True,
+        "saved_as": "emendas.csv",
+        "overwritten": True
+    })
