@@ -3493,17 +3493,24 @@ def buscar_municipios(request):
         return JsonResponse({"erro": str(e)}, status=500)
 
 
+import os
+import io
+import base64
+import pandas as pd
+from django.http import JsonResponse
+
 def resumo_emendas(request, id_parlamentar):
     caminho_csv = os.path.join('media', 'emendas.csv')
     df = pd.read_csv(caminho_csv, encoding='utf-8')
 
+    # Filtra pelo parlamentar
     df_filtrado = df[df['ID_PARLAMENTAR'] == id_parlamentar]
-
     if df_filtrado.empty:
-        return JsonResponse({'erro': 'Parlamentar não encontrado'}, status=404)
+        return JsonResponse({'erro': 'Parlamentar não encontrado'}, status=404, json_dumps_params={"ensure_ascii": False})
 
     nome = df_filtrado['PARLAMENTAR'].iloc[0]
 
+    # Função para converter valores com vírgula em float
     def parse_valor(valor):
         if pd.isna(valor):
             return 0.0
@@ -3516,15 +3523,49 @@ def resumo_emendas(request, id_parlamentar):
     investimento_total = df_filtrado['INVESTIMENTO PREVISTO 2025'].apply(parse_valor).sum()
     liquidado_total = df_filtrado['LIQUIDAÇÃO 2025'].apply(parse_valor).sum()
 
-    # Garantir que valores nulos não quebrem .str.upper()
+    # Impedimentos (tratando NaN)
     impedimentos = df_filtrado[df_filtrado['IMPEDIMENTO TÉCNICO'].fillna('').str.upper() == 'SIM'].shape[0]
+
+    # ===== CSV embutido (filtrado por ANO DA EMENDA = 2025) =====
+    # Normaliza o tipo do ano (caso venha como string)
+    ano_col = 'ANO DA EMENDA'
+    df_filtrado[ano_col] = pd.to_numeric(df_filtrado[ano_col], errors='coerce').astype('Int64')
+
+    colunas = [
+        "PARLAMENTAR",
+        "ANO DA EMENDA",
+        "TEMÁTICA",
+        "IMPEDIMENTO TÉCNICO",
+        "INVESTIMENTO TOTAL PREVISTO",
+        "MUNICÍPIOS",
+        "EMPENHO 2025",
+        "LIQUIDAÇÃO 2025",
+        "PAGAMENTO 2025",
+    ]
+
+    # Seleciona somente 2025 e apenas as colunas desejadas
+    df_csv = df_filtrado[df_filtrado[ano_col] == 2025][colunas]
+
+    # Gera CSV em memória (sep=';' e BOM p/ Excel)
+    csv_buffer = io.StringIO()
+    df_csv.to_csv(csv_buffer, index=False, sep=';')
+    csv_text = '\ufeff' + csv_buffer.getvalue()  # BOM UTF-8
+    csv_bytes = csv_text.encode('utf-8')
+    csv_b64 = base64.b64encode(csv_bytes).decode('ascii')
 
     return JsonResponse({
         'nome': nome,
         'investimento_total': f"R$ {investimento_total:,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.'),
         'liquidado_total': f"R$ {liquidado_total:,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.'),
         'impedimentos': impedimentos,
+        'csv': {
+            'filename': f"emendas_{id_parlamentar}_2025.csv",
+            'mimetype': 'text/csv; charset=utf-8',
+            'encoding': 'base64',
+            'content': csv_b64
+        }
     }, json_dumps_params={"ensure_ascii": False})
+
 
 
 def resumo_emendas_municipios(request, cd_mun):
