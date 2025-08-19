@@ -1,7 +1,7 @@
 from django.shortcuts import render,redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.csrf import csrf_exempt
-from django.views.decorators.http import require_POST
+from django.views.decorators.http import require_POST, require_http_methods
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib import messages, auth
 from django.conf import settings
@@ -11,6 +11,7 @@ from django.contrib.auth.tokens import default_token_generator
 from django.utils.http import urlsafe_base64_encode
 from django.utils import dateformat, timezone
 from django.utils.timezone import now
+from urllib.request import Request, urlopen
 from django.urls import reverse
 import random
 import string
@@ -3665,47 +3666,60 @@ def top_municipios_emendas(request):
     return JsonResponse({'top10': resultado}, json_dumps_params={'ensure_ascii': False})
 
 
+# Se preferir, mova essa URL para settings.py como EMENDAS_CSV_URL
+EMENDAS_CSV_URL = (
+    "https://docs.google.com/spreadsheets/d/1MwwFDqkmlXjtImorlUGoSaccADrkmrwUfiW6FvtcFsc/export?format=csv&gid=0"
+)
+
 @csrf_exempt
-@require_POST
-def upload_emendas_csv(request):
+@require_http_methods(["GET", "POST"])  # aceita GET ou POST (mais simples para o n8n)
+def update_emendas_csv(request):
     """
-    Recebe um CSV (campo 'file' ou 'csv') e salva em MEDIA_ROOT como 'emendas.csv'.
-    - Se já existir, sobrescreve (sem criar backup).
-    - Escrita atômica: grava em temp e faz os.replace.
+    Baixa o CSV público do Google Sheets e salva em MEDIA_ROOT/emendas.csv
+    - Sobrescreve o arquivo existente de forma atômica (os.replace).
+    - Não recebe arquivo no corpo da requisição.
     """
-    upload = request.FILES.get('file') or request.FILES.get('csv')
-    if not upload:
-        return HttpResponseBadRequest('Arquivo não enviado. Use o campo "file" (multipart/form-data).')
-
-    if not upload.name.lower().endswith('.csv'):
-        return HttpResponseBadRequest('Arquivo deve ser .csv')
-
-    media_root = getattr(settings, 'MEDIA_ROOT')
+    media_root = getattr(settings, "MEDIA_ROOT", "media")
     os.makedirs(media_root, exist_ok=True)
 
-    final_path = os.path.join(media_root, 'emendas.csv')
-    tmp_path = os.path.join(media_root, f'.emendas.csv.tmp-{uuid.uuid4().hex}')
+    final_path = os.path.join(media_root, "emendas.csv")
+    tmp_path = os.path.join(media_root, f".emendas.csv.tmp-{uuid.uuid4().hex}")
+
+    # Requisição HTTP simples usando urllib (sem dependências externas)
+    req = Request(
+        EMENDAS_CSV_URL,
+        headers={
+            "User-Agent": "Mozilla/5.0",
+            "Accept": "text/csv, */*;q=0.1",
+        },
+        method="GET",
+    )
 
     try:
-        # grava no temporário
-        with open(tmp_path, 'wb') as dest:
-            for chunk in upload.chunks():
+        with urlopen(req, timeout=30) as resp, open(tmp_path, "wb") as dest:
+            # Status check (em versões mais novas de Python resp.status existe)
+            status = getattr(resp, "status", 200)
+            if status != 200:
+                return JsonResponse({"ok": False, "error": f"HTTP {status} ao baixar CSV"}, status=502)
+
+            # Stream em chunks para arquivo temporário
+            while True:
+                chunk = resp.read(1024 * 64)
+                if not chunk:
+                    break
                 dest.write(chunk)
 
-        # substitui de forma atômica (sobrescreve se existir)
+        # Substitui de forma atômica (sobrescreve se já existir)
         os.replace(tmp_path, final_path)
 
+        size = os.path.getsize(final_path)
+        return JsonResponse({"ok": True, "saved_as": "emendas.csv", "bytes": size})
+
     except Exception as e:
-        # limpeza do temporário se algo falhar
+        # Limpa temporário se algo falhar
         try:
             if os.path.exists(tmp_path):
                 os.remove(tmp_path)
         except Exception:
             pass
-        return JsonResponse({"ok": False, "error": f"Falha ao salvar: {e}"}, status=500)
-
-    return JsonResponse({
-        "ok": True,
-        "saved_as": "emendas.csv",
-        "overwritten": True
-    })
+        return JsonResponse({"ok": False, "error": f"Falha ao atualizar: {e}"}, status=500)

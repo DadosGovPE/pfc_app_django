@@ -66,7 +66,7 @@ urlpatterns = [
     path('api/emendas/resumo/municipios/<int:cd_mun>/', views.resumo_emendas_municipios, name='resumo_emendas_municipios'),
     path('api/emendas/top-deputados/', views.top_deputados_emendas, name='top_deputados_emendas'),
     path('api/emendas/top-municipios/', views.top_municipios_emendas, name='top_municipios_emendas'),
-    path('api/upload-emendas/', views.upload_emendas_csv, name='upload_emendas_csv'),
+    path("api/update-emendas/", views.update_emendas_csv, name="update_emendas_csv"),
 
 ]   
 
