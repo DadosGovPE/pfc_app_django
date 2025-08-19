@@ -3559,7 +3559,7 @@ def resumo_emendas(request, id_parlamentar):
         'liquidado_total': f"R$ {liquidado_total:,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.'),
         'impedimentos': impedimentos,
         'csv': {
-            'filename': f"emendas_{id_parlamentar}_2025.csv",
+            'filename': f"emendas_{nome}_2025.csv",
             'mimetype': 'text/csv; charset=utf-8',
             'encoding': 'base64',
             'content': csv_b64
