@@ -3509,6 +3509,7 @@ def resumo_emendas(request, id_parlamentar):
         return JsonResponse({'erro': 'Parlamentar não encontrado'}, status=404, json_dumps_params={"ensure_ascii": False})
 
     nome = df_filtrado['PARLAMENTAR'].iloc[0]
+    df_filtrado = df_filtrado[df_filtrado['ANO DA EMENDA']==2025]
 
     # Função para converter valores com vírgula em float
     def parse_valor(valor):
@@ -3519,6 +3520,7 @@ def resumo_emendas(request, id_parlamentar):
             return float(valor)
         except ValueError:
             return 0.0
+
 
     investimento_total = df_filtrado['INVESTIMENTO PREVISTO 2025'].apply(parse_valor).sum()
     liquidado_total = df_filtrado['LIQUIDAÇÃO 2025'].apply(parse_valor).sum()
