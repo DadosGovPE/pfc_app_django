@@ -1,7 +1,7 @@
 from django.shortcuts import render,redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.csrf import csrf_exempt
-from django.views.decorators.http import require_POST, require_http_methods
+from django.views.decorators.http import require_POST, require_http_methods, require_GET
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib import messages, auth
 from django.conf import settings
@@ -3573,37 +3573,88 @@ def resumo_emendas(request, id_parlamentar):
 
 
 
-def resumo_emendas_municipios(request, cd_mun):
-    caminho_csv = os.path.join('media', 'emendas.csv')
+@csrf_exempt
+@require_GET
+def resumo_emendas_municipio(request, cd_mun: int):
+    """
+    Lê /media/emendas.csv, filtra ANO==2025 e CD_MUNICIPIO==cd_mun,
+    retorna resumo + CSV (base64) das linhas filtradas.
+    """
+    caminho_csv = os.path.join(getattr(settings, 'MEDIA_ROOT', 'media'), 'emendas.csv')
+    if not os.path.exists(caminho_csv):
+        return JsonResponse({"erro": "Arquivo emendas.csv não encontrado em /media"}, status=404)
+
+    # Lê tudo como string para evitar problemas com zeros à esquerda / vírgulas decimais
     df = pd.read_csv(caminho_csv, encoding='utf-8')
-    df_filtrado = df[df['CD_MUNICIPIO'] == cd_mun]
+    
+    # Normaliza colunas esperadas
+    for col in ['CD_MUNICIPIO', 'MUNICÍPIOS']:
+        if col not in df.columns:
+            return JsonResponse({"erro": f"Coluna obrigatória ausente: {col}"}, status=400)
+
+    # Filtro do ano (se existir a coluna ANO)
+    if 'ANO DA EMENDA' in df.columns:
+        # df['ANO DA EMENDA'] = df['ANO DA EMENDA'].astype(str).str.extract(r'(\d{4})', expand=False)
+        df = df[df['ANO DA EMENDA'] == 2025]
+    # Garante comparação como string
+    df['CD_MUNICIPIO'] = df['CD_MUNICIPIO'].astype(str)
+    df_filtrado = df[df['CD_MUNICIPIO'] == str(cd_mun)]
 
     if df_filtrado.empty:
-        return JsonResponse({'erro': 'Município não encontrado'}, status=404)
+        return JsonResponse(
+            {'erro': 'Município não encontrado ou sem registros para 2025'},
+            status=404,
+            json_dumps_params={"ensure_ascii": False}
+        )
 
-    nome = df_filtrado['MUNICÍPIOS'].iloc[0]
+    nome = df_filtrado['MUNICÍPIOS'].dropna().iloc[0]
 
     def parse_valor(valor):
         if pd.isna(valor):
             return 0.0
-        valor = str(valor).replace('.', '').replace(',', '.')
+        s = str(valor).strip()
+        if not s:
+            return 0.0
+        # pt-BR -> float
+        s = s.replace('.', '').replace(',', '.')
         try:
-            return float(valor)
-        except ValueError:
+            return float(s)
+        except Exception:
             return 0.0
 
-    investimento_total = df_filtrado['INVESTIMENTO PREVISTO 2025'].apply(parse_valor).sum()
-    liquidado_total = df_filtrado['LIQUIDAÇÃO 2025'].apply(parse_valor).sum()
+    def moeda_pt(valor_float: float) -> str:
+        return f"R$ {valor_float:,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.')
 
-    # Garantir que valores nulos não quebrem .str.upper()
-    impedimentos = df_filtrado[df_filtrado['IMPEDIMENTO TÉCNICO'].fillna('').str.upper() == 'SIM'].shape[0]
+    col_inv = 'INVESTIMENTO PREVISTO 2025'
+    col_liq = 'LIQUIDAÇÃO 2025'
+    col_imp = 'IMPEDIMENTO TÉCNICO'
 
-    return JsonResponse({
-        'nome': nome,
-        'investimento_total': f"R$ {investimento_total:,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.'),
-        'liquidado_total': f"R$ {liquidado_total:,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.'),
-        'impedimentos': impedimentos,
-    }, json_dumps_params={"ensure_ascii": False})
+    investimento_total = df_filtrado[col_inv].apply(parse_valor).sum() if col_inv in df_filtrado.columns else 0.0
+    liquidado_total   = df_filtrado[col_liq].apply(parse_valor).sum() if col_liq in df_filtrado.columns else 0.0
+    impedimentos = (
+        df_filtrado[col_imp].fillna('').astype(str).str.upper().eq('SIM').sum()
+        if col_imp in df_filtrado.columns else 0
+    )
+
+    # Gera CSV (apenas as linhas filtradas)
+    buf = io.StringIO()
+    df_filtrado.to_csv(buf, index=False, encoding='utf-8')
+    csv_bytes = buf.getvalue().encode('utf-8')
+    csv_b64 = base64.b64encode(csv_bytes).decode('ascii')
+
+    return JsonResponse(
+        {
+            'nome': nome,
+            'investimento_total': moeda_pt(investimento_total),
+            'liquidado_total': moeda_pt(liquidado_total),
+            'impedimentos': int(impedimentos),
+            # payload para o n8n enviar como documento
+            'csv_filename': f"emendas_municipio_{nome}_2025.csv",
+            'csv_mimetype': "text/csv",
+            'csv_b64': csv_b64,
+        },
+        json_dumps_params={"ensure_ascii": False}
+    )
 
 
 
