@@ -3636,9 +3636,26 @@ def resumo_emendas_municipio(request, cd_mun: int):
         if col_imp in df_filtrado.columns else 0
     )
 
-    # Gera CSV (apenas as linhas filtradas)
+        # ------ SOMENTE AS COLUNAS PEDIDAS NO CSV ------
+    colunas_desejadas = [
+        "PARLAMENTAR",
+        "ANO DA EMENDA",
+        "TEMÁTICA",
+        "IMPEDIMENTO TÉCNICO",
+        "INVESTIMENTO TOTAL PREVISTO",
+        "MUNICÍPIOS",
+        "EMPENHO 2025",
+        "LIQUIDAÇÃO 2025",
+        "PAGAMENTO 2025",
+    ]
+    disponiveis = [c for c in colunas_desejadas if c in df_filtrado.columns]
+    ausentes = [c for c in colunas_desejadas if c not in df_filtrado.columns]
+
+    df_csv = df_filtrado[disponiveis].copy()
+
+    # CSV → base64
     buf = io.StringIO()
-    df_filtrado.to_csv(buf, index=False, encoding='utf-8')
+    df_csv.to_csv(buf, index=False)  # StringIO já é texto; depois codificamos para utf-8
     csv_bytes = buf.getvalue().encode('utf-8')
     csv_b64 = base64.b64encode(csv_bytes).decode('ascii')
 
@@ -3657,7 +3674,9 @@ def resumo_emendas_municipio(request, cd_mun: int):
                 'mimetype': 'text/csv',
                 'encoding': 'base64',
                 'content': csv_b64
-            }
+            },
+            'csv_columns_used': disponiveis,
+            'csv_columns_missing': ausentes,
         },
         json_dumps_params={"ensure_ascii": False}
     )
