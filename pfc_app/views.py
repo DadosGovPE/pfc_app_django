@@ -3687,6 +3687,7 @@ def top_deputados_emendas(request):
     caminho_csv = os.path.join('media', 'emendas.csv')
     df = pd.read_csv(caminho_csv, encoding='utf-8')
 
+    df['ID_PARLAMENTAR'] = df['ID_PARLAMENTAR'].astype(str).str.strip()
     # Função para converter valores monetários
     def parse_valor(valor):
         if pd.isna(valor):
@@ -3698,7 +3699,14 @@ def top_deputados_emendas(request):
             return 0.0
 
     df['valor'] = df['LIQUIDAÇÃO 2025'].apply(parse_valor)
-    df_group = df.groupby(['PARLAMENTAR'])['valor'].sum().reset_index()
+    # df_group = df.groupby(['PARLAMENTAR'])['valor'].sum().reset_index()
+    df_group = (
+        df.groupby('ID_PARLAMENTAR', as_index=False)
+        .agg({
+            'valor': 'sum',
+            'PARLAMENTAR': 'first'   # ou 'last' se preferir
+        })
+    )
 
     df_group = df_group.sort_values(by='valor', ascending=False).head(10)
 
