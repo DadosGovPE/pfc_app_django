@@ -3553,9 +3553,9 @@ def resumo_emendas(request, id_parlamentar):
 
     # Gera CSV em memória (sep=';' e BOM p/ Excel)
     csv_buffer = io.StringIO()
-    df_csv.to_csv(csv_buffer, index=False, sep=';')
+    df_csv.to_csv(csv_buffer, index=False, sep=';', encoding="utf-8-sig")
     csv_text = '\ufeff' + csv_buffer.getvalue()  # BOM UTF-8
-    csv_bytes = csv_text.encode('utf-8')
+    csv_bytes = csv_text.encode('utf-8-sig')
     csv_b64 = base64.b64encode(csv_bytes).decode('ascii')
 
     return JsonResponse({
@@ -3655,8 +3655,8 @@ def resumo_emendas_municipio(request, cd_mun: int):
 
     # CSV → base64
     buf = io.StringIO()
-    df_csv.to_csv(buf, index=False)  # StringIO já é texto; depois codificamos para utf-8
-    csv_bytes = buf.getvalue().encode('utf-8')
+    df_csv.to_csv(buf, index=False, encoding="utf-8-sig")  # StringIO já é texto; depois codificamos para utf-8
+    csv_bytes = buf.getvalue().encode('utf-8-sig')
     csv_b64 = base64.b64encode(csv_bytes).decode('ascii')
 
     return JsonResponse(
