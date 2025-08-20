@@ -3512,7 +3512,7 @@ def resumo_emendas(request, id_parlamentar):
         return JsonResponse({'erro': 'Parlamentar não encontrado'}, status=404, json_dumps_params={"ensure_ascii": False})
 
     nome = df_filtrado['PARLAMENTAR'].iloc[0]
-    df_filtrado = df_filtrado[df_filtrado['ANO DA EMENDA']==2025]
+    # df_filtrado = df_filtrado[df_filtrado['ANO DA EMENDA']==2025]
 
     # Função para converter valores com vírgula em float
     def parse_valor(valor):
@@ -3533,8 +3533,8 @@ def resumo_emendas(request, id_parlamentar):
 
     # ===== CSV embutido (filtrado por ANO DA EMENDA = 2025) =====
     # Normaliza o tipo do ano (caso venha como string)
-    ano_col = 'ANO DA EMENDA'
-    df_filtrado[ano_col] = pd.to_numeric(df_filtrado[ano_col], errors='coerce').astype('Int64')
+    # ano_col = 'ANO DA EMENDA'
+    # df_filtrado[ano_col] = pd.to_numeric(df_filtrado[ano_col], errors='coerce').astype('Int64')
 
     colunas = [
         "PARLAMENTAR",
@@ -3549,7 +3549,7 @@ def resumo_emendas(request, id_parlamentar):
     ]
 
     # Seleciona somente 2025 e apenas as colunas desejadas
-    df_csv = df_filtrado[df_filtrado[ano_col] == 2025][colunas]
+    df_csv = df_filtrado[colunas]
 
     # Gera CSV em memória (sep=';' e BOM p/ Excel)
     csv_buffer = io.StringIO()
@@ -3593,9 +3593,9 @@ def resumo_emendas_municipio(request, cd_mun: int):
             return JsonResponse({"erro": f"Coluna obrigatória ausente: {col}"}, status=400)
 
     # Filtro do ano (se existir a coluna ANO)
-    if 'ANO DA EMENDA' in df.columns:
+    # if 'ANO DA EMENDA' in df.columns:
         # df['ANO DA EMENDA'] = df['ANO DA EMENDA'].astype(str).str.extract(r'(\d{4})', expand=False)
-        df = df[df['ANO DA EMENDA'] == 2025]
+    #    df = df[df['ANO DA EMENDA'] == 2025]
     # Garante comparação como string
     df['CD_MUNICIPIO'] = df['CD_MUNICIPIO'].astype(str)
     df_filtrado = df[df['CD_MUNICIPIO'] == str(cd_mun)]
