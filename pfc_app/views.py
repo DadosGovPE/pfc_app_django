@@ -3717,6 +3717,7 @@ def top_municipios_emendas(request):
     caminho_csv = os.path.join('media', 'emendas.csv')
     df = pd.read_csv(caminho_csv, encoding='utf-8')
 
+    df['CD_MUNICIPIO'] = df['CD_MUNICIPIO'].astype(str).str.strip()
     def parse_valor(valor):
         if pd.isna(valor):
             return 0.0
@@ -3727,7 +3728,14 @@ def top_municipios_emendas(request):
             return 0.0
 
     df['valor'] = df['LIQUIDAÇÃO 2025'].apply(parse_valor)
-    df_group = df.groupby(['MUNICÍPIOS'])['valor'].sum().reset_index()
+    # Agrupa só pelo código, pega o primeiro nome que aparecer
+    df_group = (
+        df.groupby('CD_MUNICIPIO', as_index=False)
+        .agg({
+            'valor': 'sum',
+            'MUNICÍPIOS': 'first'   # ou 'last' se preferir
+        })
+    )
 
     df_group = df_group.sort_values(by='valor', ascending=False).head(10)
 
