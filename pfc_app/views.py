@@ -228,6 +228,9 @@ def registrar(request):
         messages.error(request, f'Celular precisa ter o DDD mais 9 números!')
         return render(request, 'pfc_app/registrar.html', context)
     
+    if UserCadastro.objects.filter(cpf=cpf).exists():
+        messages.error(request, f'❌ Atenção você foi bloqueado por múltiplas tentativas!')
+        return render(request, 'pfc_app/registrar.html', context)
 
     send_mail('Solicitação de cadastro', 
               f'Nome:{nome}\n '
