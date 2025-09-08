@@ -3367,33 +3367,44 @@ def carga_horaria_por_cpf(request):
         if hoje < data_corte:
             data_corte = date(ano_base - 1, 3, 1)
 
-        inscricoes = Inscricao.objects.filter(
-            ~Q(status__nome='CANCELADA'),
-            ~Q(status__nome='EM FILA'),
-            Q(curso__status__nome='FINALIZADO'),
-            Q(concluido=True),
-            participante=usuario,
-            curso__data_termino__gte=data_corte
+        # INSCRIÇÕES PFC (apenas 1 vez por curso no ciclo)
+        inscricoes_qs = (
+            Inscricao.objects.filter(
+                ~Q(status__nome='CANCELADA'),
+                ~Q(status__nome='EM FILA'),
+                Q(curso__status__nome='FINALIZADO'),
+                Q(concluido=True),
+                participante=usuario,
+                curso__data_termino__gte=data_corte,
+            )
+            .values('curso__nome_curso')                      # agrupa por curso
+            .annotate(ch_por_curso=Max('ch_valida')) # pega a CH por curso (se houver duplicadas, usa a maior)
         )
 
-        carga_pfc = sum(i.ch_valida or 0 for i in inscricoes)
+        # carga_pfc = sum(i.ch_valida or 0 for i in inscricoes)
+        carga_pfc = sum(row['ch_por_curso'] or 0 for row in inscricoes_qs)
 
         status_validacoes = StatusValidacao.objects.filter(
             nome__in=["DEFERIDA", "DEFERIDA PARCIALMENTE"]
         )
 
-        validacoes = Validacao_CH.objects.filter(usuario=usuario, 
+        validacoes_qs  = Validacao_CH.objects.filter(usuario=usuario, 
                                                  data_termino_curso__gte=data_corte,
                                            status__in=status_validacoes)
         
-        carga_validacoes = sum(i.ch_confirmada or 0 for i in validacoes)
+        # carga_validacoes = sum(i.ch_confirmada or 0 for i in validacoes)
+        carga_validacoes = sum(v.ch_confirmada or 0 for v in validacoes_qs)
 
-        carga_total = carga_pfc + carga_validacoes
+        carga_total = (carga_pfc or 0) + (carga_validacoes or 0)
 
         return JsonResponse({
             "nome": usuario.nome,
             "cpf": usuario.cpf,
             "carga_horaria_total": carga_total,
+            "detalhe": {
+                "pfc": carga_pfc,
+                "validacoes_externas": carga_validacoes,
+            },
             "periodo": f"{data_corte.strftime('%d/%m/%Y')} até hoje"
         })
 
