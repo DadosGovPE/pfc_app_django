@@ -24,72 +24,80 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 # SECURITY WARNING: keep the secret key used in production secret!
 load_dotenv()
-SECRET_KEY = os.getenv('DJANGO_SECRET_KEY')
+SECRET_KEY = os.getenv("DJANGO_SECRET_KEY")
 
 # SECURITY WARNING: don't run with debug turned on in production!
-if os.getenv('ENVIROMENT')=='DEV':
+if os.getenv("ENVIROMENT") == "DEV":
     DEBUG = True
 else:
     DEBUG = False
 
-CSRF_TRUSTED_ORIGINS = ['https://*.seplag.pe.gov.br','http://*.seplag.pe.gov.br', 'https://*.127.0.0.1','http://10.238.75.122' ,'https://10.238.75.122']
-ALLOWED_HOSTS = ['*']
+CSRF_TRUSTED_ORIGINS = [
+    "https://*.seplag.pe.gov.br",
+    "http://*.seplag.pe.gov.br",
+    "https://*.127.0.0.1",
+    "http://10.238.75.122",
+    "https://10.238.75.122",
+]
+ALLOWED_HOSTS = ["*"]
 CSRF_COOKIE_SECURE = False
 
+JWT_SECRET = os.getenv("JWT_SECRET")  # mesma do PFC ou chave pública se RS256
+JWT_ALGORITHM = os.getenv("JWT_ALGORITHM")
 
 # Application definition
 
 INSTALLED_APPS = [
-    'jazzmin',
-    'django.contrib.admin',
-    'django.contrib.auth',
-    'django.contrib.contenttypes',
-    'django.contrib.sessions',
-    'django.contrib.messages',
-    'django.contrib.staticfiles',
-    'pfc_app',
-    'bootstrap5',
-    'django_static_fontawesome',
-    'mathfilters',
-    'explorer',
-    'django_filters',
-    'simple_history',
-    'pesquisas',
+    "jazzmin",
+    "django.contrib.admin",
+    "django.contrib.auth",
+    "django.contrib.contenttypes",
+    "django.contrib.sessions",
+    "django.contrib.messages",
+    "django.contrib.staticfiles",
+    "pfc_app",
+    "bootstrap5",
+    "django_static_fontawesome",
+    "mathfilters",
+    "explorer",
+    "django_filters",
+    "simple_history",
+    "pesquisas",
 ]
 
 MIDDLEWARE = [
-    'django.middleware.security.SecurityMiddleware',
-    'django.contrib.sessions.middleware.SessionMiddleware',
-    'django.middleware.common.CommonMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware',
-    'django.contrib.auth.middleware.AuthenticationMiddleware',
-    'django.contrib.messages.middleware.MessageMiddleware',
-    'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'pfc_app_django.middleware.LogUsernameMiddleware',
-    'simple_history.middleware.HistoryRequestMiddleware',
+    "django.middleware.security.SecurityMiddleware",
+    "django.contrib.sessions.middleware.SessionMiddleware",
+    "django.middleware.common.CommonMiddleware",
+    "django.middleware.csrf.CsrfViewMiddleware",
+    "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "django.contrib.messages.middleware.MessageMiddleware",
+    "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "pfc_app_django.middleware.LogUsernameMiddleware",
+    "simple_history.middleware.HistoryRequestMiddleware",
 ]
 
-ROOT_URLCONF = 'pfc_app_django.urls'
+ROOT_URLCONF = "pfc_app_django.urls"
 
 TEMPLATES = [
     {
-        'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': ['templates'],
-        'APP_DIRS': True,
-        'OPTIONS': {
-            'context_processors': [
-                'django.template.context_processors.debug',
-                'django.template.context_processors.request',
-                'django.contrib.auth.context_processors.auth',
-                'django.contrib.messages.context_processors.messages',
-                'pfc_app.context_processors.ajustes_pesquisa_context',
-                'pesquisas.context_processors.pesquisa_aberta',
+        "BACKEND": "django.template.backends.django.DjangoTemplates",
+        "DIRS": ["templates"],
+        "APP_DIRS": True,
+        "OPTIONS": {
+            "context_processors": [
+                "django.template.context_processors.debug",
+                "django.template.context_processors.request",
+                "django.contrib.auth.context_processors.auth",
+                "django.contrib.messages.context_processors.messages",
+                "pfc_app.context_processors.ajustes_pesquisa_context",
+                "pesquisas.context_processors.pesquisa_aberta",
             ],
         },
     },
 ]
 
-WSGI_APPLICATION = 'pfc_app_django.wsgi.application'
+WSGI_APPLICATION = "pfc_app_django.wsgi.application"
 
 
 # Database
@@ -106,13 +114,13 @@ WSGI_APPLICATION = 'pfc_app_django.wsgi.application'
 #     }
 # }
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',#'django.db.backends.sqlite3',
-        'NAME': os.getenv('DJANGO_DATABASE_NAME'),
-        'USER': os.getenv('DJANGO_DATABASE_USER'),
-        'PASSWORD': os.getenv('DJANGO_DATABASE_PW'),
-        'HOST': os.getenv('DJANGO_DATABASE_HOST'),
-        'PORT': os.getenv('DJANGO_DATABASE_PORT'),
+    "default": {
+        "ENGINE": "django.db.backends.postgresql",  #'django.db.backends.sqlite3',
+        "NAME": os.getenv("DJANGO_DATABASE_NAME"),
+        "USER": os.getenv("DJANGO_DATABASE_USER"),
+        "PASSWORD": os.getenv("DJANGO_DATABASE_PW"),
+        "HOST": os.getenv("DJANGO_DATABASE_HOST"),
+        "PORT": os.getenv("DJANGO_DATABASE_PORT"),
     }
 }
 
@@ -128,16 +136,16 @@ CACHES = {
 
 AUTH_PASSWORD_VALIDATORS = [
     {
-        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
+        "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator",
     },
     {
-        'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
+        "NAME": "django.contrib.auth.password_validation.MinimumLengthValidator",
     },
     {
-        'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
+        "NAME": "django.contrib.auth.password_validation.CommonPasswordValidator",
     },
     {
-        'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
+        "NAME": "django.contrib.auth.password_validation.NumericPasswordValidator",
     },
 ]
 
@@ -145,54 +153,53 @@ AUTH_PASSWORD_VALIDATORS = [
 # Internationalization
 # https://docs.djangoproject.com/en/4.2/topics/i18n/
 
-LANGUAGE_CODE = 'pt-BR'
+LANGUAGE_CODE = "pt-BR"
 
-TIME_ZONE = 'America/Sao_Paulo'
+TIME_ZONE = "America/Sao_Paulo"
 
 USE_I18N = True
 
 USE_TZ = True
 
-DATE_FORMAT = 'd/m/Y'
+DATE_FORMAT = "d/m/Y"
 
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/4.2/howto/static-files/
 
-STATIC_URL = 'static/'
-STATIC_ROOT = os.path.join(BASE_DIR, 'static')
+STATIC_URL = "static/"
+STATIC_ROOT = os.path.join(BASE_DIR, "static")
 # STATICFILES_DIRS = [
 #         BASE_DIR / "static/css/"
 #     ]
 
 
-MEDIA_URL = '/media/'
-MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+MEDIA_URL = "/media/"
+MEDIA_ROOT = os.path.join(BASE_DIR, "media")
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
 
-DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-AUTH_USER_MODEL = 'pfc_app.User'
+AUTH_USER_MODEL = "pfc_app.User"
 
 MESSAGE_TAGS = {
-    constants.ERROR: 'alert-danger',
-    constants.WARNING: 'alert-warning',
-    constants.DEBUG: 'alert-info',
-    constants.SUCCESS: 'alert-success',
-    constants.INFO: 'alert-info',
+    constants.ERROR: "alert-danger",
+    constants.WARNING: "alert-warning",
+    constants.DEBUG: "alert-info",
+    constants.SUCCESS: "alert-success",
+    constants.INFO: "alert-info",
 }
 
 # Configurações de E-mail
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = os.getenv('EMAIL_HOST')
-EMAIL_PORT = os.getenv('EMAIL_PORT')
-EMAIL_USE_TLS = os.getenv('EMAIL_USE_TLS')
-EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER')
-EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')
-DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL')
-
+EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+EMAIL_HOST = os.getenv("EMAIL_HOST")
+EMAIL_PORT = os.getenv("EMAIL_PORT")
+EMAIL_USE_TLS = os.getenv("EMAIL_USE_TLS")
+EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER")
+EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD")
+DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL")
 
 
 JAZZMIN_SETTINGS = {
@@ -200,22 +207,17 @@ JAZZMIN_SETTINGS = {
     "welcome_sign": "Bem-vindo",
     "site_icon": "pfc_app/logos/IG.png",
     "site_logo": "pfc_app/logos/IG.png",
-    
     "topmenu_links": [
-
         # Url that gets reversed (Permissions can be added)
-        {"name": "Voltar à área do Usuário",  "url": "lista_cursos"},
-
+        {"name": "Voltar à área do Usuário", "url": "lista_cursos"},
         # App with dropdown menu to all its models pages (Permissions checked against models)
         {"app": "pfc_app"},
     ],
-    
-    
 }
 
 
-EXPLORER_CONNECTIONS = { 'Default': 'default' }
-EXPLORER_DEFAULT_CONNECTION = 'default'
+EXPLORER_CONNECTIONS = {"Default": "default"}
+EXPLORER_DEFAULT_CONNECTION = "default"
 
 
 # LOGGING = {
@@ -235,4 +237,3 @@ EXPLORER_DEFAULT_CONNECTION = 'default'
 #         },
 #     },
 # }
-
