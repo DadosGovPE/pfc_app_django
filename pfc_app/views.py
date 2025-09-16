@@ -317,7 +317,7 @@ def registrar(request):
 
     if UserCadastro.objects.filter(cpf=cpf).exists():
         messages.error(
-            request, f"❌ Atenção você foi bloqueado por múltiplas tentativas!"
+            request, f"❌ Atenção! Você foi BLOQUEADO por múltiplas tentativas!"
         )
         return render(request, "pfc_app/registrar.html", context)
 
