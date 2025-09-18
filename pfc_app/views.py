@@ -241,6 +241,7 @@ def api_authenticate(request):
     payload = {
         "sub": str(user.id),
         "cpf": user.cpf,
+        "username": user.username,
         "email": user.email,
         "name": user.get_full_name(),
         "iat": now(),
