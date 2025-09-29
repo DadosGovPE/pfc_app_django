@@ -4064,10 +4064,10 @@ def buscar_parlamentares(request):
 
     try:
         caminho_csv = os.path.join(settings.BASE_DIR, "media", "emendas.csv")
-        df = pd.read_csv(caminho_csv)
+        df = pd.read_csv(caminho_csv, encoding="utf-8", skiprows=1)
 
         # Normaliza os nomes no dataframe
-        df["parlamentar_normalizado"] = df["PARLAMENTAR"].apply(normalizar)
+        df["parlamentar_normalizado"] = df["AUTOR"].apply(normalizar)
 
         # Normaliza o nome de busca
         nome_normalizado = normalizar(nome_param)
@@ -4079,7 +4079,7 @@ def buscar_parlamentares(request):
 
         # Remove duplicados
         parlamentares_unicos = df_filtrado[
-            ["PARLAMENTAR", "ID_PARLAMENTAR"]
+            ["AUTOR", "CD_PARLAMENTAR"]
         ].drop_duplicates()
 
         return JsonResponse(
@@ -4110,10 +4110,10 @@ def buscar_municipios(request):
 
     try:
         caminho_csv = os.path.join(settings.BASE_DIR, "media", "emendas.csv")
-        df = pd.read_csv(caminho_csv)
+        df = pd.read_csv(caminho_csv, encoding="utf-8", skiprows=1)
 
         # Normaliza os nomes no dataframe
-        df["municipio_normalizado"] = df["MUNICÍPIOS"].apply(normalizar)
+        df["municipio_normalizado"] = df["MUNICÍPIO"].apply(normalizar)
 
         # Normaliza o nome de busca
         nome_normalizado = normalizar(nome_param)
@@ -4146,10 +4146,10 @@ from django.http import JsonResponse
 
 def resumo_emendas(request, id_parlamentar):
     caminho_csv = os.path.join("media", "emendas.csv")
-    df = pd.read_csv(caminho_csv, encoding="utf-8")
+    df = pd.read_csv(caminho_csv, encoding="utf-8", skiprows=1)
 
     # Filtra pelo parlamentar
-    df_filtrado = df[df["ID_PARLAMENTAR"] == id_parlamentar]
+    df_filtrado = df[df["CD_PARLAMENTAR"] == id_parlamentar]
     if df_filtrado.empty:
         return JsonResponse(
             {"erro": "Parlamentar não encontrado"},
@@ -4157,7 +4157,7 @@ def resumo_emendas(request, id_parlamentar):
             json_dumps_params={"ensure_ascii": False},
         )
 
-    nome = df_filtrado["PARLAMENTAR"].iloc[0]
+    nome = df_filtrado["AUTOR"].iloc[0]
     # df_filtrado = df_filtrado[df_filtrado['ANO DA EMENDA']==2025]
 
     # Função para converter valores com vírgula em float
@@ -4171,9 +4171,9 @@ def resumo_emendas(request, id_parlamentar):
             return 0.0
 
     investimento_total = (
-        df_filtrado["INVESTIMENTO PREVISTO 2025"].apply(parse_valor).sum()
+        df_filtrado["INVESTIMENTO TOTAL PREVISTO (ANO EMENDA)"].apply(parse_valor).sum()
     )
-    liquidado_total = df_filtrado["LIQUIDAÇÃO 2025"].apply(parse_valor).sum()
+    liquidado_total = df_filtrado["LIQUIDAÇÃO DO ANO CORRENTE"].apply(parse_valor).sum()
 
     # Impedimentos (tratando NaN)
     impedimentos = df_filtrado[
@@ -4186,15 +4186,15 @@ def resumo_emendas(request, id_parlamentar):
     # df_filtrado[ano_col] = pd.to_numeric(df_filtrado[ano_col], errors='coerce').astype('Int64')
 
     colunas = [
-        "PARLAMENTAR",
-        "ANO DA EMENDA",
-        "TEMÁTICA",
+        "AUTOR",
+        "ANO",
+        "TEMÁTICA (FUNÇÃO)",
         "IMPEDIMENTO TÉCNICO",
-        "INVESTIMENTO PREVISTO 2025",
-        "MUNICÍPIOS",
-        "EMPENHO 2025",
-        "LIQUIDAÇÃO 2025",
-        "PAGAMENTO 2025",
+        "INVESTIMENTO TOTAL PREVISTO (ANO EMENDA)",
+        "MUNICÍPIO",
+        "EMPENHO DO ANO CORRENTE",
+        "LIQUIDAÇÃO DO ANO CORRENTE",
+        "PAGO DO ANO CORRENTE",
     ]
 
     # Seleciona somente 2025 e apenas as colunas desejadas
@@ -4242,10 +4242,10 @@ def resumo_emendas_municipio(request, cd_mun: int):
         )
 
     # Lê tudo como string para evitar problemas com zeros à esquerda / vírgulas decimais
-    df = pd.read_csv(caminho_csv, encoding="utf-8")
+    df = pd.read_csv(caminho_csv, encoding="utf-8", skiprows=1)
 
     # Normaliza colunas esperadas
-    for col in ["CD_MUNICIPIO", "MUNICÍPIOS"]:
+    for col in ["CD_MUNICIPIO", "MUNICÍPIO"]:
         if col not in df.columns:
             return JsonResponse(
                 {"erro": f"Coluna obrigatória ausente: {col}"}, status=400
@@ -4266,7 +4266,7 @@ def resumo_emendas_municipio(request, cd_mun: int):
             json_dumps_params={"ensure_ascii": False},
         )
 
-    nome = df_filtrado["MUNICÍPIOS"].dropna().iloc[0]
+    nome = df_filtrado["MUNICÍPIO"].dropna().iloc[0]
 
     def parse_valor(valor):
         if pd.isna(valor):
@@ -4288,8 +4288,8 @@ def resumo_emendas_municipio(request, cd_mun: int):
             .replace("X", ".")
         )
 
-    col_inv = "INVESTIMENTO PREVISTO 2025"
-    col_liq = "LIQUIDAÇÃO 2025"
+    col_inv = "INVESTIMENTO TOTAL PREVISTO (ANO EMENDA)"
+    col_liq = "LIQUIDAÇÃO DO ANO CORRENTE"
     col_imp = "IMPEDIMENTO TÉCNICO"
 
     investimento_total = (
@@ -4310,15 +4310,15 @@ def resumo_emendas_municipio(request, cd_mun: int):
 
     # ------ SOMENTE AS COLUNAS PEDIDAS NO CSV ------
     colunas_desejadas = [
-        "PARLAMENTAR",
-        "ANO DA EMENDA",
-        "TEMÁTICA",
+        "AUTOR",
+        "ANO",
+        "TEMÁTICA (FUNÇÃO)",
         "IMPEDIMENTO TÉCNICO",
-        "INVESTIMENTO PREVISTO 2025",
-        "MUNICÍPIOS",
-        "EMPENHO 2025",
-        "LIQUIDAÇÃO 2025",
-        "PAGAMENTO 2025",
+        "INVESTIMENTO TOTAL PREVISTO (ANO EMENDA)",
+        "MUNICÍPIO",
+        "EMPENHO DO ANO CORRENTE",
+        "LIQUIDAÇÃO DO ANO CORRENTE",
+        "PAGO DO ANO CORRENTE",
     ]
     disponiveis = [c for c in colunas_desejadas if c in df_filtrado.columns]
     ausentes = [c for c in colunas_desejadas if c not in df_filtrado.columns]
@@ -4358,9 +4358,9 @@ def resumo_emendas_municipio(request, cd_mun: int):
 
 def top_deputados_emendas(request):
     caminho_csv = os.path.join("media", "emendas.csv")
-    df = pd.read_csv(caminho_csv, encoding="utf-8")
+    df = pd.read_csv(caminho_csv, encoding="utf-8", skiprows=1)
 
-    df["ID_PARLAMENTAR"] = df["ID_PARLAMENTAR"].astype(str).str.strip()
+    df["CD_PARLAMENTAR"] = df["CD_PARLAMENTAR"].astype(str).str.strip()
 
     # Função para converter valores monetários
     def parse_valor(valor):
@@ -4372,12 +4372,12 @@ def top_deputados_emendas(request):
         except ValueError:
             return 0.0
 
-    df["valor"] = df["LIQUIDAÇÃO 2025"].apply(parse_valor)
+    df["valor"] = df["LIQUIDAÇÃO DO ANO CORRENTE"].apply(parse_valor)
     # df_group = df.groupby(['PARLAMENTAR'])['valor'].sum().reset_index()
-    df_group = df.groupby("ID_PARLAMENTAR", as_index=False).agg(
+    df_group = df.groupby("CD_PARLAMENTAR", as_index=False).agg(
         {
             "valor": "sum",
-            "PARLAMENTAR": "first",  # ou 'last' se preferir
+            "AUTOR": "first",  # ou 'last' se preferir
         }
     )
 
@@ -4385,7 +4385,7 @@ def top_deputados_emendas(request):
 
     resultado = [
         {
-            "nome": row["PARLAMENTAR"],
+            "nome": row["AUTOR"],
             "total_emendas": f"{row['valor']:,.2f}".replace(",", "X")
             .replace(".", ",")
             .replace("X", "."),
@@ -4398,7 +4398,7 @@ def top_deputados_emendas(request):
 
 def top_municipios_emendas(request):
     caminho_csv = os.path.join("media", "emendas.csv")
-    df = pd.read_csv(caminho_csv, encoding="utf-8")
+    df = pd.read_csv(caminho_csv, encoding="utf-8", skiprows=1)
 
     df["CD_MUNICIPIO"] = df["CD_MUNICIPIO"].astype(str).str.strip()
 
@@ -4411,12 +4411,12 @@ def top_municipios_emendas(request):
         except ValueError:
             return 0.0
 
-    df["valor"] = df["LIQUIDAÇÃO 2025"].apply(parse_valor)
+    df["valor"] = df["LIQUIDAÇÃO DO ANO CORRENTE"].apply(parse_valor)
     # Agrupa só pelo código, pega o primeiro nome que aparecer
     df_group = df.groupby("CD_MUNICIPIO", as_index=False).agg(
         {
             "valor": "sum",
-            "MUNICÍPIOS": "first",  # ou 'last' se preferir
+            "MUNICÍPIO": "first",  # ou 'last' se preferir
         }
     )
 
@@ -4424,7 +4424,7 @@ def top_municipios_emendas(request):
 
     resultado = [
         {
-            "municipio": row["MUNICÍPIOS"],
+            "municipio": row["MUNICÍPIO"],
             "total_emendas": f"{row['valor']:,.2f}".replace(",", "X")
             .replace(".", ",")
             .replace("X", "."),
