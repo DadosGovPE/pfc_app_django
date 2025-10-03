@@ -10,7 +10,7 @@
 
 <form method="POST" action="{% url 'votar_cursos' %}">
   {% csrf_token %}
-
+  <input type="hidden" name="ano_ref" value={{ ano_ref }}>
   {% for trilha in trilhas %}
     <div class="mb-4">
       <h4>{{ trilha.nome }}</h4>

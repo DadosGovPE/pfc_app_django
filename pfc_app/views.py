@@ -18,7 +18,7 @@ import string
 import uuid
 from django.utils.encoding import force_bytes
 from django.contrib.auth import update_session_auth_hash
-from django.db import IntegrityError
+from django.db import IntegrityError, transaction
 from django.http import HttpResponse, JsonResponse, HttpResponseBadRequest
 from django.template import loader
 from .models import (
@@ -3294,11 +3294,49 @@ def votar_cursos(request):
     if request.method == "POST":
         try:
             cursos_ids = request.POST.getlist("cursos")
-            cursos_selecionados = PesquisaCursosPriorizados.objects.filter(
-                id__in=cursos_ids
-            )
-            request.user.pesquisa_cursos_priorizados.set(cursos_selecionados)
+            cursos = list(PesquisaCursosPriorizados.objects.filter(id__in=cursos_ids))
+            # cursos_selecionados = PesquisaCursosPriorizados.objects.filter(
+            #     id__in=cursos_ids
+            # )
+            # Garante que todos os selecionados pertencem ao mesmo ano
+
+            ano_form = request.POST.get("ano_ref")
+            if not cursos_ids:
+                if ano_form:
+                    with transaction.atomic():
+                        antigos = request.user.pesquisa_cursos_priorizados.filter(
+                            ano_ref=ano_form
+                        )
+                        if antigos.exists():
+                            request.user.pesquisa_cursos_priorizados.remove(*antigos)
+                    messages.success(
+                        request,
+                        f"Você apagou seus votos do ano de {ano_form}. Caso queira registrar seus votos, volte à pesquisa.",
+                    )
+                else:
+                    messages.warning(request, "Você não selecionou nenhum curso.")
+                return redirect("lista_cursos")
+
+            anos = {c.ano_ref for c in cursos}
+            if len(anos) != 1:
+                messages.error(request, "Selecione cursos de um único ano por vez.")
+                return redirect("lista_cursos")
+
+            ano = next(iter(anos))
+
+            with transaction.atomic():
+                # Remove SOMENTE as escolhas anteriores daquele ano
+                antigos_mesmo_ano = request.user.pesquisa_cursos_priorizados.filter(
+                    ano_ref=ano
+                )
+                if antigos_mesmo_ano.exists():
+                    request.user.pesquisa_cursos_priorizados.remove(*antigos_mesmo_ano)
+
+                # Adiciona as novas escolhas do mesmo ano
+                request.user.pesquisa_cursos_priorizados.add(*cursos)
+
             messages.success(request, f"Priorizações computadas com sucesso!")
+
         except:
             messages.error(request, f"Algo deu errado!")
 
