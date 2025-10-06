@@ -13,7 +13,7 @@
   <input type="hidden" name="ano_ref" value={{ ano_ref }}>
   {% for trilha in trilhas %}
     <div class="mb-4">
-      <h4>{{ trilha.nome }}</h4>
+      <h4>Assinale os cursos do seu interesse na trilha de {{ trilha.nome }}</h4>
       <ul>
         {% for curso in cursos_por_trilha|get_item:trilha %}
           <li>
