@@ -75,4 +75,4 @@ class PriorizacaoRespostaForm(forms.ModelForm):
                 "placeholder": "Escreva aqui suas sugestões, justificativas ou novos cursos desejados..."
             })
         }
-        labels = {"comentario": "Sugestões/Comentários (opcional)"}
+        labels = {"comentario": "Sentiu falta de alguma temática? Então diz pra gente:"}
