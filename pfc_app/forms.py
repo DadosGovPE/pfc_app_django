@@ -1,5 +1,5 @@
 from django import forms
-from .models import Avaliacao, Subtema, User  # Certifique-se de importar o modelo Avaliacao
+from .models import Avaliacao, Subtema, User, PriorizacaoResposta  # Certifique-se de importar o modelo Avaliacao
 from django.forms import FileInput
 
 
@@ -63,3 +63,16 @@ class UsuarioForm(forms.ModelForm):
             'lotacao_fk': forms.Select(attrs={'class': 'custom-select'}),
             'lotacao_especifica_fk': forms.Select(attrs={'class': 'custom-select'}),
         }
+
+
+class PriorizacaoRespostaForm(forms.ModelForm):
+    class Meta:
+        model = PriorizacaoResposta
+        fields = ["comentario"]
+        widgets = {
+            "comentario": forms.Textarea(attrs={
+                "rows": 4,
+                "placeholder": "Escreva aqui suas sugestões, justificativas ou novos cursos desejados..."
+            })
+        }
+        labels = {"comentario": "Sugestões/Comentários (opcional)"}

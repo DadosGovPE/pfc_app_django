@@ -78,8 +78,8 @@
         <p>Nome completo: {{ user.nome }}</p>
         <p>Cargo: {{ user.cargo }}</p>
         <p>Grupo ocupacional: {{ user.grupo_ocupacional }}</p>
-        <p>Lotação: {{ user.lotacao }}</p>
-        <p>Lotação específica: {{ user.lotacao_especifica }}</p>
+        <p>Lotação: {{ user.lotacao_fk.nome }}</p>
+        <p>Lotação específica: {{ user.lotacao_especifica_fk.nome }}</p>
         <!-- adicione outros campos que não são editáveis aqui -->
     
     </div>

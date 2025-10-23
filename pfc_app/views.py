@@ -50,8 +50,9 @@ from .models import (
     AjustesHoraAula,
     StatusCurso,
     UserCadastro,
+    PriorizacaoResposta
 )
-from .forms import AvaliacaoForm, DateFilterForm, UserUpdateForm
+from .forms import AvaliacaoForm, DateFilterForm, UserUpdateForm, PriorizacaoRespostaForm
 from django.db.models import (
     Count,
     Q,
@@ -3278,12 +3279,19 @@ def listar_cursos_priorizados(request):
 
     for curso in cursos:
         cursos_por_trilha[curso.trilha].append(curso)
+    
+    pr, _ = PriorizacaoResposta.objects.get_or_create(
+        user=request.user, ano_ref=ajustes.ano_ref,
+        defaults={"comentario": ""}
+    )
+    form = PriorizacaoRespostaForm(instance=pr)
 
     context = {
         "trilhas": trilhas,
         "cursos_por_trilha": cursos_por_trilha,
         "user_cursos": user_cursos,
         "ano_ref": ajustes.ano_ref,
+        'form_resposta': form,
     }
     return render(request, "pfc_app/pesquisa_priorizacao.html", context)
 
@@ -3292,6 +3300,11 @@ def listar_cursos_priorizados(request):
 def votar_cursos(request):
     """Registra as escolhas do usuário na pesquisa de priorização."""
     if request.method == "POST":
+        ano_atual = datetime.now().year
+        ajustes, _ = AjustesPesquisa.objects.get_or_create(
+            defaults={'nome': 'padrao', 'ano_ref': ano_atual}
+        )
+
         try:
             cursos_ids = request.POST.getlist("cursos")
             cursos = list(PesquisaCursosPriorizados.objects.filter(id__in=cursos_ids))
@@ -3309,6 +3322,17 @@ def votar_cursos(request):
                         )
                         if antigos.exists():
                             request.user.pesquisa_cursos_priorizados.remove(*antigos)
+
+                    pr, _ = PriorizacaoResposta.objects.get_or_create(
+                    user=request.user, ano_ref=ajustes.ano_ref
+                    )
+                    form = PriorizacaoRespostaForm(request.POST, instance=pr)
+                    if form.is_valid():
+                        form.save()
+                    else:
+                        # Não bloqueia as escolhas; apenas informa
+                        messages.warning(request, 'Seu comentário não pôde ser salvo. Verifique o texto e tente novamente.')    
+                        
                     messages.success(
                         request,
                         f"Você apagou seus votos do ano de {ano_form}. Caso queira registrar seus votos, volte à pesquisa.",
@@ -3334,6 +3358,16 @@ def votar_cursos(request):
 
                 # Adiciona as novas escolhas do mesmo ano
                 request.user.pesquisa_cursos_priorizados.add(*cursos)
+
+                pr, _ = PriorizacaoResposta.objects.get_or_create(
+                    user=request.user, ano_ref=ajustes.ano_ref
+                )
+                form = PriorizacaoRespostaForm(request.POST, instance=pr)
+                if form.is_valid():
+                    form.save()
+                else:
+                    # Não bloqueia as escolhas; apenas informa
+                    messages.warning(request, 'Seu comentário não pôde ser salvo. Verifique o texto e tente novamente.')
 
             messages.success(request, f"Priorizações computadas com sucesso!")
 

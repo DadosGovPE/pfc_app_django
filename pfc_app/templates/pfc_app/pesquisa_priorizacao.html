@@ -25,7 +25,12 @@
       </ul>
     </div>
   {% endfor %}
-
+    <div class="mb-3">
+      <label for="{{ form_resposta.comentario.id_for_label }}" class="form-label">
+        {{ form_resposta.comentario.label }}
+      </label>
+      {{ form_resposta.comentario|add_class:"form-control" }}
+    </div>
   <button class="btn btn-success" type="submit">Votar</button>
 </form>
 {% endblock %}

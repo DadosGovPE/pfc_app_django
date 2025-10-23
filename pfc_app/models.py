@@ -148,6 +148,23 @@ class User(AbstractUser):
             # Defina o campo avatar como vazio para garantir que o arquivo não seja salvo novamente
 
 
+class PriorizacaoResposta(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="priorizacao_respostas")
+    ano_ref = models.IntegerField()
+    comentario = models.TextField(blank=True, null=True)
+    created_at = models.DateTimeField(default=timezone.now)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = ("user", "ano_ref")
+        indexes = [
+            models.Index(fields=["user", "ano_ref"]),
+        ]
+
+    def __str__(self):
+        return f"{self.user} - {self.ano_ref}"
+
+
 class UserCadastro(models.Model):
     nome = models.CharField(max_length=400, blank=False, null=False)
     cpf = models.CharField(max_length=11, blank=False, null=False, unique=True)
