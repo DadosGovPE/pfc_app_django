@@ -25,12 +25,17 @@
       </ul>
     </div>
   {% endfor %}
-    <div class="mb-3">
+    <div class="mb-3 col-12 col-md-6">
+      <br/>
       <label for="{{ form_resposta.comentario.id_for_label }}" class="form-label">
-        {{ form_resposta.comentario.label }}
+        <strong>{{ form_resposta.comentario.label }}</strong>
       </label>
       {{ form_resposta.comentario|add_class:"form-control" }}
+      <br/><br/>
+      <strong>Tem interesse em fazer parte do time de instrutores do IGPE? Se sim, clique neste <a href="https://docs.google.com/forms/d/e/1FAIpQLSfeBjvGFLAPpRQLoavw_PLmoLlS4l0cW3U42201GceSCJAq5w/viewform" target="_blank" >link</a>.
+      </strong>
     </div>
+    <br/>
   <button class="btn btn-success" type="submit">Votar</button>
 </form>
 {% endblock %}

@@ -81,9 +81,14 @@
                             <label for="id_fim">Data de fim</label>
                         </div>
                     </div>
-                    <button class='btn btn-primary' type='submit'>
-                        Filtrar
-                    </button>
+                    <div class="d-flex gap-2 mt-2">
+                        <button class="btn btn-primary" type="submit" name="action" value="filter">
+                            Mostrar Apenas CH < 60h
+                        </button>
+                        <button class="btn btn-outline-secondary" type="submit" name="action" value="all">
+                            Mostrar Todos
+                        </button>
+                    </div>
                 </div>
                 </form>
             
@@ -114,7 +119,6 @@
                         <td>{{ usuario.lotacao }}</td>
                         <td>{{ usuario.lotacao_especifica }}</td>
                         <td>{{ usuario.total_ch }}</td>
-
                         <td>{{ usuario.ch_faltante }}</td>
                     </tr>
                     {% endfor %}

@@ -50,9 +50,14 @@ from .models import (
     AjustesHoraAula,
     StatusCurso,
     UserCadastro,
-    PriorizacaoResposta
+    PriorizacaoResposta,
 )
-from .forms import AvaliacaoForm, DateFilterForm, UserUpdateForm, PriorizacaoRespostaForm
+from .forms import (
+    AvaliacaoForm,
+    DateFilterForm,
+    UserUpdateForm,
+    PriorizacaoRespostaForm,
+)
 from django.db.models import (
     Count,
     Q,
@@ -467,6 +472,8 @@ def usuarios_sem_ch(request):
     Realiza subqueries para calcular a soma de horas concluídas em
     inscrições e validações, filtrando por período informado.
     """
+    action = request.GET.get("action", "filter")
+
     # Inicialize o filtro para capturar as datas
     filtro = UserFilter(request.GET, queryset=User.objects.all())
 
@@ -505,6 +512,10 @@ def usuarios_sem_ch(request):
             curso__data_termino__lte=data_fim
         )  # Substitua 'data' pelo campo correto
 
+    # alterado aqui ##########################
+    # Distinc para que so conte 1 curso por periodo
+    inscricoes = inscricoes.values("curso__nome_curso").distinct()
+
     inscricoes = (
         inscricoes.values("participante")
         .annotate(total_ch=Sum("ch_valida"))
@@ -542,7 +553,10 @@ def usuarios_sem_ch(request):
     )
 
     # Calculate remaining load needed to reach 60
-    users = users.annotate(ch_faltante=60 - F("total_ch")).filter(total_ch__lt=60)
+    users = users.annotate(ch_faltante=60 - F("total_ch"))
+
+    if action == "filter":
+        users = users.filter(total_ch__lt=60)
 
     # Select the fields you need for the table
     users = users.values(
@@ -3279,10 +3293,9 @@ def listar_cursos_priorizados(request):
 
     for curso in cursos:
         cursos_por_trilha[curso.trilha].append(curso)
-    
+
     pr, _ = PriorizacaoResposta.objects.get_or_create(
-        user=request.user, ano_ref=ajustes.ano_ref,
-        defaults={"comentario": ""}
+        user=request.user, ano_ref=ajustes.ano_ref, defaults={"comentario": ""}
     )
     form = PriorizacaoRespostaForm(instance=pr)
 
@@ -3291,7 +3304,7 @@ def listar_cursos_priorizados(request):
         "cursos_por_trilha": cursos_por_trilha,
         "user_cursos": user_cursos,
         "ano_ref": ajustes.ano_ref,
-        'form_resposta': form,
+        "form_resposta": form,
     }
     return render(request, "pfc_app/pesquisa_priorizacao.html", context)
 
@@ -3302,7 +3315,7 @@ def votar_cursos(request):
     if request.method == "POST":
         ano_atual = datetime.now().year
         ajustes, _ = AjustesPesquisa.objects.get_or_create(
-            defaults={'nome': 'padrao', 'ano_ref': ano_atual}
+            defaults={"nome": "padrao", "ano_ref": ano_atual}
         )
 
         try:
@@ -3324,15 +3337,18 @@ def votar_cursos(request):
                             request.user.pesquisa_cursos_priorizados.remove(*antigos)
 
                     pr, _ = PriorizacaoResposta.objects.get_or_create(
-                    user=request.user, ano_ref=ajustes.ano_ref
+                        user=request.user, ano_ref=ajustes.ano_ref
                     )
                     form = PriorizacaoRespostaForm(request.POST, instance=pr)
                     if form.is_valid():
                         form.save()
                     else:
                         # Não bloqueia as escolhas; apenas informa
-                        messages.warning(request, 'Seu comentário não pôde ser salvo. Verifique o texto e tente novamente.')    
-                        
+                        messages.warning(
+                            request,
+                            "Seu comentário não pôde ser salvo. Verifique o texto e tente novamente.",
+                        )
+
                     messages.success(
                         request,
                         f"Você apagou seus votos do ano de {ano_form}. Caso queira registrar seus votos, volte à pesquisa.",
@@ -3367,7 +3383,10 @@ def votar_cursos(request):
                     form.save()
                 else:
                     # Não bloqueia as escolhas; apenas informa
-                    messages.warning(request, 'Seu comentário não pôde ser salvo. Verifique o texto e tente novamente.')
+                    messages.warning(
+                        request,
+                        "Seu comentário não pôde ser salvo. Verifique o texto e tente novamente.",
+                    )
 
             messages.success(request, f"Priorizações computadas com sucesso!")
 
