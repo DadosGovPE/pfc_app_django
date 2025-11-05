@@ -8,6 +8,8 @@ from django.conf import settings
 from django.core.mail import send_mail
 from django.contrib.auth.forms import PasswordChangeForm, PasswordResetForm
 from django.contrib.auth.tokens import default_token_generator
+from django.contrib.auth.password_validation import validate_password
+from django.core.exceptions import ValidationError
 from django.utils.http import urlsafe_base64_encode
 from django.utils import dateformat, timezone
 from django.utils.timezone import now
@@ -246,7 +248,7 @@ def api_authenticate(request):
 
     payload = {
         "sub": str(user.id),
-        "cpf": user.cpf,
+        "cpf": str(user.cpf),
         "username": user.username,
         "email": user.email,
         "name": user.get_full_name(),
@@ -255,9 +257,80 @@ def api_authenticate(request):
         "iss": "PFC",
         "aud": "clientes",
     }
+
     token = jwt.encode(payload, settings.JWT_SECRET, algorithm="HS256")
 
     return JsonResponse({"token": token})
+
+
+def _decode_jwt_from_auth_header(request):
+    auth_header = request.META.get("HTTP_AUTHORIZATION", "")
+    if not auth_header.startswith("Bearer "):
+        return None, JsonResponse({"error": "Authorization header ausente ou inválido"}, status=401)
+    token = auth_header.split(" ", 1)[1].strip()
+    try:
+        payload = jwt.decode(
+            token,
+            settings.JWT_SECRET,
+            algorithms=["HS256"],
+            audience="clientes",
+            issuer="PFC",
+            options={"require": ["exp", "iat", "sub"]}
+        )
+        # garantia de expiração mesmo se clock drift
+        if datetime.now(timezone.utc).timestamp() > payload["exp"]:
+            return None, JsonResponse({"error": "Token expirado"}, status=401)
+        return payload, None
+    except jwt.InvalidTokenError as e:
+        return None, JsonResponse({"error": f"Token inválido: {str(e)}"}, status=401)
+
+@csrf_exempt
+@require_POST
+@transaction.atomic
+def api_password_change(request):
+    """
+    Troca de senha feita pelo próprio usuário autenticado via JWT.
+    Espera JSON: {"old_password": "...", "new_password": "..."}
+    Header: Authorization: Bearer <token>
+    """
+    payload, error_response = _decode_jwt_from_auth_header(request)
+    if error_response:
+        return error_response
+
+    try:
+        data = json.loads(request.body.decode("utf-8"))
+    except json.JSONDecodeError:
+        return JsonResponse({"error": "JSON inválido"}, status=400)
+
+    old_password = data.get("old_password")
+    new_password = data.get("new_password")
+
+    if not old_password or not new_password:
+        return JsonResponse({"error": "old_password e new_password são obrigatórios"}, status=400)
+
+    # Recupera usuário pelo sub do token
+    user_id = payload.get("sub")
+    user = auth.get_user_model().objects.filter(id=user_id).first()
+    if not user:
+        return JsonResponse({"error": "Usuário não encontrado"}, status=404)
+
+    # Confere senha atual
+    if not user.check_password(old_password):
+        return JsonResponse({"error": "Senha atual incorreta"}, status=401)
+
+    # Validação de senha pelas regras do Django
+    try:
+        validate_password(new_password, user=user)
+    except ValidationError as e:
+        return JsonResponse({"error": "Senha não atende aos requisitos", "details": e.messages}, status=400)
+
+    # Persiste
+    user.set_password(new_password)
+    user.save(update_fields=["password"])
+
+    return JsonResponse({"status": "ok", "message": "Senha alterada com sucesso"})
+
+
 
 
 def registrar(request):
