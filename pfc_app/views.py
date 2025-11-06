@@ -249,6 +249,7 @@ def api_authenticate(request):
     payload = {
         "sub": str(user.id),
         "cpf": str(user.cpf),
+        "primeiro_acesso": user.is_primeiro_acesso,
         "username": user.username,
         "email": user.email,
         "name": user.get_full_name(),
@@ -266,7 +267,9 @@ def api_authenticate(request):
 def _decode_jwt_from_auth_header(request):
     auth_header = request.META.get("HTTP_AUTHORIZATION", "")
     if not auth_header.startswith("Bearer "):
-        return None, JsonResponse({"error": "Authorization header ausente ou inválido"}, status=401)
+        return None, JsonResponse(
+            {"error": "Authorization header ausente ou inválido"}, status=401
+        )
     token = auth_header.split(" ", 1)[1].strip()
     try:
         payload = jwt.decode(
@@ -275,7 +278,7 @@ def _decode_jwt_from_auth_header(request):
             algorithms=["HS256"],
             audience="clientes",
             issuer="PFC",
-            options={"require": ["exp", "iat", "sub"]}
+            options={"require": ["exp", "iat", "sub"]},
         )
         # garantia de expiração mesmo se clock drift
         if datetime.now(timezone.utc).timestamp() > payload["exp"]:
@@ -283,6 +286,7 @@ def _decode_jwt_from_auth_header(request):
         return payload, None
     except jwt.InvalidTokenError as e:
         return None, JsonResponse({"error": f"Token inválido: {str(e)}"}, status=401)
+
 
 @csrf_exempt
 @require_POST
@@ -306,7 +310,9 @@ def api_password_change(request):
     new_password = data.get("new_password")
 
     if not old_password or not new_password:
-        return JsonResponse({"error": "old_password e new_password são obrigatórios"}, status=400)
+        return JsonResponse(
+            {"error": "old_password e new_password são obrigatórios"}, status=400
+        )
 
     # Recupera usuário pelo sub do token
     user_id = payload.get("sub")
@@ -322,15 +328,17 @@ def api_password_change(request):
     try:
         validate_password(new_password, user=user)
     except ValidationError as e:
-        return JsonResponse({"error": "Senha não atende aos requisitos", "details": e.messages}, status=400)
+        return JsonResponse(
+            {"error": "Senha não atende aos requisitos", "details": e.messages},
+            status=400,
+        )
 
     # Persiste
     user.set_password(new_password)
+    user.is_primeiro_acesso = False
     user.save(update_fields=["password"])
 
     return JsonResponse({"status": "ok", "message": "Senha alterada com sucesso"})
-
-
 
 
 def registrar(request):

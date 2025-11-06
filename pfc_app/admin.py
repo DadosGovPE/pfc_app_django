@@ -191,6 +191,7 @@ class CustomUserAdmin(UserAdmin):
                     "tipo_atuacao",
                     "role",
                     "is_externo",
+                    "is_primeiro_acesso",
                     "avatar",
                     "pesquisa_cursos_priorizados",
                 )

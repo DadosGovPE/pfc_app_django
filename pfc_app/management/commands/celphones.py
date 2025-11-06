@@ -3,16 +3,14 @@ from pfc_app.models import User
 
 
 class Command(BaseCommand):
-    help = 'Check'
-    
+    help = "Check"
 
-    def handle(self, *args, **kwargs):   
-        users = User.objects.all() 
-        celPhone = ""
+    def handle(self, *args, **kwargs):
+        users = User.objects.all()
+
         for user in users:
-            if user.telefone:
-                if user.telefone.endswith("66"):
-                    self.stdout.write(f'{user.nome}-{user.telefone}')
-        
-            
-        self.stdout.write(self.style.SUCCESS('FINALIZADO'))
+            if user.is_primeiro_acesso:
+                user.is_primeiro_acesso = False
+                user.save()
+
+        self.stdout.write(self.style.SUCCESS("FINALIZADO"))
