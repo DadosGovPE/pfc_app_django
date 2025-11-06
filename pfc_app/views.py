@@ -336,7 +336,7 @@ def api_password_change(request):
     # Persiste
     user.set_password(new_password)
     user.is_primeiro_acesso = False
-    user.save(update_fields=["password"])
+    user.save(update_fields=["password", "is_primeiro_acesso"])
 
     return JsonResponse({"status": "ok", "message": "Senha alterada com sucesso"})
 
