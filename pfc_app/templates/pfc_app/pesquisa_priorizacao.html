@@ -14,10 +14,10 @@
   {% for trilha in trilhas %}
     <div class="mb-4">
       <h4>Assinale os cursos do seu interesse na trilha de {{ trilha.nome }}</h4>
-      <ul>
+      <ul class="list-unstyled mt-4">
         {% for curso in cursos_por_trilha|get_item:trilha %}
           <li>
-            <input type="checkbox" name="cursos" value="{{ curso.id }}"
+            <input type="checkbox" class="checkbox-lg" name="cursos" value="{{ curso.id }}"
                    {% if curso in user_cursos %}checked{% endif %}>
             {{ curso.nome }} {% if curso.forma_atendimento %} {% endif %}
           </li>

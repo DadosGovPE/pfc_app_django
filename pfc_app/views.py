@@ -66,6 +66,7 @@ from django.db.models import (
     Sum,
     F,
     Avg,
+    IntegerField,
     FloatField,
     When,
     BooleanField,
@@ -3364,9 +3365,21 @@ def listar_cursos_priorizados(request):
         messages.error(request, f"Pesquisa de priorização fechada!")
         return redirect("lista_cursos")
 
-    cursos = PesquisaCursosPriorizados.objects.filter(
-        ano_ref=ajustes.ano_ref
-    ).select_related("trilha")
+    cursos = (
+        PesquisaCursosPriorizados.objects.filter(ano_ref=ajustes.ano_ref)
+        .select_related("trilha")
+        .annotate(
+            outro_order=Case(
+                When(nome__iexact="outro", then=Value(1)),
+                default=Value(0),
+                output_field=IntegerField(),
+            )
+        )
+        .order_by(
+            "trilha", "outro_order", "nome"
+        )  # "Outro" vai pro final dentro de cada trilha
+    )
+
     user_cursos = request.user.pesquisa_cursos_priorizados.all()
 
     trilhas = Trilha.objects.order_by("ordem_relatorio")
