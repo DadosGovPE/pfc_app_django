@@ -503,6 +503,10 @@ class PesquisaCursosAdmin(admin.ModelAdmin):
     search_fields = ("nome",)
 
 
+class PriorizacaoRespostaAdmin(admin.ModelAdmin):
+    list_display = ("user", "ano_ref", "comentario")
+
+
 # Register your models here.
 
 admin.site.register(Curso, CursoAdmin)
@@ -539,7 +543,7 @@ admin.site.register(OrigemPagamento)
 admin.site.register(UserCadastro, UserCadastroAdmin)
 admin.site.register(User.pesquisa_cursos_priorizados.through, UserPesquisaCursosAdmin)
 
-admin.site.register(PriorizacaoResposta)
+admin.site.register(PriorizacaoResposta, PriorizacaoRespostaAdmin)
 
 
 admin.site.site_header = "PFC"
