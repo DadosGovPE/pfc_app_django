@@ -539,5 +539,7 @@ admin.site.register(OrigemPagamento)
 admin.site.register(UserCadastro, UserCadastroAdmin)
 admin.site.register(User.pesquisa_cursos_priorizados.through, UserPesquisaCursosAdmin)
 
+admin.site.register(PriorizacaoResposta)
+
 
 admin.site.site_header = "PFC"
