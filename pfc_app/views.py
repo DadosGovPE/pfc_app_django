@@ -2921,7 +2921,7 @@ def gerar_curadoria(request, ano, mes):
         ]
         for curso in trilha.cursos.filter(
             data_inicio__gte=data_inicio, data_inicio__lte=data_fim
-        ):
+        ).exclude(status__nome="CANCELADO"):
             url = f"https://www.pfc.seplag.pe.gov.br/curso_detail/{curso.id}"
             link_text = '<u><link href="' + url + '">' + "Inscrição" + "</link></u>"
             curso_nome = curso.nome_curso
@@ -3248,7 +3248,7 @@ def curadoria_html(request, ano, mes):
         )
         cursos = trilha.cursos.filter(
             data_inicio__gte=data_inicio, data_inicio__lte=data_fim
-        )
+        ).exclude(status__nome="CANCELADO")
 
         trilhas_com_cursos[trilha] = {
             "curadorias": curadorias,
