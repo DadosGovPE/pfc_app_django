@@ -4,6 +4,8 @@ from django.contrib.auth.admin import UserAdmin
 from .models import *
 from django import forms
 from django.contrib import messages
+from django.contrib.admin.widgets import RelatedFieldWidgetWrapper
+
 
 # Curso, User, Inscricao, StatusCurso, StatusInscricao, \
 # StatusValidacao, Avaliacao, Validacao_CH,Certificado, \
@@ -449,6 +451,27 @@ class CuradoriaAdmin(admin.ModelAdmin):
                 )
                 return  # impede o save
         super().save_model(request, obj, form, change)
+
+    def formfield_for_foreignkey(self, db_field, request, **kwargs):
+        formfield = super().formfield_for_foreignkey(db_field, request, **kwargs)
+
+        if db_field.name == "curso_priorizado":
+            # o Django geralmente já envolve em RelatedFieldWidgetWrapper
+            if isinstance(formfield.widget, RelatedFieldWidgetWrapper):
+                formfield.widget.can_delete_related = False
+            else:
+                # fallback (caso não venha envolvido)
+                formfield.widget = RelatedFieldWidgetWrapper(
+                    formfield.widget,
+                    db_field.remote_field,
+                    self.admin_site,
+                    can_add_related=True,
+                    can_change_related=True,
+                    can_delete_related=False,
+                    can_view_related=True,
+                )
+
+        return formfield
 
 
 class TrilhaAdmin(admin.ModelAdmin):
