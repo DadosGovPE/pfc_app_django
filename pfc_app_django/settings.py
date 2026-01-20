@@ -39,6 +39,7 @@ CSRF_TRUSTED_ORIGINS = [
     "http://10.238.75.122",
     "https://10.238.75.122",
     "http://191.252.60.33",
+    "http://10.238.117.16",
 ]
 ALLOWED_HOSTS = ["*"]
 CSRF_COOKIE_SECURE = False
