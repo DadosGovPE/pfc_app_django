@@ -185,13 +185,13 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 AUTH_USER_MODEL = "pfc_app.User"
 
-MESSAGE_TAGS = {
-    constants.ERROR: "alert-danger",
-    constants.WARNING: "alert-warning",
-    constants.DEBUG: "alert-info",
-    constants.SUCCESS: "alert-success",
-    constants.INFO: "alert-info",
-}
+# MESSAGE_TAGS = {
+#     constants.ERROR: "danger",
+#     constants.WARNING: "warning",
+#     constants.DEBUG: "info",
+#     constants.SUCCESS: "success",
+#     constants.INFO: "info",
+# }
 
 # Configurações de E-mail
 EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"

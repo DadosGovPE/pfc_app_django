@@ -2,6 +2,8 @@ from django.contrib import admin
 from django.db.models import Q, Prefetch
 from django.contrib.auth.admin import UserAdmin
 from .models import *
+from django import forms
+from django.contrib import messages
 
 # Curso, User, Inscricao, StatusCurso, StatusInscricao, \
 # StatusValidacao, Avaliacao, Validacao_CH,Certificado, \
@@ -390,6 +392,32 @@ class RelatorioAdmin(admin.ModelAdmin):
     list_display = ("codigo",)
 
 
+class CuradoriaAdminForm(forms.ModelForm):
+    class Meta:
+        model = Curadoria
+        fields = "__all__"
+
+    def clean(self):
+        cleaned_data = super().clean()
+
+        mes_competencia = cleaned_data.get("mes_competencia")
+        curso_priorizado = cleaned_data.get("curso_priorizado")
+
+        # Só valida se os dois estiverem preenchidos
+        if mes_competencia and curso_priorizado and curso_priorizado.mes_competencia:
+            ano_curadoria = mes_competencia.year
+            ano_priorizado = curso_priorizado.mes_competencia.year
+
+            if ano_curadoria != ano_priorizado:
+                self.add_error(
+                    "curso_priorizado",
+                    f"O curso priorizado selecionado é de {ano_priorizado}, "
+                    f"mas a curadoria está em {ano_curadoria}. O ano deve ser o mesmo.",
+                )
+
+        return cleaned_data
+
+
 class CuradoriaAdmin(admin.ModelAdmin):
     list_display = (
         "nome_curso",
@@ -402,6 +430,25 @@ class CuradoriaAdmin(admin.ModelAdmin):
         "curso_priorizado",
     )
     autocomplete_fields = ["curso_priorizado"]
+
+    change_list_template = "admin/pfc_app/curadoria/change_list.html"
+
+    def save_model(self, request, obj, form, change):
+        if obj.curso_priorizado and obj.mes_competencia:
+            ano_curadoria = obj.mes_competencia.year
+            ano_priorizado = obj.curso_priorizado.mes_competencia.year
+
+            if ano_curadoria != ano_priorizado:
+                messages.error(
+                    request,
+                    (
+                        f"Erro ao salvar '{obj.nome_curso}': "
+                        f"o curso priorizado é de {ano_priorizado}, "
+                        f"mas a curadoria está em {ano_curadoria}."
+                    ),
+                )
+                return  # impede o save
+        super().save_model(request, obj, form, change)
 
 
 class TrilhaAdmin(admin.ModelAdmin):
