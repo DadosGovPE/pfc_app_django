@@ -1,51 +1,89 @@
-from django.contrib.auth import get_user_model
-# from django.contrib.admin.views.decorators import staff_member_required
-# from django.shortcuts import get_object_or_404, render
+from django.contrib import messages
+from django.contrib.admin.views.decorators import staff_member_required
+from django.core.mail import EmailMultiAlternatives
+from django.shortcuts import render, redirect
 
-# from .models import MensagemTemplate, TagTemplate
-# from .render import render_template
+from mensageria.forms import EnvioEmailCursoStatusForm
+from mensageria.models import TagTemplate
+from mensageria.render import render_template
 
-User = get_user_model()
+from pfc_app.models import Inscricao
 
 
-# @staff_member_required
-# def preview_template(request):
-#     templates = MensagemTemplate.objects.filter(ativo=True).order_by("nome")
+@staff_member_required
+def enviar_emails_por_curso_status(request):
+    if request.method == "POST":
+        form = EnvioEmailCursoStatusForm(request.POST)
+        if form.is_valid():
+            curso = form.cleaned_data["curso"]
+            template = form.cleaned_data["template"]
+            status = form.cleaned_data["status"]
+            dry_run = form.cleaned_data["dry_run"]
+            limite = form.cleaned_data.get("limite")
 
-#     template_id = request.GET.get("template_id") or ""
-#     user_id = request.GET.get("user_id") or ""
-#     empresa_id = request.GET.get("empresa_id") or ""
-#     pedido_id = request.GET.get("pedido_id") or ""
+            qs = (
+                Inscricao.objects.select_related("curso", "participante", "status")
+                .filter(curso=curso, status=status)
+                .order_by("id")
+            )
 
-#     selected_template = None
-#     output = None
-#     context = {}
+            if limite:
+                qs = qs[:limite]
 
-#     if template_id:
-#         selected_template = get_object_or_404(MensagemTemplate, id=template_id)
+            total = qs.count()
+            if total == 0:
+                messages.warning(
+                    request, "Nenhuma inscrição encontrada para esse curso e status."
+                )
+                return redirect(request.path)
 
-#     if user_id:
-#         context["user"] = get_object_or_404(User, id=user_id)
+            if dry_run:
+                messages.info(request, f"DRY RUN: {total} e-mails seriam enviados.")
+                return redirect(request.path)
 
-#     if empresa_id:
-#         context["empresa"] = get_object_or_404(Empresa, id=empresa_id)
+            tags = TagTemplate.objects.filter(ativa=True).select_related("content_type")
 
-#     if pedido_id:
-#         context["pedido"] = get_object_or_404(Pedido, id=pedido_id)
+            enviados = 0
+            falhas = 0
+            sem_email = 0
 
-#     if selected_template:
-#         tags = TagTemplate.objects.filter(ativa=True).select_related("content_type")
-#         output = render_template(selected_template, context=context, tags_queryset=tags)
+            for insc in qs.iterator(chunk_size=200):
+                user = insc.participante
+                if not user.email:
+                    sem_email += 1
+                    continue
 
-#     return render(
-#         request,
-#         "mensageria/preview_template.html",
-#         {
-#             "templates": templates,
-#             "template_id": template_id,
-#             "user_id": user_id,
-#             "empresa_id": empresa_id,
-#             "pedido_id": pedido_id,
-#             "output": output,
-#         },
-#     )
+                ctx = {
+                    "user": user,
+                    "curso": insc.curso,
+                    "inscricao": insc,
+                    "status_inscricao": insc.status,  # se quiser tags diretas
+                }
+
+                payload = render_template(template, context=ctx, tags_queryset=tags)
+                assunto = (payload.get("assunto") or "").strip() or template.assunto
+                corpo = payload.get("corpo") or ""
+
+                try:
+                    msg = EmailMultiAlternatives(
+                        subject=assunto,
+                        body=corpo,
+                        to=[user.email],
+                    )
+                    msg.send()
+                    enviados += 1
+                except Exception:
+                    falhas += 1
+
+            messages.success(
+                request,
+                f"Envio finalizado. Total filtrado: {total}. Enviados: {enviados}. "
+                f"Sem e-mail: {sem_email}. Falhas: {falhas}.",
+            )
+            return redirect(request.path)
+    else:
+        form = EnvioEmailCursoStatusForm()
+
+    return render(
+        request, "mensageria/enviar_emails_por_curso_status.html", {"form": form}
+    )

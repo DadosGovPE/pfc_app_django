@@ -1,8 +1,12 @@
-# from django.urls import path
-# from .views import preview_template
+from django.urls import path
+from .views import enviar_emails_por_curso_status
 
-# app_name = "mensageria"
+app_name = "mensageria"
 
-# urlpatterns = [
-#     path("preview/", preview_template, name="preview_template"),
-# ]
+urlpatterns = [
+    path(
+        "enviar-curso-status/",
+        enviar_emails_por_curso_status,
+        name="enviar_curso_status",
+    ),
+]
