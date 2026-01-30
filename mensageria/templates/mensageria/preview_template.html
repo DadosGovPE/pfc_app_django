@@ -1,0 +1,59 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Preview Mensageria</title>
+    <style>
+      body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial; margin: 24px; }
+      .row { display: flex; gap: 24px; align-items: flex-start; }
+      .card { border: 1px solid #ddd; border-radius: 10px; padding: 16px; width: 100%; }
+      label { display: block; font-size: 12px; margin-top: 10px; }
+      input, select { width: 100%; padding: 8px; margin-top: 6px; }
+      pre { white-space: pre-wrap; }
+      .muted { color: #666; font-size: 12px; }
+      button { margin-top: 12px; padding: 10px 14px; }
+    </style>
+  </head>
+  <body>
+    <h2>Preview de Template</h2>
+    <p class="muted">Contextos: user, empresa, pedido. Cadastre tags no admin e use [nome_da_tag].</p>
+
+    <div class="row">
+      <div class="card">
+        <form method="get">
+          <label>Template</label>
+          <select name="template_id">
+            <option value="">— selecione —</option>
+            {% for t in templates %}
+              <option value="{{ t.id }}" {% if template_id == t.id|stringformat:"s" %}selected{% endif %}>
+                {{ t.nome }}
+              </option>
+            {% endfor %}
+          </select>
+
+          <label>User ID (alias "user")</label>
+          <input name="user_id" value="{{ user_id }}" placeholder="ex.: 1" />
+
+          <label>Empresa ID (alias "empresa")</label>
+          <input name="empresa_id" value="{{ empresa_id }}" placeholder="ex.: 1" />
+
+          <label>Pedido ID (alias "pedido")</label>
+          <input name="pedido_id" value="{{ pedido_id }}" placeholder="ex.: 1" />
+
+          <button type="submit">Renderizar</button>
+        </form>
+      </div>
+
+      <div class="card">
+        <h3>Resultado</h3>
+        {% if output %}
+          <p><strong>Assunto:</strong> {{ output.assunto }}</p>
+          <hr />
+          <pre>{{ output.corpo }}</pre>
+        {% else %}
+          <p class="muted">Selecione um template e informe IDs para gerar o preview.</p>
+        {% endif %}
+      </div>
+    </div>
+  </body>
+</html>
