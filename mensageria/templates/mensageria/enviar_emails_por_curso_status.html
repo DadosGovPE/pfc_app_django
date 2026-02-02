@@ -46,6 +46,13 @@
                 <div class="text-danger small">{{ form.status.errors }}</div>
               {% endif %}
             </div>
+            <div class="mb-3">
+                <label class="form-label fw-bold">{{ form.concluido.label }}</label>
+                {{ form.concluido }}
+                {% if form.concluido.errors %}
+                    <div class="text-danger small">{{ form.concluido.errors }}</div>
+                {% endif %}
+            </div>
 
             <div class="row">
               <div class="col-12 col-md-6 mb-3">

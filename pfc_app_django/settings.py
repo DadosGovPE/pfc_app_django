@@ -204,6 +204,8 @@ EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER")
 EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD")
 DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL")
 
+DEFAULT_FROM_EMAIL = "PFC SEPLAG <pfc.seplag@gmail.com>"
+
 
 JAZZMIN_SETTINGS = {
     "login_logo": "pfc_app/logos/Logo2024-180x180.png",

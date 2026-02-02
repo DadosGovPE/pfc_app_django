@@ -16,8 +16,18 @@ class EnvioEmailCursoStatusForm(forms.Form):
     status = forms.ModelChoiceField(
         queryset=StatusInscricao.objects.all().order_by("nome"),
         label="Status da inscrição",
+        required=False,
+        empty_label="(Todos)",
     )
-
+    concluido = forms.ChoiceField(
+        label="Inscrição concluída?",
+        choices=[
+            ("", "(Todos)"),
+            ("1", "Sim (somente concluídas)"),
+            ("0", "Não (somente não concluídas)"),
+        ],
+        required=False,
+    )
     dry_run = forms.BooleanField(
         required=False,
         initial=False,

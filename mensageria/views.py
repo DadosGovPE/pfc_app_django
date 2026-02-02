@@ -20,12 +20,23 @@ def enviar_emails_por_curso_status(request):
             status = form.cleaned_data["status"]
             dry_run = form.cleaned_data["dry_run"]
             limite = form.cleaned_data.get("limite")
+            concluido = form.cleaned_data.get("concluido")
 
             qs = (
                 Inscricao.objects.select_related("curso", "participante", "status")
-                .filter(curso=curso, status=status)
+                .filter(curso=curso)
                 .order_by("id")
             )
+
+            # status opcional
+            if status:
+                qs = qs.filter(status=status)
+
+            # concluído opcional
+            if concluido == "1":
+                qs = qs.filter(concluido=True)
+            elif concluido == "0":
+                qs = qs.filter(concluido=False)
 
             if limite:
                 qs = qs[:limite]

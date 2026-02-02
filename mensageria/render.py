@@ -1,4 +1,6 @@
 import re
+from datetime import date, datetime
+from django.utils import timezone
 
 TAG_PATTERN = re.compile(r"\[([a-z][a-z0-9_]*)\]")
 
@@ -15,6 +17,23 @@ BLOCKED_ATTRS = {
     "__closure__",
     "__func__",
 }
+
+
+def format_tag_value(value):
+    if value is None:
+        return ""
+
+    # DateTimeField -> dd/mm/yyyy
+    if isinstance(value, datetime):
+        if timezone.is_aware(value):
+            value = timezone.localtime(value)
+        return value.strftime("%d/%m/%Y")
+
+    # DateField -> dd/mm/yyyy
+    if isinstance(value, date):
+        return value.strftime("%d/%m/%Y")
+
+    return str(value)
 
 
 def safe_getattr(obj, attr: str):
@@ -56,7 +75,7 @@ def render_text(text: str, tags_by_name: dict, context: dict) -> str:
         if value is None:
             return tag.padrao or ""
 
-        return str(value)
+        return format_tag_value(value)
 
     return TAG_PATTERN.sub(repl, text)
 

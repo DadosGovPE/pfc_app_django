@@ -31,6 +31,13 @@ class TagTemplateAdminForm(forms.ModelForm):
         required=False,
         disabled=True,
         label="Dica (campos do 1º nível)",
+        widget=forms.Textarea(
+            attrs={
+                "rows": 4,
+                "class": "vLargeTextField",
+                "style": "resize: vertical;",
+            }
+        ),
     )
 
     class Meta:
