@@ -1,0 +1,126 @@
+{% extends 'base.html' %}
+
+{% block content %}
+{% include 'parciais/_messages.html' %}
+
+<div class="d-flex p-2 justify-content-center mb-4">
+  <h1>ACOMPANHAR ENVIO</h1>
+</div>
+
+<div class="container">
+  <div class="row justify-content-center">
+    <div class="col-12 col-lg-8">
+
+      <div class="card shadow-sm mb-3">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              <strong>Status:</strong>
+              <span id="status-text">Iniciando...</span>
+            </div>
+            <div>
+              <strong>Total:</strong>
+              <span id="total-count">0</span>
+            </div>
+          </div>
+          <div class="mt-2">
+            <div><strong>Enviados:</strong> <span id="sent-count">0</span></div>
+            <div><strong>Sem e-mail:</strong> <span id="no-email-count">0</span></div>
+            <div><strong>Falhas:</strong> <span id="fail-count">0</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <h5 class="card-title">Detalhes</h5>
+          <ul id="log-list" class="list-group small"></ul>
+        </div>
+      </div>
+
+      <div class="d-flex gap-2 mt-3">
+        <a href="{% url 'mensageria:enviar_curso_status' %}" class="btn btn-outline-secondary">
+          Voltar
+        </a>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+  (function () {
+    var statusText = document.getElementById("status-text");
+    var totalCount = document.getElementById("total-count");
+    var sentCount = document.getElementById("sent-count");
+    var noEmailCount = document.getElementById("no-email-count");
+    var failCount = document.getElementById("fail-count");
+    var logList = document.getElementById("log-list");
+
+    var sent = 0;
+    var noEmail = 0;
+    var fail = 0;
+
+    function addItem(text, status) {
+      var li = document.createElement("li");
+      li.className = "list-group-item";
+      if (status === "erro") {
+        li.className += " list-group-item-danger";
+      } else if (status === "sem_email") {
+        li.className += " list-group-item-warning";
+      } else if (status === "dry_run") {
+        li.className += " list-group-item-info";
+      } else {
+        li.className += " list-group-item-success";
+      }
+      li.textContent = text;
+      logList.appendChild(li);
+    }
+
+    var source = new EventSource("{% url 'mensageria:enviar_curso_status_stream' %}");
+
+    source.onmessage = function (event) {
+      var payload = JSON.parse(event.data);
+      if (payload.type === "start") {
+        totalCount.textContent = payload.total || 0;
+        statusText.textContent = payload.dry_run ? "Dry run" : "Enviando...";
+        return;
+      }
+
+      if (payload.type === "item") {
+        if (payload.status === "sem_email") {
+          noEmail += 1;
+          noEmailCount.textContent = noEmail;
+          addItem(payload.user + " - sem e-mail", payload.status);
+        } else if (payload.status === "dry_run") {
+          addItem(payload.user + " <" + payload.email + "> - dry run", payload.status);
+        } else if (payload.status === "erro") {
+          fail += 1;
+          failCount.textContent = fail;
+          addItem(payload.user + " <" + payload.email + "> - erro: " + (payload.message || "falha"), payload.status);
+        } else {
+          sent += 1;
+          sentCount.textContent = sent;
+          addItem(payload.user + " <" + payload.email + "> - enviado", payload.status);
+        }
+        return;
+      }
+
+      if (payload.type === "done") {
+        statusText.textContent = "Finalizado";
+        if (typeof payload.total === "number") totalCount.textContent = payload.total;
+        if (typeof payload.enviados === "number") sentCount.textContent = payload.enviados;
+        if (typeof payload.sem_email === "number") noEmailCount.textContent = payload.sem_email;
+        if (typeof payload.falhas === "number") failCount.textContent = payload.falhas;
+        source.close();
+      }
+    };
+
+    source.onerror = function () {
+      statusText.textContent = "Falha na conexao";
+      source.close();
+    };
+  })();
+</script>
+
+{% endblock %}

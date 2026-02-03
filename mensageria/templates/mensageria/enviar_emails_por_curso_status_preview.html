@@ -1,0 +1,70 @@
+{% extends 'base.html' %}
+
+{% block content %}
+{% include 'parciais/_messages.html' %}
+
+<div class="d-flex p-2 justify-content-center mb-4">
+  <h1>PRE-VISUALIZAR ENVIO DE E-MAIL</h1>
+</div>
+
+<div class="container">
+  <div class="row justify-content-center">
+    <div class="col-12 col-lg-8">
+
+      <div class="card shadow-sm mb-4">
+        <div class="card-body">
+          <h5 class="card-title">Resumo</h5>
+          <div class="small">
+            <div><strong>Curso:</strong> {{ curso }}</div>
+            <div><strong>Modelo:</strong> {{ template }}</div>
+            <div><strong>Status:</strong> {{ status|default:"(Todos)" }}</div>
+            <div><strong>Concluido:</strong> {{ concluido_label }}</div>
+            <div><strong>Limite:</strong> {{ limite|default:"(Sem limite)" }}</div>
+            <div><strong>Total filtrado:</strong> {{ total }}</div>
+          </div>
+          {% if dry_run %}
+            <div class="alert alert-warning mt-3 mb-0">
+              DRY RUN ativo: ao confirmar, nenhum e-mail sera enviado.
+            </div>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <form method="post" action="{% url 'mensageria:enviar_curso_status_confirmar' %}">
+            {% csrf_token %}
+
+            {% for field in form %}
+              {{ field.as_hidden }}
+            {% endfor %}
+
+            <div class="mb-3">
+              <label class="form-label fw-bold">Assunto</label>
+              <input type="text" name="assunto" class="form-control" value="{{ assunto }}">
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label fw-bold">Corpo da mensagem</label>
+              <textarea name="corpo" class="form-control" rows="10">{{ corpo }}</textarea>
+              <div class="form-text">As tags no formato [tag_nome] serao substituidas no envio.</div>
+            </div>
+
+            <div class="d-flex gap-2">
+              <button type="submit" class="btn btn-primary">
+                Confirmar envio
+              </button>
+
+              <a href="{% url 'mensageria:enviar_curso_status' %}" class="btn btn-outline-secondary">
+                Voltar
+              </a>
+            </div>
+          </form>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+{% endblock %}

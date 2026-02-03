@@ -14,7 +14,7 @@
       <div class="card shadow-sm">
         <div class="card-body">
 
-          <form method="post">
+          <form method="post" action="{% url 'mensageria:enviar_curso_status_preview' %}">
             {% csrf_token %}
 
             {% if form.non_field_errors %}
@@ -79,7 +79,7 @@
 
             <div class="d-flex gap-2">
               <button type="submit" class="btn btn-primary">
-                Enviar
+                Pre-visualizar
               </button>
 
               <a href="{% url 'admin:index' %}" class="btn btn-outline-secondary">
