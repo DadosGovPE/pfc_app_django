@@ -117,8 +117,7 @@
     };
 
     source.onerror = function () {
-      statusText.textContent = "Falha na conexao";
-      source.close();
+      statusText.textContent = "Conexao instavel, tentando reconectar...";
     };
   })();
 </script>
