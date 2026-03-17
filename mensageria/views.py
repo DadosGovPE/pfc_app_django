@@ -7,7 +7,7 @@ from django.shortcuts import render, redirect
 
 from mensageria.forms import EnvioEmailCursoStatusForm
 from mensageria.models import TagTemplate, MensagemTemplate
-from mensageria.render import render_text
+from mensageria.render import build_email_bodies, render_text
 
 from pfc_app.models import Curso, Inscricao, StatusInscricao
 
@@ -223,11 +223,13 @@ def enviar_emails_por_curso_status_stream(request):
                 continue
 
             try:
+                corpo_texto, corpo_html = build_email_bodies(corpo)
                 msg = EmailMultiAlternatives(
                     subject=assunto,
-                    body=corpo,
+                    body=corpo_texto,
                     to=[user.email],
                 )
+                msg.attach_alternative(corpo_html, "text/html")
                 msg.send()
                 enviados += 1
                 yield _sse_event(

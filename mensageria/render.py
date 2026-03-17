@@ -1,6 +1,7 @@
 import re
 from datetime import date, datetime
 from django.utils import timezone
+from django.utils.html import strip_tags
 
 TAG_PATTERN = re.compile(r"\[([a-z][a-z0-9_]*)\]")
 
@@ -86,3 +87,14 @@ def render_template(template, context: dict, tags_queryset):
         "assunto": render_text(template.assunto, tags_by_name, context),
         "corpo": render_text(template.corpo, tags_by_name, context),
     }
+
+
+def build_email_bodies(text: str) -> tuple[str, str]:
+    html_body = text or ""
+    plain_body = strip_tags(html_body)
+
+    # Se o corpo nao tiver tags HTML, preserva exatamente o texto atual.
+    if plain_body == html_body:
+        plain_body = html_body
+
+    return plain_body, html_body
