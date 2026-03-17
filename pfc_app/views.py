@@ -115,6 +115,7 @@ from io import BytesIO
 from reportlab.lib.units import inch
 from validate_docbr import CPF
 from .filters import UserFilter
+from .avaliacao_rules import validar_acesso_avaliacao
 import matplotlib
 
 matplotlib.use("Agg")
@@ -1077,15 +1078,14 @@ def avaliacao(request, curso_id):
         temas = Tema.objects.filter(evento=False)
         subtemas = Subtema.objects.filter(tema__evento=False)
 
-    # Se existe, checa se o status está como "FINALIZADO"
-    if curso.status.nome != "FINALIZADO":
-        messages.error(request, f"Curso não finalizado!")
-        return redirect("lista_cursos")
-
     try:
         inscricao = Inscricao.objects.get(participante=request.user, curso=curso)
     except:
-        messages.error(request, f"Você não está inscrito neste curso!")
+        inscricao = None
+
+    acesso_liberado, motivo_bloqueio = validar_acesso_avaliacao(curso, inscricao)
+    if not acesso_liberado:
+        messages.error(request, motivo_bloqueio)
         return redirect("lista_cursos")
 
     if request.method == "POST":
