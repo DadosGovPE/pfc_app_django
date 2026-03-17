@@ -90,11 +90,14 @@ def render_template(template, context: dict, tags_queryset):
 
 
 def build_email_bodies(text: str) -> tuple[str, str]:
-    html_body = text or ""
+    html_body = (text or "").replace("\r\n", "\n").replace("\r", "\n")
     plain_body = strip_tags(html_body)
 
     # Se o corpo nao tiver tags HTML, preserva exatamente o texto atual.
     if plain_body == html_body:
         plain_body = html_body
+
+    # Muitos clientes antigos ignoram quebras de linha simples no HTML.
+    html_body = html_body.replace("\n", "<br>\n")
 
     return plain_body, html_body

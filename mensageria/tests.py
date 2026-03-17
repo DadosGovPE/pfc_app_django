@@ -10,7 +10,7 @@ class MensageriaRenderTests(SimpleTestCase):
         plain_body, html_body = build_email_bodies(corpo)
 
         self.assertEqual(plain_body, corpo)
-        self.assertEqual(html_body, corpo)
+        self.assertEqual(html_body, "Ola [user_nome]<br>\nAcesse https://exemplo.com")
 
     def test_build_email_bodies_gera_fallback_texto_para_html(self):
         corpo = 'Clique em <a href="https://exemplo.com/curso">inscrever-se</a>'
@@ -19,6 +19,17 @@ class MensageriaRenderTests(SimpleTestCase):
 
         self.assertEqual(plain_body, "Clique em inscrever-se")
         self.assertEqual(html_body, corpo)
+
+    def test_build_email_bodies_converte_quebra_de_linha_em_br_no_html(self):
+        corpo = 'Prezado(a),\n\nClique no <a href="https://exemplo.com">link</a>\nEquipe'
+
+        plain_body, html_body = build_email_bodies(corpo)
+
+        self.assertEqual(plain_body, "Prezado(a),\n\nClique no link\nEquipe")
+        self.assertEqual(
+            html_body,
+            'Prezado(a),<br>\n<br>\nClique no <a href="https://exemplo.com">link</a><br>\nEquipe',
+        )
 
     def test_render_text_mantem_substituicao_de_tags(self):
         class Tag:
