@@ -118,7 +118,7 @@ from validate_docbr import CPF
 from .filters import UserFilter
 from .avaliacao_rules import validar_acesso_avaliacao
 from moodle_sync.models import CursoCompletoUsuario, CursoConcluidoMoodle
-from moodle_sync.views import montar_dashboard_cursos
+from moodle_sync.services import montar_dashboard_cursos
 import matplotlib
 
 matplotlib.use("Agg")

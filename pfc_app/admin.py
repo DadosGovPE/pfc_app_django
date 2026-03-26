@@ -552,6 +552,7 @@ class UserCadastroAdmin(admin.ModelAdmin):
         "nome",
         "data_solicitacao",
     )
+    search_fields = ("cpf", "nome")
     # list_editable = ('ch_solicitada', 'ch_confirmada', 'data_termino_curso', 'status',)
 
 
