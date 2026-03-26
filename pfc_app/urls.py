@@ -15,6 +15,11 @@ urlpatterns = [
     path("update-profile/", views.update_profile, name="update_profile"),
     path("cursos/", views.cursos, name="lista_cursos"),
     path("ch/", views.carga_horaria, name="carga_horaria"),
+    path(
+        "ch/sincronizar-cursos-ead/",
+        views.sincronizar_cursos_ead_carga_horaria,
+        name="sincronizar_cursos_ead_carga_horaria",
+    ),
     path("inscricoes/", views.inscricoes, name="inscricoes"),
     path("curso_detail/<int:pk>", views.CursoDetailView.as_view(), name="detail_curso"),
     path(

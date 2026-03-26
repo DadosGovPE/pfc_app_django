@@ -1,0 +1,336 @@
+{% extends 'base.html' %}
+
+{% block content %}
+  <div class="py-4">
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+      <div>
+        <h2 class="mb-1">Cursos EAD</h2>
+        <p class="text-muted mb-0">Painel integrado com os cursos do Moodle para o usuário logado.</p>
+      </div>
+    </div>
+
+    {% if erro %}
+      <div class="alert alert-danger">{{ erro }}</div>
+    {% elif usuario_moodle %}
+      <div class="alert alert-success d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <span>Os cursos completos foram verificados e sincronizados com a base local.</span>
+        <strong>{{ cursos_salvos }} novo(s) curso(s) completo(s) salvo(s).</strong>
+      </div>
+
+      <div class="d-flex flex-wrap justify-content-between gap-3 align-items-center mb-4">
+        <div>
+          <h3 class="h4 mb-1">{{ usuario_moodle.fullname|default:usuario_moodle.username }}</h3>
+          <p class="text-muted mb-0">
+            Username: <strong>{{ usuario_moodle.username }}</strong>
+            | CPF: <strong>{{ cpf }}</strong>
+            {% if usuario_moodle.email %} | {{ usuario_moodle.email }}{% endif %}
+          </p>
+        </div>
+        <div class="d-flex gap-2 flex-wrap">
+          <span class="badge text-bg-warning fs-6">{{ cursos_em_andamento|length }} em andamento</span>
+          <span class="badge text-bg-light fs-6">{{ cursos_disponiveis|length }} disponível(is)</span>
+          <span class="badge text-bg-success fs-6">{{ cursos_concluidos|length }} completo(s)</span>
+        </div>
+      </div>
+
+      <section class="mb-5">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h4 class="h5 mb-0">Cursos inscritos em andamento</h4>
+        </div>
+        <div class="row g-4">
+          {% for curso in cursos_em_andamento %}
+            <div class="col-md-6 col-xl-4">
+              <div class="card h-100 shadow-sm border-0">
+                {% if curso.imagem %}
+                  <img src="{{ curso.imagem }}" class="card-img-top" alt="{{ curso.nome }}">
+                {% endif %}
+                <div class="card-body d-flex flex-column">
+                  <div class="d-flex justify-content-between align-items-start gap-3 mb-2">
+                    <h5 class="h6 card-title mb-0">{{ curso.nome }}</h5>
+                    <span class="badge {% if curso.concluido %}text-bg-success{% else %}text-bg-warning{% endif %}">
+                      {{ curso.progresso }}%
+                    </span>
+                  </div>
+                  <p class="text-muted small mb-3">{{ curso.resumo }}</p>
+                  <div class="mt-auto">
+                    <div class="d-flex justify-content-between small mb-1">
+                      <span>Progresso</span>
+                      <strong>{{ curso.progresso }}%</strong>
+                    </div>
+                    <div class="progress mb-3" role="progressbar" aria-valuenow="{{ curso.progresso }}" aria-valuemin="0" aria-valuemax="100">
+                      <div class="progress-bar {% if curso.concluido %}bg-success{% endif %}" style="width: {{ curso.progresso }}%;"></div>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center gap-2">
+                      <span class="small text-muted">Carga horária: {{ curso.carga_horaria }}</span>
+                      <a href="{{ curso.link }}" target="_blank" rel="noopener noreferrer" class="btn btn-outline-primary btn-sm">
+                        Abrir no Moodle
+                      </a>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          {% empty %}
+            <div class="col-12">
+              <div class="alert alert-secondary mb-0">Nenhum curso inscrito com progresso abaixo de 100%.</div>
+            </div>
+          {% endfor %}
+        </div>
+      </section>
+
+      <section class="mb-5">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h4 class="h5 mb-0">Cursos disponíveis para inscrição</h4>
+        </div>
+        {{ cursos_disponiveis|json_script:"cursos-disponiveis-json" }}
+        <div class="row g-4">
+          {% for curso in cursos_disponiveis %}
+            <div class="col-md-6 col-xl-4">
+              <div class="card h-100 border-0 shadow-sm">
+                {% if curso.imagem %}
+                  <img src="{{ curso.imagem }}" class="card-img-top" alt="{{ curso.nome }}">
+                {% endif %}
+                <div class="card-body d-flex flex-column">
+                  <div class="d-flex justify-content-between align-items-start gap-3 mb-2">
+                    <h5 class="h6 card-title mb-0">{{ curso.nome }}</h5>
+                    <span class="badge text-bg-light">Disponível</span>
+                  </div>
+                  <p class="text-muted small mb-3">{{ curso.resumo }}</p>
+                  <div class="mt-auto d-flex justify-content-between align-items-center gap-2">
+                    <span class="small text-muted">Carga horária: {{ curso.carga_horaria }}</span>
+                    <button
+                      type="button"
+                      class="btn btn-outline-secondary btn-sm btn-ver-curso"
+                      data-curso-id="{{ curso.id }}"
+                      data-cadastro-url="{% url 'moodle_sync:inscrever_curso' curso.id %}"
+                    >
+                      Ver curso
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          {% empty %}
+            <div class="col-12">
+              <div class="alert alert-secondary mb-0">Não há cursos disponíveis fora das inscrições atuais.</div>
+            </div>
+          {% endfor %}
+        </div>
+      </section>
+
+      <section>
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h4 class="h5 mb-0">Cursos completos</h4>
+        </div>
+        <div class="row g-4">
+          {% for curso in cursos_concluidos %}
+            <div class="col-md-6 col-xl-4">
+              <div class="card h-100 shadow-sm border-0">
+                {% if curso.imagem %}
+                  <img src="{{ curso.imagem }}" class="card-img-top" alt="{{ curso.nome }}">
+                {% endif %}
+                <div class="card-body d-flex flex-column">
+                  <div class="d-flex justify-content-between align-items-start gap-3 mb-2">
+                    <h5 class="h6 card-title mb-0">{{ curso.nome }}</h5>
+                    <span class="badge text-bg-success">{{ curso.progresso }}%</span>
+                  </div>
+                  <p class="text-muted small mb-3">{{ curso.resumo }}</p>
+                  <div class="mt-auto">
+                    <div class="d-flex justify-content-between small mb-1">
+                      <span>Progresso</span>
+                      <strong>{{ curso.progresso }}%</strong>
+                    </div>
+                    <div class="progress mb-3" role="progressbar" aria-valuenow="{{ curso.progresso }}" aria-valuemin="0" aria-valuemax="100">
+                      <div class="progress-bar bg-success" style="width: {{ curso.progresso }}%;"></div>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center gap-2">
+                      <span class="small text-muted">Carga horária: {{ curso.carga_horaria }}</span>
+                      <a href="{{ curso.link }}" target="_blank" rel="noopener noreferrer" class="btn btn-outline-success btn-sm">
+                        Rever curso
+                      </a>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          {% empty %}
+            <div class="col-12">
+              <div class="alert alert-secondary mb-0">Nenhum curso completo encontrado.</div>
+            </div>
+          {% endfor %}
+        </div>
+      </section>
+    {% else %}
+      <div class="alert alert-info">Entre com um usuário que tenha CPF cadastrado para carregar os cursos.</div>
+    {% endif %}
+  </div>
+
+  <style>
+    #modalCurso::backdrop {
+      background-color: rgba(0, 0, 0, 0.55);
+    }
+
+    #modalCurso {
+      border: none;
+      max-width: 720px;
+      width: min(92vw, 720px);
+      padding: 0;
+    }
+  </style>
+
+  <dialog id="modalCurso" class="border-0 rounded-4 shadow-lg">
+    <div class="card border-0">
+      <div class="card-header bg-body-tertiary d-flex justify-content-between align-items-start gap-3">
+        <h5 class="modal-title mb-0" id="cursoModalTitulo"></h5>
+        <button type="button" class="btn btn-sm btn-outline-secondary" id="btnFecharModal">Fechar</button>
+      </div>
+      <div class="card-body">
+        <p class="text-muted mb-2" id="cursoModalSubtitulo"></p>
+        <div class="mb-3 small" id="cursoModalDescricao"></div>
+        <div class="d-flex flex-wrap gap-2 align-items-center small mb-3">
+          <span class="badge text-bg-light" id="cursoModalCarga"></span>
+          <span class="badge text-bg-light" id="cursoModalInicio"></span>
+          <span class="badge text-bg-light" id="cursoModalShortname"></span>
+          <a id="cursoModalLink" href="#" target="_blank" rel="noopener noreferrer" class="text-decoration-none">Abrir no Moodle</a>
+        </div>
+        <div id="modal-feedback" class="small mb-3"></div>
+        <form id="formRealizarInscricao" method="post" action="">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-primary">Realizar inscrição</button>
+        </form>
+      </div>
+    </div>
+  </dialog>
+
+  <script>
+    (function () {
+      const jsonElement = document.getElementById("cursos-disponiveis-json");
+      const detalhes = jsonElement ? JSON.parse(jsonElement.textContent || "[]") : [];
+      const cursosPorId = detalhes.reduce((acc, curso) => {
+        acc[String(curso.id)] = curso;
+        return acc;
+      }, {});
+
+      const modal = document.getElementById("modalCurso");
+      const titulo = document.getElementById("cursoModalTitulo");
+      const subtitulo = document.getElementById("cursoModalSubtitulo");
+      const descricao = document.getElementById("cursoModalDescricao");
+      const carga = document.getElementById("cursoModalCarga");
+      const inicio = document.getElementById("cursoModalInicio");
+      const shortname = document.getElementById("cursoModalShortname");
+      const link = document.getElementById("cursoModalLink");
+      const feedback = document.getElementById("modal-feedback");
+      const form = document.getElementById("formRealizarInscricao");
+      const btnFecharModal = document.getElementById("btnFecharModal");
+
+      function abrirModalCurso(curso, actionUrl) {
+        titulo.textContent = curso.nome || "Curso";
+        subtitulo.textContent = curso.categoria ? `Categoria: ${curso.categoria}` : "";
+        descricao.innerHTML = curso.resumo_completo || "<p>Sem detalhes do curso.</p>";
+        carga.textContent = `Carga horária: ${curso.carga_horaria || "N/A"}`;
+        inicio.textContent = `Início: ${curso.data_inicio_txt || "N/A"}`;
+        shortname.textContent = curso.shortname ? `Código: ${curso.shortname}` : "Código: N/A";
+        link.href = curso.link || "#";
+        form.setAttribute("action", actionUrl || "");
+        feedback.textContent = "";
+        feedback.className = "small mb-3";
+        if (typeof modal.showModal === "function") {
+          modal.showModal();
+        } else {
+          modal.classList.add("d-block");
+          modal.style.display = "block";
+          modal.setAttribute("open", "open");
+        }
+      }
+
+      function fecharModalCurso() {
+        if (modal && typeof modal.close === "function" && modal.open) {
+          modal.close();
+          return;
+        }
+        if (modal) {
+          modal.classList.remove("d-block");
+          modal.style.display = "none";
+          modal.removeAttribute("open");
+        }
+      }
+
+      if (btnFecharModal) {
+        btnFecharModal.addEventListener("click", fecharModalCurso);
+      }
+
+      if (modal) {
+        modal.addEventListener("cancel", function (event) {
+          event.preventDefault();
+          fecharModalCurso();
+        });
+      }
+
+      document.querySelectorAll(".btn-ver-curso").forEach((botao) => {
+        botao.addEventListener("click", function () {
+          const cursoId = String(this.dataset.cursoId || "");
+          const curso = cursosPorId[cursoId];
+          if (!curso) {
+            return;
+          }
+          abrirModalCurso(curso, this.dataset.cadastroUrl || "");
+        });
+      });
+
+      if (form) {
+        form.addEventListener("submit", async function (event) {
+          event.preventDefault();
+
+          const action = form.getAttribute("action");
+          if (!action) {
+            feedback.textContent = "URL de inscrição indisponível.";
+            feedback.className = "small mb-3 alert alert-danger";
+            return;
+          }
+
+          const submit = form.querySelector('button[type="submit"]');
+          const labelOriginal = submit ? submit.textContent : "Realizar inscrição";
+
+          if (submit) {
+            submit.disabled = true;
+            submit.textContent = "Processando...";
+          }
+
+          feedback.textContent = "Processando sua inscrição...";
+          feedback.className = "small mb-3 alert alert-info";
+
+          try {
+            const resposta = await fetch(action, {
+              method: "POST",
+              headers: {
+                "X-Requested-With": "XMLHttpRequest",
+              },
+              body: new FormData(form),
+            });
+            const payload = await resposta.json();
+
+            if (!resposta.ok || !payload.ok) {
+              feedback.textContent = payload.message || "Erro ao processar inscrição.";
+              feedback.className = "small mb-3 alert alert-danger";
+              return;
+            }
+
+            feedback.textContent = payload.message || "Inscrição concluída.";
+            feedback.className = "small mb-3 alert alert-success";
+            setTimeout(() => {
+              window.location.reload();
+            }, 700);
+          } catch (erro) {
+            feedback.textContent = "Erro de conexão com o servidor.";
+            feedback.className = "small mb-3 alert alert-danger";
+          } finally {
+            if (submit) {
+              submit.disabled = false;
+              submit.textContent = labelOriginal;
+            }
+          }
+        });
+      }
+    })();
+  </script>
+{% endblock %}

@@ -18,6 +18,7 @@ from django.urls import reverse
 import random
 import string
 import uuid
+import re
 from django.utils.encoding import force_bytes
 from django.contrib.auth import update_session_auth_hash
 from django.db import IntegrityError, transaction
@@ -116,6 +117,8 @@ from reportlab.lib.units import inch
 from validate_docbr import CPF
 from .filters import UserFilter
 from .avaliacao_rules import validar_acesso_avaliacao
+from moodle_sync.models import CursoCompletoUsuario, CursoConcluidoMoodle
+from moodle_sync.views import montar_dashboard_cursos
 import matplotlib
 
 matplotlib.use("Agg")
@@ -776,6 +779,32 @@ def processar_checkboxes(request):
     return redirect(user_cadastro)
 
 
+def obter_periodo_referencia_ch(data_base=None):
+    data_base = data_base or timezone.localdate()
+    ano_inicio = data_base.year if data_base.month >= 3 else data_base.year - 1
+    data_inicio = date(ano_inicio, 3, 1)
+    ultimo_dia_fevereiro = calendar.monthrange(ano_inicio + 1, 2)[1]
+    data_fim = date(ano_inicio + 1, 2, ultimo_dia_fevereiro)
+    return data_inicio, data_fim
+
+
+def extrair_numero_carga_horaria(valor):
+    if valor is None:
+        return 0
+    if isinstance(valor, (int, float)):
+        return int(valor)
+
+    match = re.search(r"(\d+(?:[.,]\d+)?)", str(valor))
+    if not match:
+        return 0
+
+    numero = match.group(1).replace(",", ".")
+    try:
+        return int(float(numero))
+    except (TypeError, ValueError):
+        return 0
+
+
 @login_required
 def carga_horaria(request):
     """Exibe relatório de carga horária do usuário.
@@ -835,17 +864,10 @@ def carga_horaria(request):
         usuario=usuario_alvo, status__in=[status_validacao_indeferida]
     ).order_by("-analisado_em")
 
-    ## Calculo para verificar se o usuario ja está inscrito em um dado curso
-
-    data_hoje = datetime.now()
-
-    # Verificar se a data atual é anterior a "01/03" do ano atual
-    if data_hoje.month < 3:
-        ano_atual = data_hoje.year - 1
-    else:
-        ano_atual = data_hoje.year
-
-    data_hoje = data_hoje.strftime("%Y-%m-%d")
+    data_inicio_ciclo, data_fim_ciclo = obter_periodo_referencia_ch()
+    data_hoje = timezone.localdate()
+    ano_atual = data_inicio_ciclo.year
+    data_fim_padrao = min(data_hoje, data_fim_ciclo)
 
     if form.is_valid():
         data_inicio = form.cleaned_data["data_inicio"]
@@ -858,9 +880,9 @@ def carga_horaria(request):
             validacoes = validacoes.filter(data_termino_curso__gte=data_inicio)
         else:  # Se data_inicio não estiver preenchida filtra com a data 01/03/{ano_atual}
             inscricoes_do_usuario = inscricoes_do_usuario.filter(
-                curso__data_termino__gte=f"{ano_atual}-03-01"
+                curso__data_termino__gte=data_inicio_ciclo
             )
-            validacoes = validacoes.filter(data_termino_curso__gte=f"{ano_atual}-03-01")
+            validacoes = validacoes.filter(data_termino_curso__gte=data_inicio_ciclo)
         if data_fim:
             inscricoes_do_usuario = inscricoes_do_usuario.filter(
                 curso__data_termino__lte=data_fim
@@ -868,11 +890,33 @@ def carga_horaria(request):
             validacoes = validacoes.filter(data_termino_curso__lte=data_fim)
         else:
             inscricoes_do_usuario = inscricoes_do_usuario.filter(
-                curso__data_termino__lte=data_hoje
+                curso__data_termino__lte=data_fim_padrao
             )
-            validacoes = validacoes.filter(data_termino_curso__lte=data_hoje)
+            validacoes = validacoes.filter(data_termino_curso__lte=data_fim_padrao)
 
     cursos_feitos_pfc = inscricoes_do_usuario
+    data_inicio_filtro = form.cleaned_data["data_inicio"] if form.is_valid() else None
+    data_fim_filtro = form.cleaned_data["data_fim"] if form.is_valid() else None
+    moodle_qs = CursoCompletoUsuario.objects.filter(user=usuario_alvo)
+
+    if data_inicio_filtro:
+        moodle_qs = moodle_qs.filter(data_fim_curso_moodle__date__gte=data_inicio_filtro)
+    else:
+        moodle_qs = moodle_qs.filter(data_fim_curso_moodle__date__gte=data_inicio_ciclo)
+
+    if data_fim_filtro:
+        moodle_qs = moodle_qs.filter(data_fim_curso_moodle__date__lte=data_fim_filtro)
+    else:
+        moodle_qs = moodle_qs.filter(data_fim_curso_moodle__date__lte=data_fim_padrao)
+
+    moodle_qs = moodle_qs.order_by("-data_fim_curso_moodle", "id_curso_moodle")
+    nomes_moodle = {
+        item["curso_moodle_id"]: item["nome_curso"]
+        for item in CursoConcluidoMoodle.objects.filter(usuario_pfc=usuario_alvo).values(
+            "curso_moodle_id", "nome_curso"
+        )
+    }
+
     # Distinc para que so conte 1 curso por periodo
     inscricoes_do_usuario = inscricoes_do_usuario.values("curso__nome_curso").distinct()
     # Calcula a soma da carga horária das inscrições do usuário
@@ -882,7 +926,25 @@ def carga_horaria(request):
     validacoes_ch = (
         validacoes.aggregate(Sum("ch_confirmada"))["ch_confirmada__sum"] or 0
     )
-    carga_horaria_total = carga_horaria_pfc + validacoes_ch
+    cursos_moodle = []
+    carga_horaria_moodle = 0
+    for curso_moodle in moodle_qs:
+        carga_curso = extrair_numero_carga_horaria(curso_moodle.carga_horaria_curso_moodle)
+        carga_horaria_moodle += carga_curso
+        cursos_moodle.append(
+            {
+                "nome": nomes_moodle.get(
+                    curso_moodle.id_curso_moodle,
+                    f"Curso Moodle #{curso_moodle.id_curso_moodle}",
+                ),
+                "id_curso_moodle": curso_moodle.id_curso_moodle,
+                "carga_horaria": curso_moodle.carga_horaria_curso_moodle,
+                "carga_horaria_numero": carga_curso,
+                "data_fim": curso_moodle.data_fim_curso_moodle,
+            }
+        )
+
+    carga_horaria_total = carga_horaria_pfc + validacoes_ch + carga_horaria_moodle
 
     context = {
         "inscricoes_pfc": cursos_feitos_pfc,
@@ -890,16 +952,57 @@ def carga_horaria(request):
         "validacoes_indeferidas": validacoes_indeferidas,
         "carga_horaria_pfc": carga_horaria_pfc,
         "carga_horaria_validada": validacoes_ch,
+        "carga_horaria_moodle": carga_horaria_moodle,
         "carga_horaria_total": carga_horaria_total,
+        "cursos_moodle": cursos_moodle,
         "form": form,
         "values": request.GET
         if request.GET
-        else {"data_inicio": f"{ano_atual}-03-01", "data_fim": data_hoje},
+        else {
+            "data_inicio": data_inicio_ciclo.strftime("%Y-%m-%d"),
+            "data_fim": data_fim_padrao.strftime("%Y-%m-%d"),
+        },
         "usuarios": usuarios,
         "usuario_alvo": usuario_alvo,
+        "periodo_referencia": f"{data_inicio_ciclo.strftime('%d/%m/%Y')} a {data_fim_ciclo.strftime('%d/%m/%Y')}",
     }
 
     return render(request, "pfc_app/carga_horaria.html", context)
+
+
+@login_required
+@require_POST
+def sincronizar_cursos_ead_carga_horaria(request):
+    usuario_alvo = request.user
+    usuario_id = request.POST.get("usuario_id")
+
+    if usuario_id and (request.user.role == "ADMIN" or request.user.is_superuser):
+        try:
+            usuario_alvo = User.objects.get(id=usuario_id)
+        except User.DoesNotExist:
+            return JsonResponse(
+                {"ok": False, "message": "Usuário selecionado não encontrado."},
+                status=404,
+            )
+
+    try:
+        (
+            _usuario_moodle,
+            _cpf,
+            _cursos_em_andamento,
+            _cursos_disponiveis,
+            _cursos_concluidos,
+            cursos_salvos,
+        ) = montar_dashboard_cursos(usuario_alvo)
+    except ValueError as exc:
+        return JsonResponse({"ok": False, "message": str(exc)}, status=400)
+
+    return JsonResponse(
+        {
+            "ok": True,
+            "message": f"Sincronização concluída. {cursos_salvos} novo(s) curso(s) salvo(s).",
+        }
+    )
 
 
 @login_required
@@ -4142,14 +4245,9 @@ def carga_horaria_por_cpf(request):
     try:
         usuario = User.objects.get(cpf=cpf)
 
-        # Definindo 1º de março do ano atual
-        hoje = timezone.now().date()
-        ano_base = hoje.year
-        data_corte = date(ano_base, 3, 1)
-
-        # Caso ainda estejamos antes de 01/03, use 01/03 do ano anterior
-        if hoje < data_corte:
-            data_corte = date(ano_base - 1, 3, 1)
+        hoje = timezone.localdate()
+        data_corte, data_fim_ciclo = obter_periodo_referencia_ch(hoje)
+        data_fim_considerada = min(hoje, data_fim_ciclo)
 
         # INSCRIÇÕES PFC (apenas 1 vez por curso no ciclo)
         inscricoes_qs = (
@@ -4160,6 +4258,7 @@ def carga_horaria_por_cpf(request):
                 Q(concluido=True),
                 participante=usuario,
                 curso__data_termino__gte=data_corte,
+                curso__data_termino__lte=data_fim_considerada,
             )
             .values("curso__nome_curso")  # agrupa por curso
             .annotate(
@@ -4177,13 +4276,24 @@ def carga_horaria_por_cpf(request):
         validacoes_qs = Validacao_CH.objects.filter(
             usuario=usuario,
             data_termino_curso__gte=data_corte,
+            data_termino_curso__lte=data_fim_considerada,
             status__in=status_validacoes,
         )
 
         # carga_validacoes = sum(i.ch_confirmada or 0 for i in validacoes)
         carga_validacoes = sum(v.ch_confirmada or 0 for v in validacoes_qs)
 
-        carga_total = (carga_pfc or 0) + (carga_validacoes or 0)
+        moodle_qs = CursoCompletoUsuario.objects.filter(
+            user=usuario,
+            data_fim_curso_moodle__date__gte=data_corte,
+            data_fim_curso_moodle__date__lte=data_fim_considerada,
+        )
+        carga_moodle = sum(
+            extrair_numero_carga_horaria(curso.carga_horaria_curso_moodle)
+            for curso in moodle_qs
+        )
+
+        carga_total = (carga_pfc or 0) + (carga_validacoes or 0) + (carga_moodle or 0)
 
         return JsonResponse(
             {
@@ -4193,8 +4303,9 @@ def carga_horaria_por_cpf(request):
                 "detalhe": {
                     "pfc": carga_pfc,
                     "validacoes_externas": carga_validacoes,
+                    "moodle": carga_moodle,
                 },
-                "periodo": f"{data_corte.strftime('%d/%m/%Y')} até hoje",
+                "periodo": f"{data_corte.strftime('%d/%m/%Y')} até {data_fim_considerada.strftime('%d/%m/%Y')}",
             }
         )
 

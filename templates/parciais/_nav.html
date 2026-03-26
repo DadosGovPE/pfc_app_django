@@ -96,10 +96,24 @@
                                 <img class="two iconHeight mx-2" src="{% static 'pfc_app/icones/book-half.svg' %}"
                                     alt="book-half">
                             </div>
-                            <div class="smallFont textColor">Inscrições Abertas</div>
+                            <div class="smallFont textColor">Cursos PFC</div>
                         </a>
                     </li>
                     
+
+                    <li class="nav-item iconChange  me-4 pt-2">
+                        <a class="nav-link text-center  p-0 js-ead-loading-link" href="{% url 'moodle_sync:painel_cursos_usuario' %}">
+                            <div class=" d-flex align-items-center overflow-hidden changeWidth mx-auto">
+                                
+                                <img class="one iconHeight mx-2" src="{% static 'pfc_app/icones/journal-bookmark.svg' %}" alt="cursos-ead">
+                                <img class="two iconHeight mx-2" src="{% static 'pfc_app/icones/journal-bookmark-fill.svg' %}"
+                                    alt="cursos-ead-fill">
+                            </div>
+                            <div class="smallFont textColor">Cursos EAD</div>
+                        </a>
+                    </li>
+
+
                     <li class="nav-item iconChange  me-4 pt-2">
                         <a class="nav-link text-center  p-0" href="{% url 'curadoria_show' %}"> 
                             <div class=" d-flex align-items-center overflow-hidden changeWidth mx-auto">
@@ -136,6 +150,7 @@
                             <div class="smallFont textColor">Meus Cursos</div> 
                         </a>
                     </li>
+
                     
                     <li class="nav-item iconChange  me-4 pt-2">
                         <a class="nav-link text-center  p-0" href="{% url 'carga_horaria' %}"> 

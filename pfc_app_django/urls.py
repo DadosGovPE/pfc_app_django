@@ -23,4 +23,5 @@ urlpatterns = [
     path("admin/", admin.site.urls),
     path("", include("pfc_app.urls")),
     path("mensageria/", include("mensageria.urls")),
+    path("moodle/", include("moodle_sync.urls")),
 ]

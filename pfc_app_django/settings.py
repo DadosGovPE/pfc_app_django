@@ -66,6 +66,7 @@ INSTALLED_APPS = [
     "simple_history",
     "pesquisas",
     "mensageria",
+    "moodle_sync",
 ]
 
 MIDDLEWARE = [
@@ -229,6 +230,9 @@ JAZZMIN_SETTINGS = {
 
 EXPLORER_CONNECTIONS = {"Default": "default"}
 EXPLORER_DEFAULT_CONNECTION = "default"
+
+MOODLE_URL = os.getenv("MOODLE_URL", "https://moodle.seplag.pe.gov.br/moodle")
+MOODLE_TOKEN = os.getenv("MOODLE_TOKEN", "75fa1862d89f8604ee214a3e12d40baa")
 
 
 # LOGGING = {

@@ -69,6 +69,19 @@
                 {% endif %}
                     <h5 class="card-title">Cursos PFC: {{ carga_horaria_pfc }} hora{{ carga_horaria_pfc|custom_pluralize:'s'}} </h5>
                     <h5 class="card-title">Carga Horária Externa Validada: {{ carga_horaria_validada }} hora{{ carga_horaria_validada|custom_pluralize:'s'}} </h5>
+                    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+                        <h5 class="card-title mb-0">Cursos Moodle: {{ carga_horaria_moodle }} hora{{ carga_horaria_moodle|custom_pluralize:'s'}} </h5>
+                        <button
+                            type="button"
+                            class="btn btn-outline-primary btn-sm"
+                            id="btn-sync-cursos-ead"
+                            data-sync-url="{% url 'sincronizar_cursos_ead_carga_horaria' %}"
+                            data-usuario-id="{{ usuario_alvo.id }}"
+                        >
+                            Ver/Sync cursos EAD
+                        </button>
+                    </div>
+                    <p class="text-muted small mt-2 mb-0">Período de referência do ciclo: {{ periodo_referencia }}</p>
                 </div>
                 <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#listaIndeferimentoModal">
                     VER SOLICITAÇÕES INDEFERIDAS
@@ -165,6 +178,114 @@
                 </div>
             </div>
             <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const syncButton = document.getElementById("btn-sync-cursos-ead");
+        const moodleModalElement = document.getElementById("listaMoodleModal");
+
+        function abrirModalMoodle() {
+            if (!moodleModalElement || typeof bootstrap === "undefined") {
+                return;
+            }
+            bootstrap.Modal.getOrCreateInstance(moodleModalElement).show();
+        }
+
+        const params = new URLSearchParams(window.location.search);
+        if (params.get("open_moodle_modal") === "1") {
+            abrirModalMoodle();
+            params.delete("open_moodle_modal");
+            const nextUrl = `${window.location.pathname}${params.toString() ? `?${params.toString()}` : ""}`;
+            window.history.replaceState({}, "", nextUrl);
+        }
+
+        if (!syncButton) {
+            return;
+        }
+
+        syncButton.addEventListener("click", async function () {
+            const syncUrl = this.dataset.syncUrl;
+            const usuarioId = this.dataset.usuarioId || "";
+            const originalLabel = this.textContent.trim();
+            const csrfToken = document.querySelector("input[name='csrfmiddlewaretoken']")?.value;
+
+            this.disabled = true;
+            this.textContent = "Sincronizando...";
+
+            try {
+                const formData = new FormData();
+                if (usuarioId) {
+                    formData.append("usuario_id", usuarioId);
+                }
+
+                const response = await fetch(syncUrl, {
+                    method: "POST",
+                    headers: csrfToken ? { "X-CSRFToken": csrfToken } : {},
+                    body: formData,
+                });
+                const payload = await response.json();
+
+                if (!response.ok || !payload.ok) {
+                    throw new Error(payload.message || "Erro ao sincronizar cursos EAD.");
+                }
+
+                const nextUrl = new URL(window.location.href);
+                nextUrl.searchParams.set("open_moodle_modal", "1");
+                window.location.href = nextUrl.toString();
+            } catch (error) {
+                alert(error.message || "Erro ao sincronizar cursos EAD.");
+                this.disabled = false;
+                this.textContent = originalLabel;
+            }
+        });
+    });
+</script>
+
+<div class="modal fade" id="listaMoodleModal" tabindex="-1" aria-labelledby="listaMoodleModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div>
+                    <h5 class="modal-title" id="listaMoodleModalLabel">Cursos Moodle no ciclo</h5>
+                    <small class="text-muted">{{ periodo_referencia }}</small>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="table-responsive">
+                    <table class="table table-bordered table-striped align-middle">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>CURSO</th>
+                                <th class="text-center">CARGA HORÁRIA</th>
+                                <th class="text-center">CONCLUSÃO</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for curso in cursos_moodle %}
+                                <tr>
+                                    <td>{{ forloop.counter }}</td>
+                                    <td>{{ curso.nome }}</td>
+                                    <td class="text-center">{{ curso.carga_horaria }}</td>
+                                    <td class="text-center">{% if curso.data_fim %}{{ curso.data_fim|date:"d/m/Y" }}{% else %}-{% endif %}</td>
+                                </tr>
+                            {% empty %}
+                                <tr>
+                                    <td colspan="4" class="text-center">Nenhum curso Moodle concluído encontrado no período.</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer justify-content-between">
+                <strong>Total Moodle: {{ carga_horaria_moodle }} hora{{ carga_horaria_moodle|custom_pluralize:'s' }}</strong>
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
             </div>
         </div>
