@@ -1,3 +1,4 @@
+from collections import defaultdict
 from datetime import datetime, timezone
 import json
 import time
@@ -124,6 +125,32 @@ def serializar_curso_catalogo(curso, progresso=None, inscrito=False):
     }
 
 
+def obter_data_conclusao_atividades_curso(userid, courseid):
+    try:
+        status = moodle_api_get(
+            "core_completion_get_activities_completion_status",
+            userid=userid,
+            courseid=courseid,
+        )
+    except ValueError as exc:
+        mensagem = str(exc)
+        if (
+            "Não existem critérios de conclusão" in mensagem
+            or "There are no completion criteria" in mensagem
+        ):
+            return None
+        raise
+
+    maiores_timestamps = []
+    for atividade in status.get("statuses", []):
+        if atividade.get("timecompleted"):
+            maiores_timestamps.append(atividade["timecompleted"])
+
+    if not maiores_timestamps:
+        return None
+    return timestamp_to_utc_datetime(max(maiores_timestamps))
+
+
 def obter_data_conclusao_curso(userid, courseid):
     try:
         status = moodle_api_get(
@@ -133,16 +160,24 @@ def obter_data_conclusao_curso(userid, courseid):
         )
     except ValueError as exc:
         mensagem = str(exc)
-        if "Não existem critérios de conclusão" in mensagem or "There are no completion criteria" in mensagem:
-            return None
-        raise
+        if (
+            "Não existem critérios de conclusão" in mensagem
+            or "There are no completion criteria" in mensagem
+        ):
+            status = {}
+        else:
+            raise
     maiores_timestamps = []
     for comp in status.get("completionstatus", {}).get("completions", []):
         if comp.get("complete") and comp.get("timecompleted"):
             maiores_timestamps.append(comp["timecompleted"])
-    if not maiores_timestamps:
-        return None
-    return timestamp_to_utc_datetime(max(maiores_timestamps))
+    if maiores_timestamps:
+        return timestamp_to_utc_datetime(max(maiores_timestamps))
+
+    # Alguns cursos chegam com progresso 100%, mas sem registrar uma
+    # conclusão de curso consolidada. Nesses casos usamos a data mais
+    # recente de conclusão das atividades como referência do ciclo.
+    return obter_data_conclusao_atividades_curso(userid, courseid)
 
 
 def persistir_cursos_completos(user, cursos_concluidos, usuario_moodle_id=0):
@@ -185,6 +220,148 @@ def persistir_cursos_completos(user, cursos_concluidos, usuario_moodle_id=0):
             novos_registros += 1
 
     return novos_registros
+
+
+def obter_cursos_visiveis_moodle():
+    return [
+        curso
+        for curso in moodle_api_get("core_course_get_courses")
+        if curso.get("visible") and curso.get("id") != 1
+    ]
+
+
+def obter_data_conclusao_curso_otimizada(userid, curso):
+    courseid = curso["id"]
+    if curso.get("completionhascriteria"):
+        return obter_data_conclusao_curso(userid, courseid)
+    return obter_data_conclusao_atividades_curso(userid, courseid)
+
+
+def sincronizar_todos_usuarios_moodle_por_curso(queryset=None, limit=None):
+    inicio_total = time.perf_counter()
+    queryset = queryset or User.objects.filter(is_active=True).order_by("id")
+    if limit:
+        queryset = queryset[:limit]
+
+    usuarios = list(queryset)
+    usuarios_por_cpf = {
+        normalizar_cpf(getattr(user, "cpf", "")): user
+        for user in usuarios
+        if len(normalizar_cpf(getattr(user, "cpf", ""))) == 11
+    }
+    cpfs_alvo = set(usuarios_por_cpf.keys())
+
+    cursos_por_usuario = defaultdict(list)
+    usuario_moodle_ids = {}
+    cursos = obter_cursos_visiveis_moodle()
+    erros = []
+    pares_avaliados = 0
+    pares_com_data = 0
+
+    for curso in cursos:
+        inscritos = moodle_api_get("core_enrol_get_enrolled_users", courseid=curso["id"])
+
+        for usuario_moodle in inscritos:
+            cpf = normalizar_cpf(obter_campo_customizado(usuario_moodle, "cpf"))
+            if cpf not in cpfs_alvo:
+                continue
+
+            user = usuarios_por_cpf[cpf]
+            pares_avaliados += 1
+
+            try:
+                data_conclusao = obter_data_conclusao_curso_otimizada(
+                    usuario_moodle["id"], curso
+                )
+            except ValueError as exc:
+                erros.append(
+                    {
+                        "user_id": user.id,
+                        "cpf": user.cpf,
+                        "usuario": getattr(user, "nome", None)
+                        or getattr(user, "username", str(user)),
+                        "curso_id": curso["id"],
+                        "curso": curso.get("displayname") or curso.get("fullname"),
+                        "message": str(exc),
+                    }
+                )
+                continue
+
+            if not data_conclusao:
+                continue
+
+            pares_com_data += 1
+            usuario_moodle_ids[user.id] = usuario_moodle["id"]
+            cursos_por_usuario[user.id].append(
+                {
+                    "id": curso["id"],
+                    "nome": curso.get("displayname") or curso.get("fullname"),
+                    "carga_horaria": extrair_carga_horaria(curso),
+                    "data_inicio": optional_timestamp_to_utc_datetime(
+                        curso.get("startdate")
+                    ),
+                    "data_fim": data_conclusao,
+                }
+            )
+
+    resultados = []
+    total_processados = 0
+    total_sucesso = 0
+    total_erro = 0
+    total_cursos_salvos = 0
+
+    for user in usuarios:
+        inicio = time.perf_counter()
+        cursos_concluidos = cursos_por_usuario.get(user.id, [])
+        usuario_moodle_id = usuario_moodle_ids.get(user.id, 0)
+
+        try:
+            cursos_salvos = persistir_cursos_completos(
+                user,
+                cursos_concluidos,
+                usuario_moodle_id=usuario_moodle_id,
+            )
+            resultado = {
+                "ok": True,
+                "user_id": user.id,
+                "cpf": getattr(user, "cpf", ""),
+                "usuario": getattr(user, "nome", None)
+                or getattr(user, "username", str(user)),
+                "usuario_moodle_id": usuario_moodle_id,
+                "cursos_concluidos": len(cursos_concluidos),
+                "cursos_salvos": cursos_salvos,
+                "duration_seconds": round(time.perf_counter() - inicio, 2),
+                "message": "Sincronização por curso concluída com sucesso.",
+            }
+            total_sucesso += 1
+            total_cursos_salvos += cursos_salvos
+        except Exception as exc:
+            resultado = {
+                "ok": False,
+                "user_id": user.id,
+                "cpf": getattr(user, "cpf", ""),
+                "usuario": getattr(user, "nome", None)
+                or getattr(user, "username", str(user)),
+                "duration_seconds": round(time.perf_counter() - inicio, 2),
+                "message": str(exc),
+            }
+            total_erro += 1
+
+        resultados.append(resultado)
+        total_processados += 1
+
+    return {
+        "total_processados": total_processados,
+        "total_sucesso": total_sucesso,
+        "total_erro": total_erro,
+        "total_cursos_salvos": total_cursos_salvos,
+        "duration_seconds": round(time.perf_counter() - inicio_total, 2),
+        "resultados": resultados,
+        "cursos_lidos": len(cursos),
+        "pares_avaliados": pares_avaliados,
+        "pares_com_data": pares_com_data,
+        "erros_consulta": erros,
+    }
 
 
 def montar_dashboard_cursos(user):
