@@ -22,7 +22,12 @@ import re
 from django.utils.encoding import force_bytes
 from django.contrib.auth import update_session_auth_hash
 from django.db import IntegrityError, transaction
-from django.http import HttpResponse, JsonResponse, HttpResponseBadRequest
+from django.http import (
+    HttpResponse,
+    JsonResponse,
+    HttpResponseBadRequest,
+    StreamingHttpResponse,
+)
 from django.template import loader
 from .models import (
     Curso,
@@ -117,6 +122,7 @@ from reportlab.lib.units import inch
 from validate_docbr import CPF
 from .filters import UserFilter
 from .avaliacao_rules import validar_acesso_avaliacao
+from .calendar_invites import send_course_calendar_invite
 from moodle_sync.models import CursoCompletoUsuario, CursoConcluidoMoodle
 from moodle_sync.services import montar_dashboard_cursos
 import matplotlib
@@ -158,6 +164,30 @@ MONTHS = [
     (11, "Novembro"),
     (12, "Dezembro"),
 ]
+
+
+def _send_calendar_invite_after_commit(inscricao_id):
+    def _send():
+        try:
+            inscricao = Inscricao.objects.select_related("curso", "participante").get(
+                pk=inscricao_id
+            )
+            send_course_calendar_invite(inscricao)
+        except Exception:
+            logger.exception(
+                "Falha ao enviar convite de agenda da inscricao %s", inscricao_id
+            )
+
+    transaction.on_commit(_send)
+
+
+def _inscricao_progress_event(step, status, message=None, redirect_url=None):
+    payload = {"step": step, "status": status}
+    if message:
+        payload["message"] = message
+    if redirect_url:
+        payload["redirect_url"] = redirect_url
+    return f"data: {json.dumps(payload, ensure_ascii=False)}\n\n"
 
 
 # Create your views here.
@@ -1142,7 +1172,8 @@ def inscrever(request, curso_id):
         if criada:
             # A inscrição foi criada com sucesso
             messages.success(request, "Inscrição realizada!")
-            # send_mail('Teste', f'Follow this link to reset your password: ihaa', 'g.trindade@gmail.com', [request.user.email])
+            if inscricao.status_id == status_id_aprovada.id:
+                _send_calendar_invite_after_commit(inscricao.id)
             return redirect("lista_cursos")
         else:
             # A inscrição já existe
@@ -1152,6 +1183,126 @@ def inscrever(request, curso_id):
         print("INTEGRITY ERROR")
         messages.error(request, "Você já está inscrito")
         return redirect("detail_curso", pk=curso_id)
+
+@login_required
+def inscrever_progresso(request, curso_id):
+    """Realiza inscricao via streaming para exibir progresso no modal."""
+
+    def stream():
+        yield _inscricao_progress_event("inscricao", "running")
+
+        try:
+            curso = Curso.objects.get(pk=curso_id)
+            status_id_aprovada = StatusInscricao.objects.get(nome="APROVADA")
+            status_id_pendente = StatusInscricao.objects.get(nome="PENDENTE")
+            status_id_fila = StatusInscricao.objects.get(nome="EM FILA")
+
+            inscricoes_validas = Inscricao.objects.filter(
+                ~Q(status__nome="CANCELADA"),
+                ~Q(status__nome="EM FILA"),
+                ~Q(status__nome="PENDENTE"),
+                ~Q(condicao_na_acao="DOCENTE"),
+                curso=curso,
+            ).count()
+
+            if curso.status.nome != "A INICIAR":
+                yield _inscricao_progress_event(
+                    "inscricao",
+                    "error",
+                    "Curso não disponível!",
+                    reverse("lista_cursos"),
+                )
+                return
+
+            if inscricoes_validas >= curso.vagas:
+                _inscricao, criada = Inscricao.objects.get_or_create(
+                    participante=request.user, curso=curso, status=status_id_fila
+                )
+                if criada:
+                    yield _inscricao_progress_event(
+                        "inscricao", "done", "Inscrição adicionada à fila"
+                    )
+                    yield _inscricao_progress_event(
+                        "convite", "skipped", "Convite não enviado para fila"
+                    )
+                    yield _inscricao_progress_event(
+                        "final", "done", redirect_url=reverse("lista_cursos")
+                    )
+                else:
+                    yield _inscricao_progress_event(
+                        "inscricao",
+                        "error",
+                        "Você já está inscrito",
+                        reverse("lista_cursos"),
+                    )
+                return
+
+            if curso.eh_evento or curso.is_externo or not request.user.is_externo:
+                inscricao, criada = Inscricao.objects.get_or_create(
+                    participante=request.user, curso=curso, status=status_id_aprovada
+                )
+            else:
+                inscricao, criada = Inscricao.objects.get_or_create(
+                    participante=request.user, curso=curso, status=status_id_pendente
+                )
+
+            if not criada:
+                yield _inscricao_progress_event(
+                    "inscricao",
+                    "error",
+                    "Você já está inscrito",
+                    reverse("lista_cursos"),
+                )
+                return
+
+            yield _inscricao_progress_event("inscricao", "done", "Inscrição realizada")
+
+            if inscricao.status_id != status_id_aprovada.id:
+                yield _inscricao_progress_event(
+                    "convite", "skipped", "Inscrição pendente de aprovação"
+                )
+                yield _inscricao_progress_event(
+                    "final", "done", redirect_url=reverse("lista_cursos")
+                )
+                return
+
+            yield _inscricao_progress_event("convite", "running")
+            try:
+                send_course_calendar_invite(inscricao)
+                yield _inscricao_progress_event("convite", "done", "Convite enviado")
+            except Exception:
+                logger.exception(
+                    "Falha ao enviar convite de agenda da inscricao %s", inscricao.id
+                )
+                yield _inscricao_progress_event(
+                    "convite",
+                    "error",
+                    "Inscrição realizada, mas o convite não foi enviado",
+                )
+
+            yield _inscricao_progress_event(
+                "final", "done", redirect_url=reverse("lista_cursos")
+            )
+        except IntegrityError:
+            yield _inscricao_progress_event(
+                "inscricao",
+                "error",
+                "Você já está inscrito",
+                reverse("detail_curso", kwargs={"pk": curso_id}),
+            )
+        except Exception:
+            logger.exception("Falha ao realizar inscricao com progresso")
+            yield _inscricao_progress_event(
+                "inscricao",
+                "error",
+                "Não foi possível concluir a inscrição",
+                reverse("detail_curso", kwargs={"pk": curso_id}),
+            )
+
+    response = StreamingHttpResponse(stream(), content_type="text/event-stream")
+    response["Cache-Control"] = "no-cache"
+    response["X-Accel-Buffering"] = "no"
+    return response
 
 
 def sucesso_inscricao(request):

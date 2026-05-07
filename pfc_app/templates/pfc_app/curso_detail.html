@@ -62,10 +62,12 @@
                         {% if curso.status.nome == "A INICIAR" %}
                             {% if lotado %}
                                 <a href="/inscrever/{{curso.id}}/" 
-                                class="btn btn-warning "></i>ENTRAR NA FILA</a>
+                                class="btn btn-warning js-inscricao-progress"
+                                data-progress-url="{% url 'inscrever_curso_progresso' curso.id %}"></i>ENTRAR NA FILA</a>
                             {% else %}
                                 <a href="/inscrever/{{curso.id}}/" 
-                                class="btn btn-success "></i>INSCREVER-SE</a>
+                                class="btn btn-success js-inscricao-progress"
+                                data-progress-url="{% url 'inscrever_curso_progresso' curso.id %}"></i>INSCREVER-SE</a>
                             {% endif %}
                         {% endif %}
                         
@@ -100,4 +102,154 @@
       </div>
     </div>
   </div>
+
+<div class="modal fade" id="inscricaoProgressModal" tabindex="-1" aria-labelledby="inscricaoProgressModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="inscricaoProgressModalLabel">Inscrição no curso</h5>
+            </div>
+            <div class="modal-body">
+                <div class="d-flex align-items-center justify-content-between py-2 border-bottom">
+                    <span>Realizando inscrição</span>
+                    <span id="inscricaoStepStatus" class="text-primary">
+                        <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                    </span>
+                </div>
+                <div class="d-flex align-items-center justify-content-between py-2 border-bottom">
+                    <span>Enviando convite</span>
+                    <span id="conviteStepStatus" class="text-muted">aguardando</span>
+                </div>
+                <p id="inscricaoProgressMessage" class="small text-muted mb-0 mt-3">Aguarde um instante...</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const progressLinks = document.querySelectorAll('.js-inscricao-progress');
+    const modalElement = document.getElementById('inscricaoProgressModal');
+    const inscricaoStatus = document.getElementById('inscricaoStepStatus');
+    const conviteStatus = document.getElementById('conviteStepStatus');
+    const messageElement = document.getElementById('inscricaoProgressMessage');
+
+    if (!progressLinks.length || !modalElement || typeof bootstrap === 'undefined') {
+        return;
+    }
+
+    const modal = new bootstrap.Modal(modalElement);
+    const spinner = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>';
+
+    function setStep(step, status, message) {
+        const target = step === 'convite' ? conviteStatus : inscricaoStatus;
+        if (!target) {
+            return;
+        }
+
+        target.className = '';
+        if (status === 'running') {
+            target.classList.add('text-primary');
+            target.innerHTML = spinner;
+        } else if (status === 'done') {
+            target.classList.add('text-success', 'fw-semibold');
+            target.textContent = '✓';
+        } else if (status === 'skipped') {
+            target.classList.add('text-muted');
+            target.textContent = 'não se aplica';
+        } else if (status === 'error') {
+            target.classList.add('text-danger', 'fw-semibold');
+            target.textContent = '!';
+        }
+
+        if (message) {
+            messageElement.textContent = message;
+            messageElement.classList.toggle('text-danger', status === 'error');
+        }
+    }
+
+    function resetModal() {
+        inscricaoStatus.className = 'text-primary';
+        inscricaoStatus.innerHTML = spinner;
+        conviteStatus.className = 'text-muted';
+        conviteStatus.textContent = 'aguardando';
+        messageElement.className = 'small text-muted mb-0 mt-3';
+        messageElement.textContent = 'Aguarde um instante...';
+    }
+
+    async function readProgress(response) {
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = '';
+        let redirectUrl = null;
+
+        while (true) {
+            const result = await reader.read();
+            if (result.done) {
+                break;
+            }
+
+            buffer += decoder.decode(result.value, { stream: true });
+            const events = buffer.split('\n\n');
+            buffer = events.pop();
+
+            events.forEach(function (eventText) {
+                const dataLine = eventText.split('\n').find(function (line) {
+                    return line.startsWith('data: ');
+                });
+                if (!dataLine) {
+                    return;
+                }
+
+                const payload = JSON.parse(dataLine.slice(6));
+                if (payload.step !== 'final') {
+                    setStep(payload.step, payload.status, payload.message);
+                }
+                if (payload.redirect_url) {
+                    redirectUrl = payload.redirect_url;
+                }
+            });
+        }
+
+        if (redirectUrl) {
+            messageElement.className = 'small text-muted mb-0 mt-3';
+            messageElement.textContent = 'Redirecionando para página inicial...';
+            setTimeout(function () {
+                window.location.href = redirectUrl;
+            }, 900);
+        }
+    }
+
+    progressLinks.forEach(function (link) {
+        link.addEventListener('click', async function (event) {
+            if (!window.fetch || !window.ReadableStream) {
+                return;
+            }
+
+            event.preventDefault();
+            resetModal();
+            modal.show();
+            link.classList.add('disabled');
+
+            try {
+                const response = await fetch(link.dataset.progressUrl, {
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                    credentials: 'same-origin'
+                });
+
+                if (!response.ok || !response.body) {
+                    throw new Error('Resposta inválida');
+                }
+
+                await readProgress(response);
+            } catch (error) {
+                setStep('inscricao', 'error', 'Não foi possível acompanhar a inscrição. Redirecionando...');
+                setTimeout(function () {
+                    window.location.href = link.href;
+                }, 1200);
+            }
+        });
+    });
+});
+</script>
 {% endblock %}
