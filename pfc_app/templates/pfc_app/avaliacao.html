@@ -3,7 +3,9 @@
 {% block content %}
 {% include 'parciais/_messages.html' %}
 
-{% if curso.eh_evento %}
+{% if is_moodle %}
+  <div class="d-flex p-2 justify-content-center mb-0"><h1>AvaliaÃ§Ã£o do Curso Moodle: {{ curso_nome }}</h1></div>
+{% elif curso.eh_evento %}
   <div class="d-flex p-2 justify-content-center mb-0"><h1>Avaliação do Evento: {{curso}}</h1></div>
 {% else %}
   <div class="d-flex p-2 justify-content-center mb-0"><h1>Avaliação do Curso: {{curso}}</h1></div>

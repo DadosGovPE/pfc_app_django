@@ -3,20 +3,43 @@
 {% block content %}
 {% include 'parciais/_messages.html' %}
     <div class="d-flex p-2 justify-content-center mb-4"><h1>MEUS CURSOS</h1></div>
+
+    <div class="accordion" id="meusCursosAccordion">
+    <div class="accordion-item">
+    <h2 class="accordion-header" id="cursosPfcHeading">
+        <button class="accordion-button collapsed"
+                type="button"
+                data-bs-toggle="collapse"
+                data-bs-target="#cursosPfcCollapse"
+                aria-expanded="false"
+                aria-controls="cursosPfcCollapse">
+            <span class="d-flex w-100 align-items-center justify-content-between gap-3 pe-3">
+            <span class="fw-bold">Cursos PFC</span>
+            <span class="d-flex flex-wrap justify-content-end gap-2">
+                <span class="badge bg-primary">{{ pfc_resumo.total }} cursos</span>
+                <span class="badge bg-warning text-dark">{{ pfc_resumo.avaliacoes_pendentes }} avaliacoes pendentes</span>
+                <span class="badge bg-success">{{ pfc_resumo.certificados_disponiveis }} certificados disponiveis</span>
+            </span>
+            </span>
+        </button>
+    </h2>
+    <div id="cursosPfcCollapse"
+         class="accordion-collapse collapse"
+         aria-labelledby="cursosPfcHeading">
+    <div class="accordion-body p-0 pt-3">
     <div class="table-responsive">
     <table class="table">
         <thead>
           <tr>
             <th scope="col">ID</th>
-            <th scope="col" class="text-center">ANO DE TÉRMINO</th>
+            <th scope="col" class="text-center">ANO DE TERMINO</th>
             <th scope="col" class="text-center">NOME DO CURSO</th>
             <th scope="col" class="text-center">STATUS DO CURSO</th>
-            <th scope="col" class="text-center">CARGA HORÁRIA</th>
-            <th scope="col" class="text-center">CONCLUÍDO</th>
-            <th scope="col" class="text-center">STATUS DA INSCRIÇÃO</th>
-            <th scope="col" style="width: 150px;" class="text-center">AÇÃO</th>
+            <th scope="col" class="text-center">CARGA HORARIA</th>
+            <th scope="col" class="text-center">CONCLUIDO</th>
+            <th scope="col" class="text-center">STATUS DA INSCRICAO</th>
+            <th scope="col" style="width: 150px;" class="text-center">ACAO</th>
             <th scope="col" style="width: 180px;" class="text-center">CERTIFICADO</th>
-
           </tr>
         </thead>
         <tbody>
@@ -26,116 +49,172 @@
                     <td class="text-center">{{ inscricao.curso.data_termino|date:"Y" }}</td>
                     <td>
                         <a href="{% url 'detail_curso' inscricao.curso.id %}" style="color: black;">
-                            <strong> {{ inscricao.curso.nome_curso }} </strong>
+                            <strong>{{ inscricao.curso.nome_curso }}</strong>
                         </a>
                     </td>
                     <td class="text-center">{{ inscricao.curso.status.nome }}</td>
                     <td class="text-center">{{ inscricao.ch_valida }}</td>
-                    {% if  inscricao.concluido %}
-                        <td class="text-center">SIM</td>
-                    {% else %}
-                        <td class="text-center">NÃO</td>
-                    {% endif %}
-                    <td class="text-center">{{ inscricao.status }}</td>  
-                    
-                        {% if  inscricao.curso.periodo_avaliativo and inscricao.condicao_na_acao == 'DISCENTE' %}
-                            {% if  inscricao.curso.status.nome == "FINALIZADO" and inscricao.concluido  %}
-                                {% if  inscricao.curso_avaliado %}
-                                    <td class="text-center"><a href="#" 
-                                                            class="btn btn-secondary"
-                                                            data-bs-toggle="tooltip" data-bs-placement="top" title="Curso já avaliado"
-                                                            >AVALIADO</a></td>
-                                {% else %}
-                                    <td class="text-center"><a href="/avaliacao/{{ inscricao.curso.id }}" 
-                                                            class="btn btn-primary"
-                                                            data-bs-toggle="tooltip" data-bs-placement="top" title="Avaliar curso"
-                                                            >AVALIAR</a></td>
-                                {% endif %}
+                    <td class="text-center">{% if inscricao.concluido %}SIM{% else %}NAO{% endif %}</td>
+                    <td class="text-center">{{ inscricao.status }}</td>
+                    <td class="text-center">
+                        {% if inscricao.avaliacao_pendente %}
+                            <a href="{% url 'avaliacao' curso_id=inscricao.curso.id %}"
+                               class="btn btn-primary"
+                               data-bs-toggle="tooltip"
+                               data-bs-placement="top"
+                               title="Avaliar curso">AVALIAR</a>
+                        {% elif inscricao.curso_avaliado and inscricao.curso.periodo_avaliativo and inscricao.condicao_na_acao == 'DISCENTE' %}
+                            <a href="#"
+                               class="btn btn-secondary"
+                               data-bs-toggle="tooltip"
+                               data-bs-placement="top"
+                               title="Curso ja avaliado">AVALIADO</a>
+                        {% elif inscricao.status.nome == "APROVADA" or inscricao.status.nome == "PENDENTE" %}
+                            {% if inscricao.curso.status.nome == "A INICIAR" or inscricao.curso.status.nome == "INICIADO" %}
+                                <span data-bs-toggle="tooltip" data-bs-placement="top" title="Cancela a inscricao neste curso">
+                                    <button type="button"
+                                            class="btn btn-danger"
+                                            data-bs-toggle="modal"
+                                            data-bs-target="#cancelar{{ forloop.counter }}">
+                                        <i class="bi bi-x-circle"></i> CANCELAR
+                                    </button>
+                                </span>
                             {% else %}
-                                <td>-</td>
+                                -
                             {% endif %}
                         {% else %}
-                            {% if  inscricao.status.nome == "APROVADA" or inscricao.status.nome == "PENDENTE" %}
-                                {% if  inscricao.curso.status.nome == "A INICIAR" or inscricao.curso.status.nome == "INICIADO" %}
-                                    <td class="text-center">
-                                    <span data-bs-toggle="tooltip" data-bs-placement="top" title="Cancela a inscrição neste curso">
-                                        <button type="button" class="btn btn-danger" 
-                                        data-bs-toggle="modal" 
-                                        data-bs-target="#cancelar{{ forloop.counter }}"
-                                        ><i class="bi bi-x-circle"></i> CANCELAR
-                                        </button>
-                                    </span>
-                                    </td>
-                                    <!-- Modal -->
-                                    <div class="modal fade" id="cancelar{{ forloop.counter }}" data-bs-backdrop="true" data-bs-keyboard="true" tabindex="-1" aria-labelledby="staticBackdropLabel" aria-hidden="true">
-                                        <div class="modal-dialog modal-dialog-scrollable">
-                                        <div class="modal-content">
-                                            <div class="modal-header">
-                                            <h5 class="modal-title" id="cancelarLabel">Deseja cancelar a inscrição?</h5>
-                                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                                            </div>
-                                            <div class="modal-body">
-                                            <p>Caso você mude de ideia terá que falar com os administradores.</p>
-                                            <p></p>
-                                            <p></p>
-                                            <p>Tem certeza?</p>
-                                            <p><a href="{% url 'cancelar_inscricao' inscricao.id %}" class="btn btn-danger">CANCELAR INSCRIÇÃO</a></p>
-                                            </div>
-                                            <div class="modal-footer">
-                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
-                                            </div>
-                                        </div>
-                                        </div>
-                                    </div>
-                                
-                                {% else %}
-                                    <td>-</td>
-                                {% endif %}
-                            {% else %}
-                                <td>-</td> 
-                            {% endif %}
-                            
+                            -
                         {% endif %}
-                    {% if  inscricao.curso.eh_evento %}
-                        {% if  inscricao.curso.status.nome == "FINALIZADO" and inscricao.concluido %}
-                            <td class="text-center">
-                                <a href="{% url 'generate_all_pdfs' curso_id=inscricao.curso.id unico=1 %}" 
-                                class="btn btn-primary gerar-certificado-btn" id="botaoCertificado"
-                                data-bs-toggle="tooltip" data-bs-placement="top" title="Baixa seu certificado">
+                    </td>
+                    <td class="text-center">
+                        {% if inscricao.certificado_disponivel %}
+                            <a href="{% url 'generate_all_pdfs' curso_id=inscricao.curso.id unico=1 %}"
+                               class="btn btn-primary gerar-certificado-btn"
+                               data-bs-toggle="tooltip"
+                               data-bs-placement="top"
+                               title="Baixa seu certificado">
                                 <i class="bi bi-download"></i> CERTIFICADO</a>
-                            </td>
+                        {% else %}
+                            -
                         {% endif %}
-                    {% else %}
-
-                        {% if  inscricao.curso.status.nome == "FINALIZADO" and inscricao.concluido and inscricao.curso.inst_certificadora.nome == 'IGPE' and inscricao.curso_avaliado  %}
-                            <td class="text-center">
-                                <a href="{% url 'generate_all_pdfs' curso_id=inscricao.curso.id unico=1 %}" 
-                                class="btn btn-primary gerar-certificado-btn" id="botaoCertificado"
-                                data-bs-toggle="tooltip" data-bs-placement="top" title="Baixa seu certificado">
-                                <i class="bi bi-download"></i> CERTIFICADO</a>
-                            </td>
-                        {% elif inscricao.curso.status.nome == "FINALIZADO" and inscricao.concluido and inscricao.curso.inst_certificadora.nome == 'IGPE' and inscricao.condicao_na_acao == 'DOCENTE'%}
-                            <td class="text-center">
-                                <a href="{% url 'generate_all_pdfs' curso_id=inscricao.curso.id unico=1 %}" 
-                                class="btn btn-primary gerar-certificado-btn" id="botaoCertificado"
-                                data-bs-toggle="tooltip" data-bs-placement="top" title="Baixa seu certificado">
-                                <i class="bi bi-download"></i> CERTIFICADO</a>
-                            </td>
-                        
-                        {% endif %}
-                    {% endif %}
-                    
+                    </td>
                 </tr>
+
+                <div class="modal fade" id="cancelar{{ forloop.counter }}" data-bs-backdrop="true" data-bs-keyboard="true" tabindex="-1" aria-labelledby="cancelarLabel{{ forloop.counter }}" aria-hidden="true">
+                    <div class="modal-dialog modal-dialog-scrollable">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                        <h5 class="modal-title" id="cancelarLabel{{ forloop.counter }}">Deseja cancelar a inscricao?</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                        <p>Caso voce mude de ideia tera que falar com os administradores.</p>
+                        <p>Tem certeza?</p>
+                        <p><a href="{% url 'cancelar_inscricao' inscricao.id %}" class="btn btn-danger">CANCELAR INSCRICAO</a></p>
+                        </div>
+                        <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+                        </div>
+                    </div>
+                    </div>
+                </div>
             {% empty %}
-                <p>Você não tem inscrições.</p>
-                  
+                <tr>
+                    <td colspan="9" class="text-center">Voce nao tem inscricoes PFC.</td>
+                </tr>
             {% endfor %}
-          
         </tbody>
       </table>
     </div>
+    </div>
+    </div>
+    </div>
 
-<!-- Modal -->
+    <div class="accordion-item mt-3">
+    <h2 class="accordion-header" id="cursosMoodleHeading">
+        <button class="accordion-button collapsed"
+                type="button"
+                data-bs-toggle="collapse"
+                data-bs-target="#cursosMoodleCollapse"
+                aria-expanded="false"
+                aria-controls="cursosMoodleCollapse">
+            <span class="d-flex w-100 align-items-center justify-content-between gap-3 pe-3">
+            <span class="fw-bold">Cursos Moodle</span>
+            <span class="d-flex flex-wrap justify-content-end gap-2">
+                <span class="badge bg-primary">{{ moodle_resumo.total }} cursos</span>
+                <span class="badge bg-warning text-dark">{{ moodle_resumo.avaliacoes_pendentes }} avaliacoes pendentes</span>
+                <span class="badge bg-success">{{ moodle_resumo.certificados_disponiveis }} certificados disponiveis</span>
+            </span>
+            </span>
+        </button>
+    </h2>
+    <div id="cursosMoodleCollapse"
+         class="accordion-collapse collapse"
+         aria-labelledby="cursosMoodleHeading">
+    <div class="accordion-body p-0 pt-3">
+    <div class="table-responsive">
+    <table class="table">
+        <thead>
+          <tr>
+            <th scope="col">ID MOODLE</th>
+            <th scope="col" class="text-center">ANO DE CONCLUSAO</th>
+            <th scope="col" class="text-center">NOME DO CURSO</th>
+            <th scope="col" class="text-center">STATUS</th>
+            <th scope="col" class="text-center">CARGA HORARIA</th>
+            <th scope="col" class="text-center">CONCLUIDO</th>
+            <th scope="col" style="width: 150px;" class="text-center">ACAO</th>
+            <th scope="col" style="width: 180px;" class="text-center">CERTIFICADO</th>
+          </tr>
+        </thead>
+        <tbody>
+            {% for curso_moodle in cursos_moodle %}
+                <tr>
+                    <th scope="row">{{ curso_moodle.curso_moodle_id }}</th>
+                    <td class="text-center">{{ curso_moodle.data_conclusao|date:"Y" }}</td>
+                    <td><strong>{{ curso_moodle.nome_curso }}</strong></td>
+                    <td class="text-center">FINALIZADO</td>
+                    <td class="text-center">{{ curso_moodle.carga_horaria }}</td>
+                    <td class="text-center">SIM</td>
+                    {% if curso_moodle.curso_avaliado %}
+                        <td class="text-center">
+                            <a href="#"
+                               class="btn btn-secondary"
+                               data-bs-toggle="tooltip"
+                               data-bs-placement="top"
+                               title="Curso ja avaliado">AVALIADO</a>
+                        </td>
+                        <td class="text-center">
+                            <a href="{% url 'generate_moodle_pdf' curso_moodle_id=curso_moodle.curso_moodle_id %}"
+                               class="btn btn-primary gerar-certificado-btn"
+                               data-bs-toggle="tooltip"
+                               data-bs-placement="top"
+                               title="Baixa seu certificado">
+                               <i class="bi bi-download"></i> CERTIFICADO</a>
+                        </td>
+                    {% else %}
+                        <td class="text-center">
+                            <a href="{% url 'avaliacao_moodle' curso_moodle_id=curso_moodle.curso_moodle_id %}"
+                               class="btn btn-primary"
+                               data-bs-toggle="tooltip"
+                               data-bs-placement="top"
+                               title="Avaliar curso">AVALIAR</a>
+                        </td>
+                        <td class="text-center">-</td>
+                    {% endif %}
+                </tr>
+            {% empty %}
+                <tr>
+                    <td colspan="8" class="text-center">Nenhum curso Moodle concluido.</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    </div>
+    </div>
+    </div>
+    </div>
+
 <div class="modal fade" id="loadingModal" tabindex="-1" aria-labelledby="loadingModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
@@ -153,16 +232,14 @@
     document.addEventListener('DOMContentLoaded', function() {
         var loadingModal = new bootstrap.Modal(document.getElementById('loadingModal'));
 
-        // Adiciona um event listener para todos os links de gerar certificado
         document.querySelectorAll('.gerar-certificado-btn').forEach(function(button) {
             button.addEventListener('click', function(event) {
                 loadingModal.show();
                 setTimeout(function() {
                     loadingModal.hide();
-                }, 3000); // 3000 milissegundos = 3 segundos
+                }, 3000);
             });
         });
     });
 </script>
 {% endblock %}
-

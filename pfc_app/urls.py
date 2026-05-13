@@ -37,6 +37,11 @@ urlpatterns = [
     path("inscrever/<int:curso_id>/", views.inscrever, name="inscrever_curso"),
     path("avaliacao/<int:curso_id>/", views.avaliacao, name="avaliacao"),
     path(
+        "avaliacao/moodle/<int:curso_moodle_id>/",
+        views.avaliacao_moodle,
+        name="avaliacao_moodle",
+    ),
+    path(
         "inscricao_cancelar/<int:inscricao_id>/",
         views.cancelar_inscricao,
         name="cancelar_inscricao",
@@ -57,6 +62,11 @@ urlpatterns = [
         "generate_single_pdf/<int:inscricao_id>/",
         views.generate_single_pdf,
         name="generate_single_pdf",
+    ),
+    path(
+        "certificado/moodle/<int:curso_moodle_id>/",
+        views.generate_moodle_pdf,
+        name="generate_moodle_pdf",
     ),
     path(
         "reset-password/", views.reset_password_request, name="reset_password_request"

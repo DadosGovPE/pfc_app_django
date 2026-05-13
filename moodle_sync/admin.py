@@ -1,6 +1,11 @@
 from django.contrib import admin
 
-from .models import CursoCompletoUsuario, CursoConcluidoMoodle
+from .models import (
+    AvaliacaoAbertaMoodle,
+    AvaliacaoMoodle,
+    CursoCompletoUsuario,
+    CursoConcluidoMoodle,
+)
 
 
 @admin.register(CursoConcluidoMoodle)
@@ -26,3 +31,24 @@ class CursoCompletoUsuarioAdmin(admin.ModelAdmin):
     )
     search_fields = ("user__nome", "user__cpf", "id_curso_moodle")
 
+
+@admin.register(AvaliacaoMoodle)
+class AvaliacaoMoodleAdmin(admin.ModelAdmin):
+    list_display = ("curso_moodle", "participante", "subtema", "nota")
+    list_filter = ("subtema", "nota")
+    search_fields = (
+        "curso_moodle__nome_curso",
+        "participante__nome",
+        "participante__cpf",
+    )
+
+
+@admin.register(AvaliacaoAbertaMoodle)
+class AvaliacaoAbertaMoodleAdmin(admin.ModelAdmin):
+    list_display = ("curso_moodle", "participante")
+    search_fields = (
+        "curso_moodle__nome_curso",
+        "participante__nome",
+        "participante__cpf",
+        "avaliacao",
+    )

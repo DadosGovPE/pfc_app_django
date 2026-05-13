@@ -123,7 +123,12 @@ from validate_docbr import CPF
 from .filters import UserFilter
 from .avaliacao_rules import validar_acesso_avaliacao
 from .calendar_invites import send_course_calendar_invite
-from moodle_sync.models import CursoCompletoUsuario, CursoConcluidoMoodle
+from moodle_sync.models import (
+    AvaliacaoAbertaMoodle,
+    AvaliacaoMoodle,
+    CursoCompletoUsuario,
+    CursoConcluidoMoodle,
+)
 from moodle_sync.services import montar_dashboard_cursos
 import matplotlib
 
@@ -1038,8 +1043,10 @@ def sincronizar_cursos_ead_carga_horaria(request):
 @login_required
 def inscricoes(request):
     """Mostra todas as inscrições do usuário e se já foram avaliadas."""
-    inscricoes_do_usuario = (
-        Inscricao.objects.annotate(
+    inscricoes_do_usuario = list(
+        Inscricao.objects.select_related(
+            "curso__status", "curso__inst_certificadora", "status"
+        ).annotate(
             curso_avaliado=Exists(
                 Avaliacao.objects.filter(
                     participante=request.user, curso=OuterRef("curso")
@@ -1049,9 +1056,69 @@ def inscricoes(request):
         .filter(participante=request.user)
         .order_by("-curso__data_termino")
     )
+    cursos_moodle = list(
+        CursoConcluidoMoodle.objects.annotate(
+            curso_avaliado=Exists(
+                AvaliacaoMoodle.objects.filter(
+                    participante=request.user, curso_moodle=OuterRef("pk")
+                )
+            )
+        )
+        .filter(usuario_pfc=request.user)
+        .order_by("-data_conclusao", "-curso_moodle_id")
+    )
+    pfc_avaliacoes_pendentes = 0
+    pfc_certificados_disponiveis = 0
+    for inscricao in inscricoes_do_usuario:
+        curso = inscricao.curso
+        status_nome = getattr(getattr(curso, "status", None), "nome", None)
+        inst_certificadora = getattr(curso, "inst_certificadora", None)
+        inst_certificadora_nome = getattr(inst_certificadora, "nome", None)
+
+        inscricao.avaliacao_pendente = (
+            bool(getattr(curso, "periodo_avaliativo", False))
+            and inscricao.condicao_na_acao == "DISCENTE"
+            and status_nome == "FINALIZADO"
+            and inscricao.concluido
+            and not inscricao.curso_avaliado
+        )
+        inscricao.certificado_disponivel = (
+            bool(getattr(curso, "eh_evento", False))
+            and status_nome == "FINALIZADO"
+            and inscricao.concluido
+        ) or (
+            not bool(getattr(curso, "eh_evento", False))
+            and status_nome == "FINALIZADO"
+            and inscricao.concluido
+            and inst_certificadora_nome == "IGPE"
+            and (inscricao.curso_avaliado or inscricao.condicao_na_acao == "DOCENTE")
+        )
+
+        if inscricao.avaliacao_pendente:
+            pfc_avaliacoes_pendentes += 1
+        if inscricao.certificado_disponivel:
+            pfc_certificados_disponiveis += 1
+
+    moodle_avaliacoes_pendentes = sum(
+        1 for curso_moodle in cursos_moodle if not curso_moodle.curso_avaliado
+    )
+    moodle_certificados_disponiveis = sum(
+        1 for curso_moodle in cursos_moodle if curso_moodle.curso_avaliado
+    )
 
     context = {
         "inscricoes": inscricoes_do_usuario,
+        "cursos_moodle": cursos_moodle,
+        "pfc_resumo": {
+            "total": len(inscricoes_do_usuario),
+            "avaliacoes_pendentes": pfc_avaliacoes_pendentes,
+            "certificados_disponiveis": pfc_certificados_disponiveis,
+        },
+        "moodle_resumo": {
+            "total": len(cursos_moodle),
+            "avaliacoes_pendentes": moodle_avaliacoes_pendentes,
+            "certificados_disponiveis": moodle_certificados_disponiveis,
+        },
     }
 
     return render(request, "pfc_app/inscricoes.html", context)
@@ -1387,6 +1454,225 @@ def avaliacao(request, curso_id):
     # form = AvaliacaoForm()
 
     return render(request, "pfc_app/avaliacao.html", {"temas": temas, "curso": curso})
+
+
+def _formatar_data_certificado(valor):
+    if not valor:
+        return ""
+    if hasattr(valor, "date"):
+        valor = valor.date()
+    return valor.strftime("%d/%m/%Y")
+
+
+def _formatar_cpf_certificado(user):
+    cpf = CPF()
+    if not cpf.validate(user.cpf):
+        raise ValueError(f"CPF de {user.nome} estÃ¡ errado! ({user.cpf})")
+    return f"{user.cpf[:3]}.{user.cpf[3:6]}.{user.cpf[6:9]}-{user.cpf[9:]}"
+
+
+def _nome_arquivo_certificado(user, nome_curso):
+    nome_limpo = re.sub(r"[^\w\-. ]+", "", nome_curso).strip() or "curso-moodle"
+    return f"{user.username}-{nome_limpo}.pdf"
+
+
+def _gerar_certificado_moodle_pdf(request, curso_moodle):
+    certificado = Certificado.objects.get(codigo="conclusao")
+    user = request.user
+    curso_completo = CursoCompletoUsuario.objects.filter(
+        user=user, id_curso_moodle=curso_moodle.curso_moodle_id
+    ).first()
+
+    data_inicio = curso_completo.data_inicio_curso_moodle if curso_completo else None
+    data_termino = curso_moodle.data_conclusao or (
+        curso_completo.data_fim_curso_moodle if curso_completo else None
+    )
+
+    texto_certificado = certificado.texto
+    tag_mapping = {
+        "[nome_completo]": user.nome,
+        "[cpf]": _formatar_cpf_certificado(user),
+        "[nome_curso]": curso_moodle.nome_curso,
+        "[data_inicio]": _formatar_data_certificado(data_inicio),
+        "[data_termino]": _formatar_data_certificado(data_termino),
+        "[curso_carga_horaria]": curso_moodle.carga_horaria,
+        "[condicao_na_acao]": "discente",
+    }
+
+    for tag, value in tag_mapping.items():
+        texto_certificado = texto_certificado.replace(tag, str(value))
+
+    output_folder = "pdf_output"
+    if not os.path.exists(output_folder):
+        os.makedirs(output_folder)
+
+    pdf_filename = os.path.join(
+        output_folder, _nome_arquivo_certificado(user, curso_moodle.nome_curso)
+    )
+
+    style_body = ParagraphStyle(
+        "body", fontName="Helvetica", fontSize=13, leading=17, alignment=TA_JUSTIFY
+    )
+    style_title = ParagraphStyle("title", fontName="Helvetica", fontSize=36)
+    style_subtitle = ParagraphStyle("subtitle", fontName="Helvetica", fontSize=24)
+
+    width, height = landscape(A4)
+    c = canvas.Canvas(pdf_filename, pagesize=landscape(A4))
+    p_title = Paragraph(certificado.cabecalho, style_title)
+    p_subtitle = Paragraph(certificado.subcabecalho1, style_subtitle)
+    p_subtitle2 = Paragraph(certificado.subcabecalho2, style_subtitle)
+    p1 = Paragraph(texto_certificado, style_body)
+
+    imagem_path = os.path.join(settings.MEDIA_ROOT, "Certificado-FUNDO.png")
+    assinatura_path = os.path.join(
+        settings.MEDIA_ROOT, "upload/certificado/assinatura.jpg"
+    )
+    igpe_path = os.path.join(settings.MEDIA_ROOT, "igpe.png")
+    ed_corp_path = os.path.join(settings.MEDIA_ROOT, "educacao_corporativa_h.png")
+    pfc_path = os.path.join(settings.MEDIA_ROOT, "retangulartransp.png")
+    seplag_path = os.path.join(settings.MEDIA_ROOT, "seplagtransparente.png")
+
+    c.drawImage(
+        imagem_path,
+        230,
+        0,
+        width=width,
+        height=height,
+        preserveAspectRatio=True,
+        mask="auto",
+    )
+    c.drawImage(
+        assinatura_path,
+        130,
+        100,
+        width=196,
+        height=50,
+        preserveAspectRatio=True,
+        mask="auto",
+    )
+    c.drawImage(
+        igpe_path, 50, 20, width=63, height=50, preserveAspectRatio=True, mask="auto"
+    )
+    c.drawImage(
+        seplag_path,
+        63 + 50 + 30,
+        20,
+        width=196,
+        height=50,
+        preserveAspectRatio=True,
+        mask="auto",
+    )
+    c.drawImage(
+        pfc_path,
+        63 + 30 + 50 + 196,
+        20,
+        width=196,
+        height=50,
+        preserveAspectRatio=True,
+        mask="auto",
+    )
+    c.drawImage(
+        ed_corp_path,
+        63 + 50 + 30 + 196 + 166,
+        20,
+        width=196,
+        height=50,
+        preserveAspectRatio=True,
+        mask="auto",
+    )
+
+    p_title.wrapOn(c, 500, 100)
+    p_title.drawOn(c, width - 800, height - 100)
+    p_subtitle.wrapOn(c, 500, 100)
+    p_subtitle.drawOn(c, width - 800, height - 165)
+    p_subtitle2.wrapOn(c, 500, 100)
+    p_subtitle2.drawOn(c, width - 800, height - 190)
+    p1.wrapOn(c, 500, 100)
+    p1.drawOn(c, width - 800, height - 300)
+    c.setTitle("Certificado PFC - Moodle")
+    c.save()
+    return pdf_filename
+
+
+@login_required
+def avaliacao_moodle(request, curso_moodle_id):
+    curso_moodle = get_object_or_404(
+        CursoConcluidoMoodle,
+        usuario_pfc=request.user,
+        curso_moodle_id=curso_moodle_id,
+    )
+    temas = Tema.objects.filter(evento=False)
+    subtemas = Subtema.objects.filter(tema__evento=False)
+
+    if request.method == "POST":
+        ja_avaliado = AvaliacaoMoodle.objects.filter(
+            participante=request.user, curso_moodle=curso_moodle
+        ).exists()
+        if ja_avaliado:
+            messages.error(request, "AvaliaÃ§Ã£o jÃ¡ realizada!")
+            return redirect("inscricoes")
+
+        for subtema in subtemas:
+            AvaliacaoMoodle.objects.create(
+                curso_moodle=curso_moodle,
+                participante=request.user,
+                subtema=subtema,
+                nota=request.POST.get(subtema.nome),
+            )
+
+        AvaliacaoAbertaMoodle.objects.create(
+            curso_moodle=curso_moodle,
+            participante=request.user,
+            avaliacao=request.POST.get("avaliacao"),
+        )
+        messages.success(request, "AvaliaÃ§Ã£o Realizada!")
+        return redirect("inscricoes")
+
+    if AvaliacaoMoodle.objects.filter(
+        participante=request.user, curso_moodle=curso_moodle
+    ).exists():
+        messages.error(request, "AvaliaÃ§Ã£o jÃ¡ realizada!")
+        return redirect("inscricoes")
+
+    return render(
+        request,
+        "pfc_app/avaliacao.html",
+        {
+            "temas": temas,
+            "curso": curso_moodle,
+            "curso_nome": curso_moodle.nome_curso,
+            "is_moodle": True,
+        },
+    )
+
+
+@login_required
+def generate_moodle_pdf(request, curso_moodle_id):
+    curso_moodle = get_object_or_404(
+        CursoConcluidoMoodle,
+        usuario_pfc=request.user,
+        curso_moodle_id=curso_moodle_id,
+    )
+    if not AvaliacaoMoodle.objects.filter(
+        participante=request.user, curso_moodle=curso_moodle
+    ).exists():
+        messages.error(request, "Avalie o curso antes de baixar o certificado.")
+        return redirect("inscricoes")
+
+    try:
+        pdf_filename = _gerar_certificado_moodle_pdf(request, curso_moodle)
+    except ValueError as exc:
+        messages.error(request, str(exc))
+        return redirect("inscricoes")
+
+    with open(pdf_filename, "rb") as pdf_file:
+        response = HttpResponse(pdf_file.read(), content_type="application/pdf")
+
+    response["Content-Disposition"] = (
+        f'attachment; filename="{os.path.basename(pdf_filename)}"'
+    )
+    os.remove(pdf_filename)
+    return response
 
 
 @login_required
