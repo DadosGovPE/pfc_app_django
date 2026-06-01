@@ -1,0 +1,106 @@
+{% extends 'base.html' %}
+
+{% block content %}
+{% include 'parciais/_messages.html' %}
+
+<div class="d-flex p-2 justify-content-between align-items-center mb-4">
+  <h1 class="m-0">Enviar Emails</h1>
+  <a href="{% url 'admin:index' %}" class="btn btn-outline-secondary">Voltar</a>
+</div>
+
+<div class="container">
+  {% if recent_batches %}
+    <section class="card shadow-sm mb-4">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <strong>Lotes recentes</strong>
+        <span class="text-muted small">Ultimos 5</span>
+      </div>
+      <div class="table-responsive">
+        <table class="table table-sm table-hover align-middle mb-0">
+          <thead>
+            <tr>
+              <th>Job</th>
+              <th>Curso</th>
+              <th>Status</th>
+              <th>Alterados</th>
+              <th>E-mails</th>
+              <th>Criado em</th>
+              <th class="text-end"></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for batch in recent_batches %}
+              <tr>
+                <td class="text-nowrap">{{ batch.job_id|slice:":8" }}</td>
+                <td>{{ batch.curso.nome_formatado }}</td>
+                <td>{{ batch.get_status_display }}</td>
+                <td>{{ batch.total_alterado }}</td>
+                <td>
+                  {% if batch.enviar_email %}
+                    {{ batch.total_enviado }} enviados
+                  {% else %}
+                    -
+                  {% endif %}
+                </td>
+                <td class="text-nowrap">{{ batch.created_at|date:"d/m/Y H:i" }}</td>
+                <td class="text-end">
+                  <a class="btn btn-sm btn-outline-primary" href="{% url 'mensageria:email_status_batch_detail' batch.job_id %}">
+                    Acompanhar
+                  </a>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  {% endif %}
+
+  <form method="get" class="row g-2 mb-3">
+    <div class="col-12 col-md-10">
+      <input type="search" name="q" value="{{ query }}" class="form-control" placeholder="Buscar curso">
+    </div>
+    <div class="col-12 col-md-2 d-grid">
+      <button type="submit" class="btn btn-primary">Buscar</button>
+    </div>
+  </form>
+
+  <div class="list-group shadow-sm">
+    {% for curso in page_obj %}
+      <a class="list-group-item list-group-item-action" href="{% url 'mensageria:enviar_emails_curso_participantes' curso.id %}">
+        <div class="d-flex w-100 justify-content-between gap-3">
+          <h5 class="mb-1">{{ curso.nome_formatado }}</h5>
+          <small class="text-nowrap">{{ curso.data_inicio|date:"d/m/Y" }}</small>
+        </div>
+        <div class="small text-muted">
+          Status: {{ curso.status }} |
+          Termino: {{ curso.data_termino|date:"d/m/Y"|default:"-" }} |
+          Turma: {{ curso.get_turma_display }}
+        </div>
+      </a>
+    {% empty %}
+      <div class="list-group-item">Nenhum curso encontrado.</div>
+    {% endfor %}
+  </div>
+
+  {% if page_obj.paginator.num_pages > 1 %}
+    <nav class="mt-3" aria-label="Paginacao">
+      <ul class="pagination justify-content-center">
+        {% if page_obj.has_previous %}
+          <li class="page-item">
+            <a class="page-link" href="?q={{ query }}&page={{ page_obj.previous_page_number }}">Anterior</a>
+          </li>
+        {% endif %}
+        <li class="page-item disabled">
+          <span class="page-link">{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
+        </li>
+        {% if page_obj.has_next %}
+          <li class="page-item">
+            <a class="page-link" href="?q={{ query }}&page={{ page_obj.next_page_number }}">Proxima</a>
+          </li>
+        {% endif %}
+      </ul>
+    </nav>
+  {% endif %}
+</div>
+{% endblock %}

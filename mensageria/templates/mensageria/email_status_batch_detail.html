@@ -1,0 +1,92 @@
+{% extends 'base.html' %}
+
+{% block content %}
+{% if is_processing %}
+  <meta http-equiv="refresh" content="5">
+{% endif %}
+
+{% include 'parciais/_messages.html' %}
+
+<div class="d-flex p-2 justify-content-between align-items-start gap-3 mb-4">
+  <div>
+    <h1 class="m-0">Lote de Emails</h1>
+    <div class="text-muted">Job {{ batch.job_id }} | {{ batch.get_status_display }}</div>
+  </div>
+  <div class="d-flex gap-2">
+    <a href="{% url 'mensageria:enviar_emails_curso_participantes' batch.curso.id %}" class="btn btn-outline-secondary">Voltar ao curso</a>
+    <a href="{% url 'mensageria:enviar_emails_cursos' %}" class="btn btn-outline-secondary">Cursos</a>
+  </div>
+</div>
+
+<div class="container">
+  <div class="row g-3 mb-3">
+    <div class="col-12 col-lg-6">
+      <div class="card shadow-sm h-100">
+        <div class="card-body">
+          <h5 class="card-title">Resumo</h5>
+          <div><strong>Curso:</strong> {{ batch.curso.nome_formatado }}</div>
+          <div><strong>Status destino:</strong> {{ batch.status_destino }}</div>
+          <div><strong>Enviar email:</strong> {% if batch.enviar_email %}Sim{% else %}Nao{% endif %}</div>
+          <div><strong>Etapa:</strong> {{ batch.current_step|default:"-" }}</div>
+          <div><strong>Criado em:</strong> {{ batch.created_at }}</div>
+          <div><strong>Inicio:</strong> {{ batch.started_at|default:"-" }}</div>
+          <div><strong>Fim:</strong> {{ batch.finished_at|default:"-" }}</div>
+          {% if is_processing %}
+            <div class="alert alert-info mt-3 mb-0">Esta pagina atualiza automaticamente enquanto o envio estiver em andamento.</div>
+          {% endif %}
+          {% if batch.error_message %}
+            <div class="alert alert-danger mt-3 mb-0">{{ batch.error_message }}</div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+    <div class="col-12 col-lg-6">
+      <div class="card shadow-sm h-100">
+        <div class="card-body">
+          <h5 class="card-title">Totais</h5>
+          <div class="row">
+            <div class="col-6"><strong>Selecionados:</strong> {{ batch.total_selecionado }}</div>
+            <div class="col-6"><strong>Alterados:</strong> {{ batch.total_alterado }}</div>
+            <div class="col-6"><strong>Ignorados:</strong> {{ batch.total_ignorado }}</div>
+            <div class="col-6"><strong>Enviados:</strong> {{ batch.total_enviado }}</div>
+            <div class="col-6"><strong>Sem e-mail:</strong> {{ batch.total_sem_email }}</div>
+            <div class="col-6"><strong>Falhas:</strong> {{ batch.total_falha }}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {% if items %}
+    <div class="card shadow-sm">
+      <div class="card-header"><strong>Destinatarios</strong></div>
+      <div class="table-responsive">
+        <table class="table table-sm table-hover align-middle mb-0">
+          <thead>
+            <tr>
+              <th>Participante</th>
+              <th>E-mail</th>
+              <th>Status anterior</th>
+              <th>Envio</th>
+              <th>Erro</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in items %}
+              <tr>
+                <td>{{ item.participante.nome }}</td>
+                <td>{{ item.email|default:"-" }}</td>
+                <td>{{ item.status_origem }}</td>
+                <td>{{ item.get_status_display }}</td>
+                <td>{{ item.error_message|default:"-" }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  {% elif batch.enviar_email %}
+    <div class="alert alert-info">Nenhum destinatario de e-mail foi registrado para este lote.</div>
+  {% endif %}
+</div>
+{% endblock %}

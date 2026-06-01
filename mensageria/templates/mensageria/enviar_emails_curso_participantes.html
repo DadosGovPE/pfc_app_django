@@ -1,0 +1,187 @@
+{% extends 'base.html' %}
+
+{% block content %}
+{% include 'parciais/_messages.html' %}
+
+<form method="post" action="{% url 'mensageria:alterar_status_participantes' curso.id %}" id="status-form">
+  {% csrf_token %}
+
+  <div class="d-flex p-2 justify-content-between align-items-start gap-3 mb-3">
+    <div>
+      <h1 class="m-0">Enviar Emails</h1>
+      <div class="text-muted">{{ curso.nome_formatado }} | {{ total_inscricoes }} participante(s)</div>
+    </div>
+    <div class="d-flex gap-2">
+      <a href="{% url 'mensageria:enviar_emails_cursos' %}" class="btn btn-outline-secondary">Cursos</a>
+      <button type="button" id="open-modal-button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#alterarStatusModal" disabled>
+        Alterar status
+      </button>
+    </div>
+  </div>
+
+  <div class="container">
+    {% if secoes %}
+      {% for secao in secoes %}
+        <section class="card shadow-sm mb-3">
+          <div class="card-header d-flex justify-content-between align-items-center gap-3">
+            <div>
+              <strong>{{ secao.status_nome }}</strong>
+              <span class="text-muted small">({{ secao.inscricoes|length }})</span>
+            </div>
+            <div class="form-check m-0">
+              <input class="form-check-input js-section-toggle" type="checkbox" id="section-{{ secao.status_id }}" data-section="{{ secao.status_id }}">
+              <label class="form-check-label" for="section-{{ secao.status_id }}">Marcar todos</label>
+            </div>
+          </div>
+          <div class="table-responsive">
+            <table class="table table-sm table-hover align-middle mb-0">
+              <thead>
+                <tr>
+                  <th style="width: 44px;"></th>
+                  <th>Participante</th>
+                  <th>E-mail</th>
+                  <th>Lotacao</th>
+                  <th>Concluido</th>
+                  <th>Condicao</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for inscricao in secao.inscricoes %}
+                  <tr>
+                    <td>
+                      <input class="form-check-input js-inscricao-checkbox" type="checkbox" name="inscricoes" value="{{ inscricao.id }}" data-section="{{ secao.status_id }}">
+                    </td>
+                    <td>{{ inscricao.participante.nome }}</td>
+                    <td>{{ inscricao.participante.email|default:"-" }}</td>
+                    <td>{{ inscricao.participante.lotacao_fk|default:inscricao.participante.lotacao|default:"-" }}</td>
+                    <td>{% if inscricao.concluido %}Sim{% else %}Nao{% endif %}</td>
+                    <td>{{ inscricao.condicao_na_acao }}</td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      {% endfor %}
+    {% else %}
+      <div class="alert alert-info">Este curso ainda nao possui inscricoes.</div>
+    {% endif %}
+  </div>
+
+  <div class="modal fade" id="alterarStatusModal" tabindex="-1" aria-labelledby="alterarStatusModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="alterarStatusModalLabel">Alterar status</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+        </div>
+        <div class="modal-body">
+          <div class="alert alert-secondary">
+            <strong id="selected-count">0</strong> participante(s) selecionado(s).
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label fw-bold" for="status-destino">Status de destino</label>
+            <select class="form-control" id="status-destino" name="status_destino" required>
+              <option value="">Selecione</option>
+              {% for status in statuses %}
+                <option value="{{ status.id }}">{{ status.nome }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="form-check mb-3">
+            <input class="form-check-input" type="checkbox" id="enviar-email" name="enviar_email">
+            <label class="form-check-label fw-bold" for="enviar-email">Enviar email</label>
+          </div>
+
+          <div id="email-fields" class="d-none">
+            <div class="mb-3">
+              <label class="form-label fw-bold" for="template">Modelo de mensagem</label>
+              <select class="form-control" id="template" name="template">
+                <option value="">Selecione</option>
+                {% for template in templates %}
+                  <option value="{{ template.id }}" data-assunto="{{ template.assunto|escape }}" data-corpo="{{ template.corpo|escape }}">{{ template.nome }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="mb-3">
+              <label class="form-label fw-bold" for="assunto">Assunto</label>
+              <input type="text" class="form-control" id="assunto" name="assunto">
+            </div>
+            <div class="mb-3">
+              <label class="form-label fw-bold" for="corpo">Corpo da mensagem</label>
+              <textarea class="form-control" id="corpo" name="corpo" rows="8"></textarea>
+              <div class="form-text">As tags cadastradas em Mensageria continuam funcionando, como [user_nome], [curso_nome_curso] e [status_inscricao_nome].</div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Confirmar alteracao</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</form>
+
+<script>
+  (function () {
+    var itemCheckboxes = Array.prototype.slice.call(document.querySelectorAll(".js-inscricao-checkbox"));
+    var sectionToggles = Array.prototype.slice.call(document.querySelectorAll(".js-section-toggle"));
+    var openModalButton = document.getElementById("open-modal-button");
+    var selectedCount = document.getElementById("selected-count");
+    var enviarEmail = document.getElementById("enviar-email");
+    var emailFields = document.getElementById("email-fields");
+    var template = document.getElementById("template");
+    var assunto = document.getElementById("assunto");
+    var corpo = document.getElementById("corpo");
+
+    function refreshState() {
+      var selected = itemCheckboxes.filter(function (checkbox) { return checkbox.checked; }).length;
+      openModalButton.disabled = selected === 0;
+      selectedCount.textContent = selected;
+
+      sectionToggles.forEach(function (toggle) {
+        var sectionItems = itemCheckboxes.filter(function (checkbox) {
+          return checkbox.dataset.section === toggle.dataset.section;
+        });
+        var sectionSelected = sectionItems.filter(function (checkbox) { return checkbox.checked; }).length;
+        toggle.checked = sectionItems.length > 0 && sectionSelected === sectionItems.length;
+        toggle.indeterminate = sectionSelected > 0 && sectionSelected < sectionItems.length;
+      });
+    }
+
+    sectionToggles.forEach(function (toggle) {
+      toggle.addEventListener("change", function () {
+        itemCheckboxes.forEach(function (checkbox) {
+          if (checkbox.dataset.section === toggle.dataset.section) {
+            checkbox.checked = toggle.checked;
+          }
+        });
+        refreshState();
+      });
+    });
+
+    itemCheckboxes.forEach(function (checkbox) {
+      checkbox.addEventListener("change", refreshState);
+    });
+
+    enviarEmail.addEventListener("change", function () {
+      emailFields.classList.toggle("d-none", !enviarEmail.checked);
+      template.required = enviarEmail.checked;
+    });
+
+    template.addEventListener("change", function () {
+      var option = template.options[template.selectedIndex];
+      if (!option) {
+        return;
+      }
+      assunto.value = option.dataset.assunto || "";
+      corpo.value = option.dataset.corpo || "";
+    });
+
+    refreshState();
+  })();
+</script>
+{% endblock %}

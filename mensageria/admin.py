@@ -4,7 +4,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.http import JsonResponse
 from django.urls import path, reverse
 
-from .models import MensagemTemplate, TagTemplate
+from .models import EmailStatusBatch, EmailStatusBatchItem, MensagemTemplate, TagTemplate
 
 
 # @admin.register(Empresa)
@@ -24,6 +24,66 @@ from .models import MensagemTemplate, TagTemplate
 class MensagemTemplateAdmin(admin.ModelAdmin):
     list_display = ("nome", "ativo")
     search_fields = ("nome", "assunto", "corpo")
+
+
+class EmailStatusBatchItemInline(admin.TabularInline):
+    model = EmailStatusBatchItem
+    extra = 0
+    can_delete = False
+    readonly_fields = (
+        "inscricao",
+        "participante",
+        "status_origem",
+        "email",
+        "status",
+        "error_message",
+        "sent_at",
+        "created_at",
+    )
+
+    def has_add_permission(self, request, obj=None):
+        return False
+
+
+@admin.register(EmailStatusBatch)
+class EmailStatusBatchAdmin(admin.ModelAdmin):
+    list_display = (
+        "job_id",
+        "curso",
+        "admin",
+        "status_destino",
+        "status",
+        "enviar_email",
+        "created_at",
+    )
+    list_filter = ("status", "enviar_email", "created_at")
+    search_fields = ("job_id", "curso__nome_curso", "admin__nome", "admin__username")
+    readonly_fields = (
+        "job_id",
+        "admin",
+        "curso",
+        "status_destino",
+        "template",
+        "enviar_email",
+        "assunto",
+        "corpo",
+        "status",
+        "current_step",
+        "total_selecionado",
+        "total_alterado",
+        "total_ignorado",
+        "total_enviado",
+        "total_sem_email",
+        "total_falha",
+        "error_message",
+        "created_at",
+        "started_at",
+        "finished_at",
+    )
+    inlines = [EmailStatusBatchItemInline]
+
+    def has_add_permission(self, request):
+        return False
 
 
 class TagTemplateAdminForm(forms.ModelForm):
