@@ -3,6 +3,7 @@ from django.contrib.admin.views.decorators import staff_member_required
 import json
 from django.core.mail import EmailMultiAlternatives
 from django.core.paginator import Paginator
+from django.db.models import Q
 from django.http import StreamingHttpResponse
 from django.shortcuts import render, redirect, get_object_or_404
 from django.views.decorators.http import require_GET, require_POST
@@ -26,6 +27,9 @@ def enviar_emails_cursos(request):
     query = (request.GET.get("q") or "").strip()
     cursos = Curso.objects.select_related("status").order_by(
         "-data_inicio", "-data_criacao", "nome_curso"
+    ).filter(
+        Q(status__nome__iexact="A INICIAR")
+        | Q(status__nome__iexact="EM ANDAMENTO")
     )
     if query:
         cursos = cursos.filter(nome_curso__icontains=query)
