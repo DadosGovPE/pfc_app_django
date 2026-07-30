@@ -123,6 +123,7 @@ from validate_docbr import CPF
 from .filters import UserFilter
 from .avaliacao_rules import validar_acesso_avaliacao
 from .calendar_invites import send_course_calendar_invite
+from .certificate_layout import draw_certificate_visuals
 from moodle_sync.models import (
     AvaliacaoAbertaMoodle,
     AvaliacaoMoodle,
@@ -1523,63 +1524,7 @@ def _gerar_certificado_moodle_pdf(request, curso_moodle):
     p_subtitle2 = Paragraph(certificado.subcabecalho2, style_subtitle)
     p1 = Paragraph(texto_certificado, style_body)
 
-    imagem_path = os.path.join(settings.MEDIA_ROOT, "Certificado-FUNDO.png")
-    assinatura_path = os.path.join(
-        settings.MEDIA_ROOT, "upload/certificado/assinatura.jpg"
-    )
-    igpe_path = os.path.join(settings.MEDIA_ROOT, "igpe.png")
-    ed_corp_path = os.path.join(settings.MEDIA_ROOT, "educacao_corporativa_h.png")
-    pfc_path = os.path.join(settings.MEDIA_ROOT, "retangulartransp.png")
-    seplag_path = os.path.join(settings.MEDIA_ROOT, "seplagtransparente.png")
-
-    c.drawImage(
-        imagem_path,
-        230,
-        0,
-        width=width,
-        height=height,
-        preserveAspectRatio=True,
-        mask="auto",
-    )
-    c.drawImage(
-        assinatura_path,
-        130,
-        100,
-        width=196,
-        height=50,
-        preserveAspectRatio=True,
-        mask="auto",
-    )
-    c.drawImage(
-        igpe_path, 50, 20, width=63, height=50, preserveAspectRatio=True, mask="auto"
-    )
-    c.drawImage(
-        seplag_path,
-        63 + 50 + 30,
-        20,
-        width=196,
-        height=50,
-        preserveAspectRatio=True,
-        mask="auto",
-    )
-    c.drawImage(
-        pfc_path,
-        63 + 30 + 50 + 196,
-        20,
-        width=196,
-        height=50,
-        preserveAspectRatio=True,
-        mask="auto",
-    )
-    c.drawImage(
-        ed_corp_path,
-        63 + 50 + 30 + 196 + 166,
-        20,
-        width=196,
-        height=50,
-        preserveAspectRatio=True,
-        mask="auto",
-    )
+    draw_certificate_visuals(c, settings.MEDIA_ROOT, width, height)
 
     p_title.wrapOn(c, 500, 100)
     p_title.drawOn(c, width - 800, height - 100)
@@ -2008,71 +1953,7 @@ def generate_single_pdf(request, inscricao_id):
     p_subtitle = Paragraph(certificado.subcabecalho1, style_subtitle)
     p_subtitle2 = Paragraph(certificado.subcabecalho2, style_subtitle)
     p1 = Paragraph(texto_customizado, style_body)
-    # Caminho relativo para a imagem dentro do diretório 'static'
-    imagem_relative_path = "Certificado-FUNDO.png"
-    assinatura_relative_path = "upload/certificado/assinatura.jpg"
-    igpe_relative_path = "igpe.png"
-    ed_corp_relative_path = "educacao_corporativa_h.png"
-    pfc_relative_path = "retangulartransp.png"
-    seplag_relative_path = "seplagtransparente.png"
-
-    # Construa o caminho absoluto usando 'settings.STATIC_ROOT'
-    imagem_path = os.path.join(settings.MEDIA_ROOT, imagem_relative_path)
-    assinatura_path = os.path.join(settings.MEDIA_ROOT, assinatura_relative_path)
-    igpe_path = os.path.join(settings.MEDIA_ROOT, igpe_relative_path)
-    ed_corp_path = os.path.join(settings.MEDIA_ROOT, ed_corp_relative_path)
-    pfc_path = os.path.join(settings.MEDIA_ROOT, pfc_relative_path)
-    seplag_path = os.path.join(settings.MEDIA_ROOT, seplag_relative_path)
-
-    # Desenhe a imagem como fundo
-    c.drawImage(
-        imagem_path,
-        230,
-        0,
-        width=width,
-        height=height,
-        preserveAspectRatio=True,
-        mask="auto",
-    )
-    c.drawImage(
-        assinatura_path,
-        130,
-        100,
-        width=196,
-        height=50,
-        preserveAspectRatio=True,
-        mask="auto",
-    )
-    c.drawImage(
-        igpe_path, 50, 20, width=63, height=50, preserveAspectRatio=True, mask="auto"
-    )
-    c.drawImage(
-        seplag_path,
-        63 + 50 + 30,
-        20,
-        width=196,
-        height=50,
-        preserveAspectRatio=True,
-        mask="auto",
-    )
-    c.drawImage(
-        pfc_path,
-        63 + 30 + 50 + 196,
-        20,
-        width=196,
-        height=50,
-        preserveAspectRatio=True,
-        mask="auto",
-    )
-    c.drawImage(
-        ed_corp_path,
-        63 + 50 + 30 + 196 + 166,
-        20,
-        width=196,
-        height=50,
-        preserveAspectRatio=True,
-        mask="auto",
-    )
+    draw_certificate_visuals(c, settings.MEDIA_ROOT, width, height)
 
     p_title.wrapOn(c, 500, 100)
     p_title.drawOn(c, width - 800, height - 100)
