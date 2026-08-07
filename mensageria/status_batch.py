@@ -1,3 +1,5 @@
+# pyright: reportAttributeAccessIssue=false
+
 import os
 import subprocess
 import sys
@@ -73,7 +75,7 @@ def create_status_batch(
     if enviar_email and template is None:
         raise ValueError("Selecione um modelo de mensagem para enviar e-mail.")
 
-    with transaction.atomic():
+    with transaction.atomic():  # pyright: ignore[reportGeneralTypeIssues]
         inscricoes = list(
             Inscricao.objects.select_for_update()
             .select_related("participante", "status", "curso")
@@ -222,7 +224,10 @@ def process_email_status_batch(job_id: str) -> bool:
                 item.error_message = ""
                 item.sent_at = timezone.now()
                 item.save(update_fields=["status", "error_message", "sent_at"])
-            except Exception as exc:
+            # Backends de e-mail podem propagar excecoes especificas do provedor;
+            # a falha deve ser registrada sem interromper os demais destinatarios.
+            # pylint: disable-next=broad-exception-caught
+            except Exception as exc:  # noqa: BLE001
                 item.status = EmailStatusBatchItem.Status.FAILED
                 item.error_message = str(exc)
                 item.save(update_fields=["status", "error_message"])
@@ -235,7 +240,9 @@ def process_email_status_batch(job_id: str) -> bool:
             finished_at=timezone.now(),
         )
         return True
-    except Exception as exc:
+    # Falhas inesperadas precisam ficar persistidas no proprio lote.
+    # pylint: disable-next=broad-exception-caught
+    except Exception as exc:  # noqa: BLE001
         _refresh_batch_totals(batch)
         _update_batch(
             batch,
