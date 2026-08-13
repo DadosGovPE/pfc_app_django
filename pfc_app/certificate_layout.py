@@ -22,6 +22,11 @@ def _cropped_transparent_image(path):
         return ImageReader(image_buffer)
 
 
+def current_seplag_logo(media_root):
+    """Return the current Seplag logo used in generated PDFs."""
+    return _cropped_transparent_image(Path(media_root) / SEPLAG_LOGO_FILENAME)
+
+
 def draw_certificate_visuals(pdf_canvas, media_root, page_width, page_height):
     """Draw the certificate background, signature and current institutional logos."""
     media_root = Path(media_root)
@@ -54,7 +59,7 @@ def draw_certificate_visuals(pdf_canvas, media_root, page_width, page_height):
         mask="auto",
     )
     pdf_canvas.drawImage(
-        _cropped_transparent_image(media_root / SEPLAG_LOGO_FILENAME),
+        current_seplag_logo(media_root),
         page_width - 255,
         15,
         width=240,

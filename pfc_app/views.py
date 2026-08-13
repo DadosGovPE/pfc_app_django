@@ -123,7 +123,7 @@ from validate_docbr import CPF
 from .filters import UserFilter
 from .avaliacao_rules import validar_acesso_avaliacao
 from .calendar_invites import send_course_calendar_invite
-from .certificate_layout import draw_certificate_visuals
+from .certificate_layout import current_seplag_logo, draw_certificate_visuals
 from moodle_sync.models import (
     AvaliacaoAbertaMoodle,
     AvaliacaoMoodle,
@@ -2589,17 +2589,15 @@ def draw_logos_relatorio(c: canvas.Canvas, width, height):
 
     igpe_relative_path = "igpe.png"
     pfc_relative_path = "PFC-NOVO-180x180.png"
-    seplag_relative_path = "seplagtransparente.png"
     igpe_path = os.path.join(settings.MEDIA_ROOT, igpe_relative_path)
     pfc_path = os.path.join(settings.MEDIA_ROOT, pfc_relative_path)
-    seplag_path = os.path.join(settings.MEDIA_ROOT, seplag_relative_path)
 
     # Substitua 'path/to/your/logo.png' pelo caminho do seu logo
     c.drawImage(
         igpe_path, x_ig, y_ig, width=logo_width, height=logo_height, mask="auto"
     )
     c.drawImage(
-        seplag_path,
+        current_seplag_logo(settings.MEDIA_ROOT),
         x_seplag,
         y_seplag,
         width=logo_width_seplag,
