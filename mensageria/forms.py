@@ -6,7 +6,7 @@ from pfc_app.models import Curso, StatusInscricao
 
 class EnvioEmailCursoStatusForm(forms.Form):
     curso = forms.ModelChoiceField(
-        queryset=Curso.objects.all().order_by("nome_curso"),
+        queryset=Curso.objects.all().order_by("-data_inicio", "nome_curso", "pk"),
         label="Curso",
     )
     template = forms.ModelChoiceField(

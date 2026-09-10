@@ -1,6 +1,30 @@
 {% extends 'base.html' %}
+{% load static %}
 
 {% block content %}
+<link rel="stylesheet" href="{% static 'admin/css/vendor/select2/select2.min.css' %}">
+<style>
+  .curso-field .select2-container .select2-selection--single {
+    min-height: 38px;
+    height: auto;
+    border: 1px solid #ced4da;
+    border-radius: .25rem;
+    padding: .375rem .75rem;
+  }
+  .curso-field .select2-container .select2-selection__rendered {
+    line-height: 1.5;
+    padding-left: 0;
+    white-space: normal;
+  }
+  .curso-field .select2-container .select2-selection__arrow {
+    height: 100%;
+  }
+  .curso-field .select2-container--focus .select2-selection,
+  .curso-field .select2-selection:focus {
+    outline: 2px solid #0d6efd;
+    outline-offset: 2px;
+  }
+</style>
 {% include 'parciais/_messages.html' %}
 
 <div class="d-flex p-2 justify-content-center mb-4">
@@ -23,8 +47,8 @@
               </div>
             {% endif %}
 
-            <div class="mb-3">
-              <label class="form-label fw-bold">{{ form.curso.label }}</label>
+            <div class="mb-3 curso-field">
+              <label id="curso-label" for="{{ form.curso.id_for_label }}" class="form-label fw-bold">{{ form.curso.label }}</label>
               {{ form.curso }}
               {% if form.curso.errors %}
                 <div class="text-danger small">{{ form.curso.errors }}</div>
@@ -102,4 +126,28 @@
   </div>
 </div>
 
+<script src="{% static 'admin/js/vendor/jquery/jquery.min.js' %}"></script>
+<script src="{% static 'admin/js/vendor/select2/select2.full.min.js' %}"></script>
+<script src="{% static 'admin/js/vendor/select2/i18n/pt-BR.js' %}"></script>
+<script>
+  (function ($) {
+    const curso = $('#{{ form.curso.id_for_label }}');
+    curso.select2({
+      language: 'pt-BR',
+      width: '100%',
+      placeholder: 'Selecione um curso',
+      minimumResultsForSearch: 0
+    });
+    curso.next('.select2-container').find('[role="combobox"]')
+      .attr('aria-labelledby', 'curso-label');
+    curso.on('select2:open', function () {
+      const search = document.querySelector('.select2-container--open .select2-search__field');
+      if (search) {
+        search.setAttribute('aria-label', 'Buscar por qualquer parte do nome do curso');
+        search.placeholder = 'Digite parte do nome do curso';
+        search.focus();
+      }
+    });
+  })(jQuery);
+</script>
 {% endblock %}
