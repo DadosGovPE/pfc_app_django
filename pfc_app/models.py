@@ -1,5 +1,6 @@
 from django.db import models
 from django import forms
+from django.core.exceptions import ValidationError
 import os
 from django.contrib.auth.models import AbstractUser
 from django.db.models.signals import pre_save
@@ -552,6 +553,10 @@ class CronogramaExecucao(models.Model):
 
 
 class Inscricao(models.Model):
+    STATUS_NECESSARIO_PARA_CONCLUSAO = "APROVADA"
+    ERRO_STATUS_CONCLUSAO = (
+        "A inscrição não foi concluída: o status precisa ser APROVADA."
+    )
     CONDICAO_ACAO_CHOICES = [
         ("DISCENTE", "DISCENTE"),
         ("DOCENTE", "DOCENTE"),
@@ -588,6 +593,29 @@ class Inscricao(models.Model):
         return (
             f"Curso: {self.curso.nome_curso} >> Participante: {self.participante.nome}"
         )
+
+    def validar_status_para_conclusao(self):
+        if (
+            self.concluido
+            and self.status_id
+            and self.status.nome != self.STATUS_NECESSARIO_PARA_CONCLUSAO
+        ):
+            raise ValidationError(
+                {
+                    "concluido": ValidationError(
+                        self.ERRO_STATUS_CONCLUSAO,
+                        code="status_nao_aprovado_para_conclusao",
+                    )
+                }
+            )
+
+    def clean(self):
+        super().clean()
+        self.validar_status_para_conclusao()
+
+    def save(self, *args, **kwargs):
+        self.validar_status_para_conclusao()
+        return super().save(*args, **kwargs)
 
 
 @receiver(pre_save, sender=Inscricao)

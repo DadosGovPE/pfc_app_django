@@ -1,7 +1,6 @@
 from django.contrib import admin
 from django.db.models import Count, Q
 from django.contrib.auth.admin import UserAdmin
-from django.core.exceptions import ValidationError
 from .models import *
 from django import forms
 from django.contrib import messages
@@ -410,21 +409,6 @@ class InscricaoAdminForm(forms.ModelForm):
         model = Inscricao
         fields = "__all__"
 
-    def clean(self):
-        cleaned_data = super().clean()
-        status = cleaned_data.get("status")
-
-        if (
-            cleaned_data.get("concluido")
-            and status is not None
-            and status.nome != "APROVADA"
-        ):
-            raise ValidationError(
-                "A inscrição só pode ser concluída quando o status for APROVADA."
-            )
-
-        return cleaned_data
-
 
 class InscricaoAdmin(admin.ModelAdmin):
     form = InscricaoAdminForm
@@ -478,6 +462,68 @@ class InscricaoAdmin(admin.ModelAdmin):
                 "curso__observacao",
             )
         )
+
+    @staticmethod
+    def _form_tem_erro_de_conclusao(form):
+        return any(
+            error.code == "status_nao_aprovado_para_conclusao"
+            for error in form.errors.as_data().get("concluido", [])
+        )
+
+    def _mostrar_erros_de_conclusao(self, request, response):
+        if request.method != "POST" or not hasattr(response, "context_data"):
+            return response
+
+        context = response.context_data or {}
+        forms = []
+        change_list = context.get("cl")
+        if change_list is not None and change_list.formset is not None:
+            forms = change_list.formset.forms
+        elif context.get("adminform") is not None:
+            forms = [context["adminform"].form]
+
+        bloqueadas = [form for form in forms if self._form_tem_erro_de_conclusao(form)]
+        if not bloqueadas:
+            return response
+
+        detalhes = []
+        for form in bloqueadas[:3]:
+            inscricao = form.instance
+            status = form.cleaned_data.get("status")
+            detalhes.append(
+                f"{inscricao.participante} — {inscricao.curso} "
+                f"(status: {status or 'não informado'})"
+            )
+
+        # O Django normalmente reapresenta o valor enviado em formulários inválidos.
+        # Desmarcar aqui evita que o admin pareça ter persistido a conclusão bloqueada.
+        for form in bloqueadas:
+            form.data = form.data.copy()
+            form.data.pop(form.add_prefix("concluido"), None)
+
+        excedentes = len(bloqueadas) - len(detalhes)
+        complemento = f" e mais {excedentes}" if excedentes else ""
+        self.message_user(
+            request,
+            "Nenhuma alteração desta página foi salva. "
+            "Para concluir, a inscrição precisa estar com status APROVADA. "
+            f"Inscrição bloqueada: {'; '.join(detalhes)}{complemento}.",
+            level=messages.ERROR,
+        )
+        return response
+
+    def changelist_view(self, request, extra_context=None):
+        response = super().changelist_view(request, extra_context=extra_context)
+        return self._mostrar_erros_de_conclusao(request, response)
+
+    def changeform_view(self, request, object_id=None, form_url="", extra_context=None):
+        response = super().changeform_view(
+            request,
+            object_id=object_id,
+            form_url=form_url,
+            extra_context=extra_context,
+        )
+        return self._mostrar_erros_de_conclusao(request, response)
 
     def participante_username(self, obj):
         return obj.participante.username if obj.participante else "N/A"
