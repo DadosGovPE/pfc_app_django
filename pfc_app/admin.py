@@ -1,6 +1,7 @@
 from django.contrib import admin
 from django.db.models import Q, Prefetch
 from django.contrib.auth.admin import UserAdmin
+from django.core.exceptions import ValidationError
 from .models import *
 from django import forms
 from django.contrib import messages
@@ -277,7 +278,29 @@ class CustomUserAdmin(UserAdmin):
 ##
 
 
+class InscricaoAdminForm(forms.ModelForm):
+    class Meta:
+        model = Inscricao
+        fields = "__all__"
+
+    def clean(self):
+        cleaned_data = super().clean()
+        status = cleaned_data.get("status")
+
+        if (
+            cleaned_data.get("concluido")
+            and status is not None
+            and status.nome != "APROVADA"
+        ):
+            raise ValidationError(
+                "A inscrição só pode ser concluída quando o status for APROVADA."
+            )
+
+        return cleaned_data
+
+
 class InscricaoAdmin(admin.ModelAdmin):
+    form = InscricaoAdminForm
     list_display = (
         "curso",
         "participante",
@@ -301,6 +324,9 @@ class InscricaoAdmin(admin.ModelAdmin):
         "concluido",
         "instrutor_principal",
     )
+
+    def get_changelist_form(self, request, **kwargs):
+        return InscricaoAdminForm
 
     def participante_username(self, obj):
         return obj.participante.username if obj.participante else "N/A"
