@@ -125,6 +125,8 @@ DATABASES = {
         "PASSWORD": os.getenv("DJANGO_DATABASE_PW"),
         "HOST": os.getenv("DJANGO_DATABASE_HOST"),
         "PORT": os.getenv("DJANGO_DATABASE_PORT"),
+        "CONN_MAX_AGE": int(os.getenv("DJANGO_DB_CONN_MAX_AGE", "60")),
+        "CONN_HEALTH_CHECKS": True,
     }
 }
 

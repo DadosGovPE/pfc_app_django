@@ -1,4 +1,5 @@
 from types import SimpleNamespace
+from unittest.mock import patch
 
 from django.contrib.admin.sites import AdminSite
 from django.core.exceptions import ValidationError
@@ -36,5 +37,12 @@ class InscricaoAdminFormTests(SimpleTestCase):
 
     def test_regra_tambem_e_usada_na_edicao_em_massa(self):
         model_admin = InscricaoAdmin(Inscricao, AdminSite())
+        status = SimpleNamespace(pk=1, nome="APROVADA")
 
-        self.assertIs(model_admin.get_changelist_form(request=None), InscricaoAdminForm)
+        with patch("pfc_app.admin.StatusInscricao.objects.only", return_value=[status]):
+            changelist_form = model_admin.get_changelist_form(request=None)
+
+        self.assertTrue(issubclass(changelist_form, InscricaoAdminForm))
+        status_field = changelist_form.base_fields["status"]
+        self.assertIs(status_field.clean("1"), status)
+        self.assertFalse(status_field.has_changed(status, "1"))

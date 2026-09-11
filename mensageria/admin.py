@@ -44,9 +44,30 @@ class EmailStatusBatchItemInline(admin.TabularInline):
     def has_add_permission(self, request, obj=None):
         return False
 
+    def get_queryset(self, request):
+        return (
+            super()
+            .get_queryset(request)
+            .select_related(
+                "inscricao__curso",
+                "inscricao__participante",
+                "participante",
+                "status_origem",
+            )
+            .defer(
+                "participante__avatar_base64",
+                "inscricao__participante__avatar_base64",
+                "inscricao__curso__ementa_curso",
+                "inscricao__curso__descricao",
+                "inscricao__curso__observacao",
+            )
+        )
+
 
 @admin.register(EmailStatusBatch)
 class EmailStatusBatchAdmin(admin.ModelAdmin):
+    list_per_page = 50
+    show_full_result_count = False
     list_display = (
         "job_id",
         "curso",
@@ -84,6 +105,20 @@ class EmailStatusBatchAdmin(admin.ModelAdmin):
 
     def has_add_permission(self, request):
         return False
+
+    def get_queryset(self, request):
+        return (
+            super()
+            .get_queryset(request)
+            .select_related("curso", "admin", "status_destino")
+            .defer(
+                "admin__avatar_base64",
+                "curso__ementa_curso",
+                "curso__descricao",
+                "curso__observacao",
+                "corpo",
+            )
+        )
 
 
 class TagTemplateAdminForm(forms.ModelForm):
