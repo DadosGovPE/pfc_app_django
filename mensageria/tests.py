@@ -1,7 +1,13 @@
 from django.core import mail
+from django.contrib.contenttypes.models import ContentType
 from django.test import SimpleTestCase, TestCase, override_settings
 
-from mensageria.models import EmailStatusBatch, EmailStatusBatchItem, MensagemTemplate
+from mensageria.models import (
+    EmailStatusBatch,
+    EmailStatusBatchItem,
+    MensagemTemplate,
+    TagTemplate,
+)
 from mensageria.render import build_email_bodies, render_text
 from mensageria.status_batch import create_status_batch, process_email_status_batch
 from pfc_app.models import Curso, Inscricao, StatusCurso, StatusInscricao, User
@@ -102,10 +108,32 @@ class EmailStatusBatchTests(TestCase):
             participante=self.user2,
             status=self.status_aprovada,
         )
+        TagTemplate.objects.bulk_create(
+            [
+                TagTemplate(
+                    nome="nome_curso",
+                    contexto_alias="curso",
+                    content_type=ContentType.objects.get_for_model(Curso),
+                    path="nome_curso",
+                ),
+                TagTemplate(
+                    nome="nome_servidor",
+                    contexto_alias="user",
+                    content_type=ContentType.objects.get_for_model(User),
+                    path="nome",
+                ),
+                TagTemplate(
+                    nome="status_inscricao",
+                    contexto_alias="inscricao",
+                    content_type=ContentType.objects.get_for_model(Inscricao),
+                    path="status.nome",
+                ),
+            ]
+        )
         self.template = MensagemTemplate.objects.create(
             nome="Alteracao",
-            assunto="Status de [curso_nome_curso]",
-            corpo="Ola [user_nome], status alterado para [status_inscricao_nome].",
+            assunto="Status de [nome_curso]",
+            corpo="Ola [nome_servidor], status alterado para [status_inscricao].",
         )
 
     def test_create_status_batch_altera_status_e_ignora_ja_alterados(self):
@@ -151,6 +179,8 @@ class EmailStatusBatchTests(TestCase):
         self.assertEqual(len(mail.outbox), 1)
         self.assertEqual(mail.outbox[0].to, ["maria@example.com"])
         self.assertIn("Curso Teste", mail.outbox[0].subject)
+        self.assertIn("MARIA", mail.outbox[0].body)
+        self.assertIn("APROVADA", mail.outbox[0].body)
         self.assertEqual(
             batch.items.get().status,
             EmailStatusBatchItem.Status.SENT,
