@@ -27,18 +27,6 @@
           <div><strong>Curso:</strong> {{ batch.curso.nome_formatado }}</div>
           <div><strong>Status destino:</strong> {{ batch.status_destino }}</div>
           <div><strong>Enviar email:</strong> {% if batch.enviar_email %}Sim{% else %}Nao{% endif %}</div>
-          <div>
-            <strong>Anexos:</strong>
-            {% if attachments %}
-              <ul class="mb-0 ps-3">
-                {% for attachment in attachments %}
-                  <li class="text-break">{{ attachment.original_name }} ({{ attachment.size|filesizeformat }})</li>
-                {% endfor %}
-              </ul>
-            {% else %}
-              Nenhum
-            {% endif %}
-          </div>
           <div><strong>Etapa:</strong> {{ batch.current_step|default:"-" }}</div>
           <div><strong>Criado em:</strong> {{ batch.created_at }}</div>
           <div><strong>Inicio:</strong> {{ batch.started_at|default:"-" }}</div>

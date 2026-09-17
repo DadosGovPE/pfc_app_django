@@ -1,15 +1,25 @@
 from django.contrib import messages
 from django.contrib.admin.views.decorators import staff_member_required
 import json
+from datetime import timedelta
+from uuid import uuid4
+
 from django.core.mail import EmailMultiAlternatives
 from django.core.paginator import Paginator
 from django.db.models import Q
 from django.http import StreamingHttpResponse
 from django.shortcuts import render, redirect, get_object_or_404
 from django.views.decorators.http import require_GET, require_POST
+from django.utils import timezone
 
+from mensageria.attachments import attachment_content_type, safe_attachment_name
 from mensageria.forms import EnvioEmailCursoStatusForm
-from mensageria.models import EmailStatusBatch, TagTemplate, MensagemTemplate
+from mensageria.models import (
+    EmailSendAttachment,
+    EmailStatusBatch,
+    TagTemplate,
+    MensagemTemplate,
+)
 from mensageria.render import build_email_bodies, render_text
 from mensageria.status_batch import create_status_batch
 
@@ -116,7 +126,6 @@ def alterar_status_participantes(request, curso_id):
             assunto=request.POST.get("assunto") or "",
             corpo=request.POST.get("corpo") or "",
             admin=request.user,
-            attachments=request.FILES.getlist("anexos"),
         )
     except ValueError as exc:
         messages.error(request, str(exc))
@@ -138,7 +147,7 @@ def email_status_batch_detail(request, job_id):
     batch = get_object_or_404(
         EmailStatusBatch.objects.select_related(
             "curso", "admin", "status_destino", "template"
-        ).prefetch_related("attachments"),
+        ),
         job_id=job_id,
     )
     items = batch.items.select_related("participante", "inscricao", "status_origem")
@@ -148,7 +157,6 @@ def email_status_batch_detail(request, job_id):
         {
             "batch": batch,
             "items": items,
-            "attachments": batch.attachments.all(),
             "is_processing": batch.is_processing,
         },
     )
@@ -156,6 +164,8 @@ def email_status_batch_detail(request, job_id):
 
 @staff_member_required
 def enviar_emails_por_curso_status_legado(request):
+    expired_at = timezone.now() - timedelta(hours=24)
+    EmailSendAttachment.objects.filter(created_at__lt=expired_at).delete()
     form = EnvioEmailCursoStatusForm()
     return render(
         request, "mensageria/enviar_emails_por_curso_status.html", {"form": form}
@@ -190,7 +200,7 @@ def enviar_emails_por_curso_status_preview(request):
     if request.method != "POST":
         return redirect("mensageria:enviar_curso_status")
 
-    form = EnvioEmailCursoStatusForm(request.POST)
+    form = EnvioEmailCursoStatusForm(request.POST, request.FILES)
     if not form.is_valid():
         return render(
             request, "mensageria/enviar_emails_por_curso_status.html", {"form": form}
@@ -218,6 +228,38 @@ def enviar_emails_por_curso_status_preview(request):
     else:
         concluido_label = "(Todos)"
 
+    attachment_job_id = ""
+    attachments = []
+    uploaded_files = form.cleaned_data.get("anexos") or []
+    if uploaded_files:
+        attachment_job_id = uuid4().hex
+        try:
+            for uploaded_file in uploaded_files:
+                original_name = safe_attachment_name(uploaded_file.name)
+                attachments.append(
+                    EmailSendAttachment.objects.create(
+                        job_id=attachment_job_id,
+                        uploaded_by=request.user,
+                        file=uploaded_file,
+                        original_name=original_name,
+                        content_type=attachment_content_type(original_name),
+                        size=uploaded_file.size,
+                    )
+                )
+        except Exception:
+            EmailSendAttachment.objects.filter(
+                job_id=attachment_job_id, uploaded_by=request.user
+            ).delete()
+            messages.error(
+                request,
+                "Não foi possível armazenar os anexos. Selecione os arquivos e tente novamente.",
+            )
+            return render(
+                request,
+                "mensageria/enviar_emails_por_curso_status.html",
+                {"form": form},
+            )
+
     return render(
         request,
         "mensageria/enviar_emails_por_curso_status_preview.html",
@@ -232,6 +274,8 @@ def enviar_emails_por_curso_status_preview(request):
             "dry_run": dry_run,
             "assunto": template.assunto,
             "corpo": template.corpo,
+            "attachments": attachments,
+            "attachment_job_id": attachment_job_id,
         },
     )
 
@@ -241,8 +285,23 @@ def enviar_emails_por_curso_status_confirmar(request):
     if request.method != "POST":
         return redirect("mensageria:enviar_curso_status")
 
+    attachment_job_id = (request.POST.get("attachment_job_id") or "").strip()
+    attachments = EmailSendAttachment.objects.none()
+    if attachment_job_id:
+        attachments = EmailSendAttachment.objects.filter(
+            job_id=attachment_job_id,
+            uploaded_by=request.user,
+        )
+        if not attachments.exists():
+            messages.error(
+                request,
+                "Os anexos não estão mais disponíveis. Selecione-os novamente.",
+            )
+            return redirect("mensageria:enviar_curso_status")
+
     form = EnvioEmailCursoStatusForm(request.POST)
     if not form.is_valid():
+        attachments.delete()
         return render(
             request, "mensageria/enviar_emails_por_curso_status.html", {"form": form}
         )
@@ -257,6 +316,7 @@ def enviar_emails_por_curso_status_confirmar(request):
     qs = _build_queryset(curso, status, concluido, limite)
     total = qs.count()
     if total == 0:
+        attachments.delete()
         messages.warning(
             request, "Nenhuma inscriÃ§Ã£o encontrada para esse curso e status."
         )
@@ -274,6 +334,7 @@ def enviar_emails_por_curso_status_confirmar(request):
         "dry_run": bool(dry_run),
         "assunto": assunto_base,
         "corpo": corpo_base,
+        "attachment_job_id": attachment_job_id,
     }
     request.session.modified = True
     return redirect("mensageria:enviar_curso_status_progresso")
@@ -318,91 +379,119 @@ def enviar_emails_por_curso_status_stream(request):
     dry_run = payload.get("dry_run")
     assunto_base = payload.get("assunto") or template.assunto
     corpo_base = payload.get("corpo") or template.corpo
+    attachment_job_id = payload.get("attachment_job_id") or ""
 
     qs = _build_queryset(curso, status, concluido, limite)
     total = qs.count()
     tags = TagTemplate.objects.filter(ativa=True).select_related("content_type")
     tags_by_name = {t.nome: t for t in tags}
+    stored_attachments = EmailSendAttachment.objects.filter(
+        job_id=attachment_job_id,
+        uploaded_by=request.user,
+    ) if attachment_job_id else EmailSendAttachment.objects.none()
 
     def stream():
-        yield _sse_event({"type": "start", "total": total, "dry_run": bool(dry_run)})
-        enviados = 0
-        falhas = 0
-        sem_email = 0
+        try:
+            email_attachments = []
+            for attachment in stored_attachments:
+                with attachment.file.open("rb") as attachment_file:
+                    email_attachments.append(
+                        (
+                            attachment.original_name,
+                            attachment_file.read(),
+                            attachment.content_type,
+                        )
+                    )
 
-        for insc in qs.iterator(chunk_size=200):
-            user = insc.participante
-            if not user.email:
-                sem_email += 1
-                yield _sse_event(
-                    {
-                        "type": "item",
-                        "status": "sem_email",
-                        "user": str(user),
-                    }
-                )
-                continue
+            yield _sse_event({"type": "start", "total": total, "dry_run": bool(dry_run)})
+            enviados = 0
+            falhas = 0
+            sem_email = 0
 
-            ctx = {
-                "user": user,
-                "curso": insc.curso,
-                "inscricao": insc,
-                "status_inscricao": insc.status,
-            }
+            for insc in qs.iterator(chunk_size=200):
+                user = insc.participante
+                if not user.email:
+                    sem_email += 1
+                    yield _sse_event(
+                        {
+                            "type": "item",
+                            "status": "sem_email",
+                            "user": str(user),
+                        }
+                    )
+                    continue
 
-            assunto = render_text(assunto_base, tags_by_name, ctx)
-            corpo = render_text(corpo_base, tags_by_name, ctx)
+                ctx = {
+                    "user": user,
+                    "curso": insc.curso,
+                    "inscricao": insc,
+                    "status_inscricao": insc.status,
+                }
 
-            if dry_run:
-                yield _sse_event(
-                    {
-                        "type": "item",
-                        "status": "dry_run",
-                        "user": str(user),
-                        "email": user.email,
-                    }
-                )
-                continue
+                assunto = render_text(assunto_base, tags_by_name, ctx)
+                corpo = render_text(corpo_base, tags_by_name, ctx)
 
-            try:
-                corpo_texto, corpo_html = build_email_bodies(corpo)
-                msg = EmailMultiAlternatives(
-                    subject=assunto,
-                    body=corpo_texto,
-                    to=[user.email],
-                )
-                msg.attach_alternative(corpo_html, "text/html")
-                msg.send()
-                enviados += 1
-                yield _sse_event(
-                    {
-                        "type": "item",
-                        "status": "enviado",
-                        "user": str(user),
-                        "email": user.email,
-                    }
-                )
-            except Exception as exc:
-                falhas += 1
-                yield _sse_event(
-                    {
-                        "type": "item",
-                        "status": "erro",
-                        "user": str(user),
-                        "email": user.email,
-                        "message": str(exc),
-                    }
-                )
+                if dry_run:
+                    yield _sse_event(
+                        {
+                            "type": "item",
+                            "status": "dry_run",
+                            "user": str(user),
+                            "email": user.email,
+                        }
+                    )
+                    continue
 
-        yield _sse_event(
-            {
-                "type": "done",
-                "total": total,
-                "enviados": enviados,
-                "sem_email": sem_email,
-                "falhas": falhas,
-            }
-        )
+                try:
+                    corpo_texto, corpo_html = build_email_bodies(corpo)
+                    msg = EmailMultiAlternatives(
+                        subject=assunto,
+                        body=corpo_texto,
+                        to=[user.email],
+                    )
+                    msg.attach_alternative(corpo_html, "text/html")
+                    for filename, content, mimetype in email_attachments:
+                        msg.attach(filename, content, mimetype)
+                    msg.send()
+                    enviados += 1
+                    yield _sse_event(
+                        {
+                            "type": "item",
+                            "status": "enviado",
+                            "user": str(user),
+                            "email": user.email,
+                        }
+                    )
+                except Exception as exc:
+                    falhas += 1
+                    yield _sse_event(
+                        {
+                            "type": "item",
+                            "status": "erro",
+                            "user": str(user),
+                            "email": user.email,
+                            "message": str(exc),
+                        }
+                    )
+
+            yield _sse_event(
+                {
+                    "type": "done",
+                    "total": total,
+                    "enviados": enviados,
+                    "sem_email": sem_email,
+                    "falhas": falhas,
+                }
+            )
+        except Exception as exc:
+            yield _sse_event(
+                {
+                    "type": "error",
+                    "message": f"Não foi possível carregar os anexos: {exc}",
+                }
+            )
+        finally:
+            stored_attachments.delete()
 
     response = StreamingHttpResponse(stream(), content_type="text/event-stream")
     response["Cache-Control"] = "no-cache"

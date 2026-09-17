@@ -1,6 +1,5 @@
 # pyright: reportAttributeAccessIssue=false
 
-import mimetypes
 import os
 import subprocess
 import sys
@@ -14,42 +13,12 @@ from django.utils import timezone
 
 from mensageria.models import (
     EmailStatusBatch,
-    EmailStatusBatchAttachment,
     EmailStatusBatchItem,
     MensagemTemplate,
     TagTemplate,
 )
 from mensageria.render import build_email_bodies, render_text
 from pfc_app.models import Curso, Inscricao, StatusInscricao
-
-
-MAX_ATTACHMENT_COUNT = 10
-MAX_ATTACHMENT_SIZE = 10 * 1024 * 1024
-MAX_ATTACHMENTS_TOTAL_SIZE = 20 * 1024 * 1024
-
-
-def _safe_attachment_name(name: str) -> str:
-    return Path((name or "anexo").replace("\\", "/")).name[:255] or "anexo"
-
-
-def validate_email_attachments(attachments) -> list:
-    files = list(attachments or [])
-    if len(files) > MAX_ATTACHMENT_COUNT:
-        raise ValueError(f"Envie no maximo {MAX_ATTACHMENT_COUNT} anexos por lote.")
-
-    total_size = 0
-    for attachment in files:
-        size = int(getattr(attachment, "size", 0) or 0)
-        name = _safe_attachment_name(getattr(attachment, "name", ""))
-        if size <= 0:
-            raise ValueError(f'O anexo "{name}" esta vazio.')
-        if size > MAX_ATTACHMENT_SIZE:
-            raise ValueError(f'O anexo "{name}" excede o limite de 10 MB.')
-        total_size += size
-
-    if total_size > MAX_ATTACHMENTS_TOTAL_SIZE:
-        raise ValueError("O conjunto de anexos excede o limite total de 20 MB.")
-    return files
 
 
 def _jobs_root() -> Path:
@@ -99,16 +68,12 @@ def create_status_batch(
     assunto: str,
     corpo: str,
     admin,
-    attachments=None,
 ) -> EmailStatusBatch:
     cleaned_ids = sorted({int(inscricao_id) for inscricao_id in inscricao_ids})
     if not cleaned_ids:
         raise ValueError("Selecione ao menos uma inscricao.")
     if enviar_email and template is None:
         raise ValueError("Selecione um modelo de mensagem para enviar e-mail.")
-    cleaned_attachments = validate_email_attachments(attachments)
-    if cleaned_attachments and not enviar_email:
-        raise ValueError("Marque a opcao de enviar e-mail para incluir anexos.")
 
     with transaction.atomic():  # pyright: ignore[reportGeneralTypeIssues]
         inscricoes = list(
@@ -170,21 +135,6 @@ def create_status_batch(
         if items:
             EmailStatusBatchItem.objects.bulk_create(items)
 
-        if enviar_email and changed:
-            for attachment in cleaned_attachments:
-                original_name = _safe_attachment_name(attachment.name)
-                content_type = (
-                    mimetypes.guess_type(original_name)[0]
-                    or "application/octet-stream"
-                )
-                EmailStatusBatchAttachment.objects.create(
-                    batch=batch,
-                    file=attachment,
-                    original_name=original_name,
-                    content_type=content_type,
-                    size=attachment.size,
-                )
-
         for inscricao in changed:
             inscricao.status = status_destino
         if changed:
@@ -244,17 +194,6 @@ def process_email_status_batch(job_id: str) -> bool:
             .exclude(status=EmailStatusBatchItem.Status.SENT)
             .order_by("id")
         )
-        email_attachments = []
-        for attachment in batch.attachments.all():
-            with attachment.file.open("rb") as attachment_file:
-                email_attachments.append(
-                    (
-                        attachment.original_name,
-                        attachment_file.read(),
-                        attachment.content_type,
-                    )
-                )
-
         for item in items.iterator(chunk_size=100):
             if not item.email:
                 item.status = EmailStatusBatchItem.Status.NO_EMAIL
@@ -279,8 +218,6 @@ def process_email_status_batch(job_id: str) -> bool:
                     to=[item.email],
                 )
                 msg.attach_alternative(corpo_html, "text/html")
-                for filename, content, mimetype in email_attachments:
-                    msg.attach(filename, content, mimetype)
                 msg.send()
                 item.status = EmailStatusBatchItem.Status.SENT
                 item.error_message = ""

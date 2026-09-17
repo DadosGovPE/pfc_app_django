@@ -6,7 +6,6 @@ from django.urls import path, reverse
 
 from .models import (
     EmailStatusBatch,
-    EmailStatusBatchAttachment,
     EmailStatusBatchItem,
     MensagemTemplate,
     TagTemplate,
@@ -70,16 +69,6 @@ class EmailStatusBatchItemInline(admin.TabularInline):
         )
 
 
-class EmailStatusBatchAttachmentInline(admin.TabularInline):
-    model = EmailStatusBatchAttachment
-    extra = 0
-    can_delete = False
-    readonly_fields = ("file", "original_name", "content_type", "size", "created_at")
-
-    def has_add_permission(self, request, obj=None):
-        return False
-
-
 @admin.register(EmailStatusBatch)
 class EmailStatusBatchAdmin(admin.ModelAdmin):
     list_per_page = 50
@@ -117,7 +106,7 @@ class EmailStatusBatchAdmin(admin.ModelAdmin):
         "started_at",
         "finished_at",
     )
-    inlines = [EmailStatusBatchAttachmentInline, EmailStatusBatchItemInline]
+    inlines = [EmailStatusBatchItemInline]
 
     def has_add_permission(self, request):
         return False

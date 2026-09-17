@@ -1,7 +1,25 @@
 from django import forms
 
+from mensageria.attachments import validate_email_attachments
 from mensageria.models import MensagemTemplate
 from pfc_app.models import Curso, StatusInscricao
+
+
+class MultipleFileInput(forms.ClearableFileInput):
+    allow_multiple_selected = True
+
+
+class MultipleFileField(forms.FileField):
+    widget = MultipleFileInput
+
+    def clean(self, data, initial=None):
+        if not data:
+            return []
+        files = data if isinstance(data, (list, tuple)) else [data]
+        cleaned_files = [
+            super(MultipleFileField, self).clean(file, initial) for file in files
+        ]
+        return validate_email_attachments(cleaned_files)
 
 
 class EnvioEmailCursoStatusForm(forms.Form):
@@ -39,6 +57,11 @@ class EnvioEmailCursoStatusForm(forms.Form):
         min_value=1,
         label="Limite (opcional)",
         help_text="Opcional: limita a quantidade de envios para teste (ex.: 5).",
+    )
+    anexos = MultipleFileField(
+        required=False,
+        label="Anexos",
+        help_text="Até 10 arquivos, com no máximo 10 MB cada e 20 MB no total.",
     )
 
     def __init__(self, *args, **kwargs):

@@ -1,3 +1,5 @@
+import tempfile
+
 from django.core import mail
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.contrib.contenttypes.models import ContentType
@@ -6,15 +8,12 @@ from django.test import SimpleTestCase, TestCase, override_settings
 from mensageria.models import (
     EmailStatusBatch,
     EmailStatusBatchItem,
+    EmailSendAttachment,
     MensagemTemplate,
     TagTemplate,
 )
 from mensageria.render import build_email_bodies, render_text
-from mensageria.status_batch import (
-    create_status_batch,
-    process_email_status_batch,
-    validate_email_attachments,
-)
+from mensageria.status_batch import create_status_batch, process_email_status_batch
 from pfc_app.models import Curso, Inscricao, StatusCurso, StatusInscricao, User
 
 
@@ -78,6 +77,8 @@ class EmailStatusBatchTests(TestCase):
             password="123",
             role="ADMIN",
         )
+        self.admin.is_staff = True
+        self.admin.save(update_fields=["is_staff"])
         self.user1 = User.objects.create_user(
             username="user1",
             cpf="00000000002",
@@ -173,11 +174,6 @@ class EmailStatusBatchTests(TestCase):
             assunto="",
             corpo="",
             admin=self.admin,
-            attachments=[
-                SimpleUploadedFile(
-                    "orientacoes.txt", b"Leia antes do curso.", content_type="text/plain"
-                )
-            ],
         )
 
         processed = process_email_status_batch(batch.job_id)
@@ -191,16 +187,63 @@ class EmailStatusBatchTests(TestCase):
         self.assertIn("Curso Teste", mail.outbox[0].subject)
         self.assertIn("MARIA", mail.outbox[0].body)
         self.assertIn("APROVADA", mail.outbox[0].body)
-        self.assertEqual(batch.attachments.count(), 1)
-        self.assertEqual(len(mail.outbox[0].attachments), 1)
-        self.assertEqual(mail.outbox[0].attachments[0][0], "orientacoes.txt")
-        self.assertEqual(mail.outbox[0].attachments[0][1], "Leia antes do curso.")
-        self.assertEqual(mail.outbox[0].attachments[0][2], "text/plain")
         self.assertEqual(
             batch.items.get().status,
             EmailStatusBatchItem.Status.SENT,
         )
 
-    def test_validate_email_attachments_rejeita_arquivo_vazio(self):
-        with self.assertRaisesMessage(ValueError, 'O anexo "vazio.txt" esta vazio.'):
-            validate_email_attachments([SimpleUploadedFile("vazio.txt", b"")])
+    def test_fluxo_enviar_email_envia_e_remove_anexo_temporario(self):
+        self.client.force_login(self.admin)
+        with tempfile.TemporaryDirectory() as media_root, override_settings(
+            MEDIA_ROOT=media_root
+        ):
+            preview_response = self.client.post(
+                "/mensageria/enviar-curso-status/preview/",
+                {
+                    "curso": self.curso.id,
+                    "template": self.template.id,
+                    "status": self.status_pendente.id,
+                    "concluido": "",
+                    "limite": "",
+                    "anexos": SimpleUploadedFile(
+                        "orientacoes.txt",
+                        b"Leia antes do curso.",
+                        content_type="text/plain",
+                    ),
+                },
+            )
+
+            self.assertEqual(preview_response.status_code, 200)
+            self.assertContains(preview_response, "orientacoes.txt")
+            attachment = EmailSendAttachment.objects.get()
+
+            confirm_response = self.client.post(
+                "/mensageria/enviar-curso-status/confirmar/",
+                {
+                    "curso": self.curso.id,
+                    "template": self.template.id,
+                    "status": self.status_pendente.id,
+                    "concluido": "",
+                    "limite": "",
+                    "assunto": self.template.assunto,
+                    "corpo": self.template.corpo,
+                    "attachment_job_id": attachment.job_id,
+                },
+            )
+            self.assertRedirects(
+                confirm_response,
+                "/mensageria/enviar-curso-status/progresso/",
+            )
+
+            stream_response = self.client.get(
+                "/mensageria/enviar-curso-status/stream/"
+            )
+            list(stream_response.streaming_content)
+
+            self.assertEqual(len(mail.outbox), 1)
+            self.assertEqual(mail.outbox[0].to, ["maria@example.com"])
+            self.assertEqual(mail.outbox[0].attachments[0][0], "orientacoes.txt")
+            self.assertEqual(
+                mail.outbox[0].attachments[0][1], "Leia antes do curso."
+            )
+            self.assertFalse(EmailSendAttachment.objects.exists())

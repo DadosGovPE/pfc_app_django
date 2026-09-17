@@ -21,6 +21,18 @@
             <div><strong>Concluido:</strong> {{ concluido_label }}</div>
             <div><strong>Limite:</strong> {{ limite|default:"(Sem limite)" }}</div>
             <div><strong>Total filtrado:</strong> {{ total }}</div>
+            <div>
+              <strong>Anexos:</strong>
+              {% if attachments %}
+                <ul class="mb-0 ps-3">
+                  {% for attachment in attachments %}
+                    <li class="text-break">{{ attachment.original_name }} ({{ attachment.size|filesizeformat }})</li>
+                  {% endfor %}
+                </ul>
+              {% else %}
+                Nenhum
+              {% endif %}
+            </div>
           </div>
           {% if dry_run %}
             <div class="alert alert-warning mt-3 mb-0">
@@ -36,8 +48,9 @@
             {% csrf_token %}
 
             {% for field in form %}
-              {{ field.as_hidden }}
+              {% if field.name != "anexos" %}{{ field.as_hidden }}{% endif %}
             {% endfor %}
+            <input type="hidden" name="attachment_job_id" value="{{ attachment_job_id }}">
 
             <div class="mb-3">
               <label class="form-label fw-bold">Assunto</label>

@@ -8,6 +8,8 @@ from django.dispatch import receiver
 from django.utils import timezone
 from uuid import uuid4
 
+from mensageria.attachments import safe_attachment_name
+
 TAG_NAME_RE = r"^[a-z][a-z0-9_]*$"
 
 
@@ -113,17 +115,27 @@ class EmailStatusBatch(models.Model):
         return f"{self.job_id} - {self.get_status_display()}"
 
 
+def email_send_attachment_path(instance, filename):
+    filename = safe_attachment_name(filename)
+    return f"mensageria/email_jobs/{instance.job_id}/attachments/{filename}"
+
+
 def email_status_attachment_path(instance, filename):
+    """Mantido para permitir que a migration 0003 seja carregada."""
+    filename = safe_attachment_name(filename)
     return (
         f"mensageria/email_status_jobs/{instance.batch.job_id}/attachments/{filename}"
     )
 
 
-class EmailStatusBatchAttachment(models.Model):
-    batch = models.ForeignKey(
-        EmailStatusBatch, on_delete=models.CASCADE, related_name="attachments"
+class EmailSendAttachment(models.Model):
+    job_id = models.CharField(max_length=32, db_index=True)
+    uploaded_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="email_send_attachments",
     )
-    file = models.FileField(upload_to=email_status_attachment_path)
+    file = models.FileField(upload_to=email_send_attachment_path)
     original_name = models.CharField(max_length=255)
     content_type = models.CharField(max_length=127, default="application/octet-stream")
     size = models.PositiveBigIntegerField(default=0)
@@ -131,15 +143,15 @@ class EmailStatusBatchAttachment(models.Model):
 
     class Meta:
         ordering = ["id"]
-        verbose_name = "anexo do lote de e-mails"
-        verbose_name_plural = "anexos do lote de e-mails"
+        verbose_name = "anexo de envio de e-mail"
+        verbose_name_plural = "anexos de envio de e-mail"
 
     def __str__(self):
         return self.original_name
 
 
-@receiver(post_delete, sender=EmailStatusBatchAttachment)
-def delete_email_status_attachment_file(sender, instance, **kwargs):
+@receiver(post_delete, sender=EmailSendAttachment)
+def delete_email_send_attachment_file(sender, instance, **kwargs):
     if instance.file:
         transaction.on_commit(lambda: instance.file.delete(save=False))
 
