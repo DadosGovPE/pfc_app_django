@@ -1,4 +1,5 @@
 from django.core import mail
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.contrib.contenttypes.models import ContentType
 from django.test import SimpleTestCase, TestCase, override_settings
 
@@ -9,7 +10,11 @@ from mensageria.models import (
     TagTemplate,
 )
 from mensageria.render import build_email_bodies, render_text
-from mensageria.status_batch import create_status_batch, process_email_status_batch
+from mensageria.status_batch import (
+    create_status_batch,
+    process_email_status_batch,
+    validate_email_attachments,
+)
 from pfc_app.models import Curso, Inscricao, StatusCurso, StatusInscricao, User
 
 
@@ -168,6 +173,11 @@ class EmailStatusBatchTests(TestCase):
             assunto="",
             corpo="",
             admin=self.admin,
+            attachments=[
+                SimpleUploadedFile(
+                    "orientacoes.txt", b"Leia antes do curso.", content_type="text/plain"
+                )
+            ],
         )
 
         processed = process_email_status_batch(batch.job_id)
@@ -181,7 +191,16 @@ class EmailStatusBatchTests(TestCase):
         self.assertIn("Curso Teste", mail.outbox[0].subject)
         self.assertIn("MARIA", mail.outbox[0].body)
         self.assertIn("APROVADA", mail.outbox[0].body)
+        self.assertEqual(batch.attachments.count(), 1)
+        self.assertEqual(len(mail.outbox[0].attachments), 1)
+        self.assertEqual(mail.outbox[0].attachments[0][0], "orientacoes.txt")
+        self.assertEqual(mail.outbox[0].attachments[0][1], "Leia antes do curso.")
+        self.assertEqual(mail.outbox[0].attachments[0][2], "text/plain")
         self.assertEqual(
             batch.items.get().status,
             EmailStatusBatchItem.Status.SENT,
         )
+
+    def test_validate_email_attachments_rejeita_arquivo_vazio(self):
+        with self.assertRaisesMessage(ValueError, 'O anexo "vazio.txt" esta vazio.'):
+            validate_email_attachments([SimpleUploadedFile("vazio.txt", b"")])

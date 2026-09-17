@@ -2,7 +2,9 @@ from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ValidationError
 from django.core.validators import RegexValidator
 from django.conf import settings
-from django.db import models
+from django.db import models, transaction
+from django.db.models.signals import post_delete
+from django.dispatch import receiver
 from django.utils import timezone
 from uuid import uuid4
 
@@ -109,6 +111,37 @@ class EmailStatusBatch(models.Model):
 
     def __str__(self):
         return f"{self.job_id} - {self.get_status_display()}"
+
+
+def email_status_attachment_path(instance, filename):
+    return (
+        f"mensageria/email_status_jobs/{instance.batch.job_id}/attachments/{filename}"
+    )
+
+
+class EmailStatusBatchAttachment(models.Model):
+    batch = models.ForeignKey(
+        EmailStatusBatch, on_delete=models.CASCADE, related_name="attachments"
+    )
+    file = models.FileField(upload_to=email_status_attachment_path)
+    original_name = models.CharField(max_length=255)
+    content_type = models.CharField(max_length=127, default="application/octet-stream")
+    size = models.PositiveBigIntegerField(default=0)
+    created_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        ordering = ["id"]
+        verbose_name = "anexo do lote de e-mails"
+        verbose_name_plural = "anexos do lote de e-mails"
+
+    def __str__(self):
+        return self.original_name
+
+
+@receiver(post_delete, sender=EmailStatusBatchAttachment)
+def delete_email_status_attachment_file(sender, instance, **kwargs):
+    if instance.file:
+        transaction.on_commit(lambda: instance.file.delete(save=False))
 
 
 class EmailStatusBatchItem(models.Model):

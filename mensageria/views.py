@@ -116,6 +116,7 @@ def alterar_status_participantes(request, curso_id):
             assunto=request.POST.get("assunto") or "",
             corpo=request.POST.get("corpo") or "",
             admin=request.user,
+            attachments=request.FILES.getlist("anexos"),
         )
     except ValueError as exc:
         messages.error(request, str(exc))
@@ -137,7 +138,7 @@ def email_status_batch_detail(request, job_id):
     batch = get_object_or_404(
         EmailStatusBatch.objects.select_related(
             "curso", "admin", "status_destino", "template"
-        ),
+        ).prefetch_related("attachments"),
         job_id=job_id,
     )
     items = batch.items.select_related("participante", "inscricao", "status_origem")
@@ -147,6 +148,7 @@ def email_status_batch_detail(request, job_id):
         {
             "batch": batch,
             "items": items,
+            "attachments": batch.attachments.all(),
             "is_processing": batch.is_processing,
         },
     )
