@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+
+{% block content %}
+{% include "leilao/partials/assets.html" %}
+<div class="leilao-app">
+  {% include 'parciais/_messages.html' %}
+  <div id="leilao-global-status" class="leilao-global-status" role="status" aria-live="polite"></div>
+
+  <header class="leilao-header">
+    <div>
+      <h1>Leilão PFC</h1>
+      <p>Encontre produtos, acompanhe as disputas e confirme o próximo lance calculado pelo sistema.</p>
+    </div>
+    <nav class="leilao-actions" aria-label="Ações do leilão">
+      <a class="btn btn-outline-primary" href="{% url 'leilao:my_products' %}">Meus produtos</a>
+      <a class="btn btn-primary" href="{% url 'leilao:product_create' %}">
+        <i class="bi bi-plus-lg" aria-hidden="true"></i> Anunciar produto
+      </a>
+    </nav>
+  </header>
+
+  <form class="leilao-tools" role="search"
+        hx-get="{% url 'leilao:catalog' %}"
+        hx-target="#product-grid"
+        hx-swap="outerHTML"
+        hx-push-url="true"
+        hx-trigger="input changed delay:350ms from:#catalog-search, change from:#status-filter">
+    <label class="leilao-search" for="catalog-search">
+      <i class="bi bi-search" aria-hidden="true"></i>
+      <span class="visually-hidden">Buscar produtos</span>
+      <input id="catalog-search" name="q" value="{{ query }}" placeholder="Buscar produto ou leilão" autocomplete="off">
+    </label>
+    <label class="leilao-select" for="status-filter">
+      <span class="visually-hidden">Filtrar por situação</span>
+      <select id="status-filter" name="status">
+        <option value="all" {% if status == 'all' %}selected{% endif %}>Todos</option>
+        <option value="active" {% if status == 'active' %}selected{% endif %}>Ativos</option>
+        <option value="ending" {% if status == 'ending' %}selected{% endif %}>Terminando</option>
+        <option value="ended" {% if status == 'ended' %}selected{% endif %}>Encerrados</option>
+      </select>
+    </label>
+    <strong class="leilao-active-count">{{ active_count }} produto{{ active_count|pluralize }} ativo{{ active_count|pluralize }}</strong>
+  </form>
+
+  {% include "leilao/partials/product_grid.html" %}
+</div>
+{% endblock %}

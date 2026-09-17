@@ -1,0 +1,12 @@
+<section id="product-grid" class="leilao-grid" aria-label="Produtos do leilão">
+  {% for product in products %}
+    {% include "leilao/partials/product_card.html" %}
+  {% empty %}
+    <div class="leilao-empty">
+      <i class="bi bi-box-seam" aria-hidden="true"></i>
+      <h2>Nenhum produto por aqui</h2>
+      <p>Altere a busca ou publique o primeiro item desta seleção.</p>
+      <a class="btn btn-primary" href="{% url 'leilao:product_create' %}">Anunciar produto</a>
+    </div>
+  {% endfor %}
+</section>

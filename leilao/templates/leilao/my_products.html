@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+
+{% block content %}
+{% include "leilao/partials/assets.html" %}
+<div class="leilao-app">
+  {% include 'parciais/_messages.html' %}
+  <header class="leilao-header">
+    <div>
+      <a class="leilao-back" href="{% url 'leilao:catalog' %}"><i class="bi bi-arrow-left" aria-hidden="true"></i> Voltar ao leilão</a>
+      <h1>Meus produtos</h1>
+      <p>Acompanhe seus anúncios e encontre o arrematante quando o prazo terminar.</p>
+    </div>
+    <a class="btn btn-primary" href="{% url 'leilao:product_create' %}">Anunciar produto</a>
+  </header>
+
+  <section class="leilao-owner-list" aria-label="Produtos anunciados por você">
+    {% for product in products %}
+      <article class="leilao-owner-row">
+        <div class="leilao-owner-thumb">
+          {% with image=product.images.first %}{% if image %}<img src="{{ image.image.url }}" alt="">{% else %}<i class="bi bi-image" aria-hidden="true"></i>{% endif %}{% endwith %}
+        </div>
+        <div class="leilao-owner-product"><h2>{{ product.title }}</h2><p>{{ product.auction.name }} · encerra em {{ product.ends_at|date:"d/m/Y, H:i" }}</p></div>
+        <div class="leilao-owner-value"><span>Lance atual</span><strong>R$ {{ product.current_price|floatformat:2 }}</strong></div>
+        <div class="leilao-owner-outcome">
+          {% if product.is_active %}
+            <span class="leilao-active"><i></i> Recebendo lances</span>
+          {% elif product.winner %}
+            <span>Arrematante</span>
+            <strong>{{ product.winner.nome|default:product.winner.username }}</strong>
+            <span>{{ product.winner.telefone|default:"Telefone não informado" }}</span>
+            <span>{{ product.winner.lotacao_fk|default:product.winner.lotacao|default:"Lotação não informada" }}</span>
+          {% else %}
+            <span>Encerrado</span><strong>Sem arrematante</strong>
+          {% endif %}
+        </div>
+      </article>
+    {% empty %}
+      <div class="leilao-empty">
+        <i class="bi bi-box-seam" aria-hidden="true"></i>
+        <h2>Você ainda não anunciou</h2>
+        <p>Quando publicar um produto, o acompanhamento aparecerá aqui.</p>
+        <a class="btn btn-primary" href="{% url 'leilao:product_create' %}">Anunciar produto</a>
+      </div>
+    {% endfor %}
+  </section>
+</div>
+{% endblock %}

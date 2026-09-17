@@ -1,0 +1,32 @@
+<div class="leilao-bid-zone" id="bid-zone-{{ product.pk }}">
+  {% with last_bid=product.highest_bid %}
+  <dl class="leilao-bid-facts">
+    <div><dt>Lance atual</dt><dd>R$ {{ product.current_price|floatformat:2 }}</dd></div>
+    <div><dt>Incremento</dt><dd>{% if product.increment_type == 'percentage' %}{{ product.increment_value|floatformat:2 }}%{% else %}R$ {{ product.increment_value|floatformat:2 }}{% endif %}</dd></div>
+  </dl>
+  <p class="leilao-last-bidder">
+    <span>Último lance</span>
+    <strong>{% if last_bid %}{{ last_bid.bidder.nome|default:last_bid.bidder.username }}{% else %}Nenhum lance ainda{% endif %}</strong>
+  </p>
+  {% if highlight_product_id == product.pk and bid_success %}<p class="leilao-feedback success" role="status">{{ bid_success }}</p>{% endif %}
+  {% if highlight_product_id == product.pk and bid_error %}<p class="leilao-feedback error" role="alert">{{ bid_error }}</p>{% endif %}
+  {% if product.is_active %}
+    {% if product.creator_id == user.id %}
+      <div class="leilao-note">Este produto é seu. Acompanhe o resultado em “Meus produtos”.</div>
+    {% elif last_bid and last_bid.bidder_id == user.id %}
+      <div class="leilao-note success" role="status"><strong>Seu lance está na frente</strong><span>Aguarde outra pessoa participar para dar um novo lance.</span></div>
+    {% else %}
+      <form method="post" action="{% url 'leilao:place_bid' product.pk %}" hx-post="{% url 'leilao:place_bid' product.pk %}" hx-target="#bid-zone-{{ product.pk }}" hx-swap="outerHTML swap:110ms settle:110ms" hx-disabled-elt="find button">
+        {% csrf_token %}
+        <button class="leilao-bid-button" type="submit">
+          <span>Dar próximo lance</span>
+          <strong>R$ {{ product.next_bid_amount|floatformat:2 }}</strong>
+          <span class="spinner-border spinner-border-sm htmx-indicator" aria-hidden="true"></span>
+        </button>
+      </form>
+    {% endif %}
+  {% else %}
+    <div class="leilao-result">{% if product.winner %}<span>Arrematado</span><strong>R$ {{ product.current_price|floatformat:2 }}</strong>{% else %}<span>Encerrado sem vencedor</span>{% endif %}</div>
+  {% endif %}
+  {% endwith %}
+</div>

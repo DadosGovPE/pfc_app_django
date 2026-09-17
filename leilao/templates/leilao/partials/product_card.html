@@ -1,0 +1,38 @@
+<article class="leilao-card" id="product-{{ product.pk }}" aria-labelledby="product-title-{{ product.pk }}">
+  <div class="leilao-media">
+    {% with images=product.images.all %}
+      {% if images %}
+        <div id="photos-{{ product.pk }}" class="carousel slide h-100" {% if images|length > 1 %}data-product-carousel data-bs-interval="3000"{% else %}data-bs-interval="false"{% endif %}>
+          <div class="carousel-inner h-100">
+            {% for photo in images %}
+              <div class="carousel-item h-100 {% if forloop.first %}active{% endif %}">
+                <img src="{{ photo.image.url }}" alt="Foto {{ forloop.counter }} de {{ product.title }}" loading="lazy">
+              </div>
+            {% endfor %}
+          </div>
+          {% if images|length > 1 %}
+            <button class="carousel-control-prev" type="button" data-bs-target="#photos-{{ product.pk }}" data-bs-slide="prev" aria-label="Foto anterior"><span class="carousel-control-prev-icon"></span></button>
+            <button class="carousel-control-next" type="button" data-bs-target="#photos-{{ product.pk }}" data-bs-slide="next" aria-label="Próxima foto"><span class="carousel-control-next-icon"></span></button>
+            <span class="leilao-photo-count">{{ images|length }} fotos</span>
+          {% endif %}
+        </div>
+      {% else %}
+        <div class="leilao-photo-placeholder"><i class="bi bi-image" aria-hidden="true"></i><span>Sem foto</span></div>
+      {% endif %}
+    {% endwith %}
+    <span class="leilao-chip">{{ product.auction.name }}</span>
+    {% include "leilao/partials/hot_slot.html" %}
+  </div>
+
+  <div class="leilao-card-body">
+    <div class="leilao-card-heading">
+      <h2 id="product-title-{{ product.pk }}">{{ product.title }}</h2>
+      <p>por {{ product.creator.nome|default:product.creator.username }} · {{ product.created_at|date:"d/m, H:i" }}</p>
+    </div>
+    <div class="leilao-countdown {% if not product.is_active %}is-ended{% endif %}" data-countdown data-end="{{ product.ends_at|date:'c' }}">
+      <i class="bi bi-clock" aria-hidden="true"></i>
+      <span data-countdown-label>{% if product.is_active %}Calculando tempo…{% else %}Leilão encerrado{% endif %}</span>
+    </div>
+    {% include "leilao/partials/bid_zone.html" %}
+  </div>
+</article>

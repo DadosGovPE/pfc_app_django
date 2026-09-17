@@ -67,6 +67,7 @@ INSTALLED_APPS = [
     "pesquisas",
     "mensageria",
     "moodle_sync",
+    "leilao",
 ]
 
 MIDDLEWARE = [
@@ -216,6 +217,8 @@ DEFAULT_FROM_EMAIL = os.getenv(
 )
 PFC_CALENDAR_ORGANIZER_NAME = os.getenv("PFC_CALENDAR_ORGANIZER_NAME", "PFC SEPLAG")
 PFC_CALENDAR_DEFAULT_LOCATION = os.getenv("PFC_CALENDAR_DEFAULT_LOCATION", "")
+LEILAO_HOT_BID_THRESHOLD = int(os.getenv("LEILAO_HOT_BID_THRESHOLD", "5"))
+LEILAO_HOT_BID_WINDOW_HOURS = int(os.getenv("LEILAO_HOT_BID_WINDOW_HOURS", "24"))
 
 
 JAZZMIN_SETTINGS = {
