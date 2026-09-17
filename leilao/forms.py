@@ -2,6 +2,7 @@ from datetime import timedelta
 
 from django import forms
 from django.core.exceptions import ValidationError
+from django.db.models import Q
 from django.utils import timezone
 
 from .models import Auction, Product, validate_image_size
@@ -69,10 +70,11 @@ class ProductForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields["auction"].queryset = Auction.objects.filter(
-            is_published=True,
-            starts_at__lte=timezone.now(),
-            ends_at__gt=timezone.now(),
+        now = timezone.now()
+        self.fields["auction"].queryset = (
+            Auction.objects.filter(is_published=True)
+            .filter(Q(starts_at__isnull=True) | Q(starts_at__lte=now))
+            .filter(Q(ends_at__isnull=True) | Q(ends_at__gt=now))
         )
         for field in self.fields.values():
             field.widget.attrs["class"] = "form-control"
@@ -91,7 +93,12 @@ class ProductForm(forms.ModelForm):
         cleaned = super().clean()
         auction = cleaned.get("auction")
         duration = cleaned.get("duration_hours")
-        if auction and duration and timezone.now() + timedelta(hours=duration) > auction.ends_at:
+        if (
+            auction
+            and auction.ends_at
+            and duration
+            and timezone.now() + timedelta(hours=duration) > auction.ends_at
+        ):
             self.add_error(
                 "duration_hours",
                 "A duração ultrapassa o encerramento do leilão selecionado.",

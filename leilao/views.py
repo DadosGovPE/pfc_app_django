@@ -30,14 +30,17 @@ from .notifications import process_ended_products
 from .services import place_next_bid
 
 
+def _active_product_filter(now):
+    return (
+        Q(starts_at__lte=now, ends_at__gt=now)
+        & (Q(auction__starts_at__isnull=True) | Q(auction__starts_at__lte=now))
+        & (Q(auction__ends_at__isnull=True) | Q(auction__ends_at__gt=now))
+    )
+
+
 def _catalog_version():
     now = timezone.now()
-    active_filter = Q(
-        starts_at__lte=now,
-        ends_at__gt=now,
-        auction__starts_at__lte=now,
-        auction__ends_at__gt=now,
-    )
+    active_filter = _active_product_filter(now)
     state = Product.objects.filter(auction__is_published=True).aggregate(
         last_bid_id=Max("bids__id"),
         last_product_update=Max("updated_at"),
@@ -91,11 +94,8 @@ def _catalog_queryset():
             ),
             is_hot=Case(
                 When(
-                    recent_bid_count__gte=hot_threshold,
-                    starts_at__lte=now,
-                    ends_at__gt=now,
-                    auction__starts_at__lte=now,
-                    auction__ends_at__gt=now,
+                    Q(recent_bid_count__gte=hot_threshold)
+                    & _active_product_filter(now),
                     then=Value(True),
                 ),
                 default=Value(False),
@@ -119,12 +119,7 @@ def catalog(request):
             | Q(description__icontains=query)
             | Q(auction__name__icontains=query)
         )
-    active_filter = Q(
-        starts_at__lte=now,
-        ends_at__gt=now,
-        auction__starts_at__lte=now,
-        auction__ends_at__gt=now,
-    )
+    active_filter = _active_product_filter(now)
     if status == "active":
         products = products.filter(active_filter)
     elif status == "ending":

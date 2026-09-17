@@ -41,8 +41,7 @@ def process_product_outcome(product_id):
         .select_related("auction", "creator", "creator__lotacao_fk")
         .get(pk=product_id)
     )
-    effective_end = min(product.ends_at, product.auction.ends_at)
-    if timezone.now() < effective_end:
+    if timezone.now() < product.effective_ends_at:
         return False
 
     highest_bid = (

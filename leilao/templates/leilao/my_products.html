@@ -19,7 +19,7 @@
         <div class="leilao-owner-thumb">
           {% with image=product.images.first %}{% if image %}<img src="{{ image.image.url }}" alt="">{% else %}<i class="bi bi-image" aria-hidden="true"></i>{% endif %}{% endwith %}
         </div>
-        <div class="leilao-owner-product"><h2>{{ product.title }}</h2><p>{{ product.auction.name }} · encerra em {{ product.ends_at|date:"d/m/Y, H:i" }}</p></div>
+        <div class="leilao-owner-product"><h2>{{ product.title }}</h2><p>{{ product.auction.name }} · encerra em {{ product.effective_ends_at|date:"d/m/Y, H:i" }}</p></div>
         <div class="leilao-owner-value"><span>Lance atual</span><strong>R$ {{ product.current_price|floatformat:2 }}</strong></div>
         <div class="leilao-owner-outcome">
           {% if product.is_active %}

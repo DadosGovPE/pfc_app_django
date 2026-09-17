@@ -16,6 +16,12 @@ class AuctionAdmin(admin.ModelAdmin):
     list_filter = ("origin", "is_published")
     search_fields = ("name", "description")
     prepopulated_fields = {"slug": ("name",)}
+    exclude = ("created_by",)
+
+    def save_model(self, request, obj, form, change):
+        if not obj.created_by_id:
+            obj.created_by = request.user
+        super().save_model(request, obj, form, change)
 
 
 class ProductImageInline(admin.TabularInline):

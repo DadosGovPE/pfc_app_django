@@ -26,8 +26,18 @@ class Auction(models.Model):
     origin = models.CharField(
         "origem", max_length=20, choices=Origin.choices, default=Origin.SEPLAG
     )
-    starts_at = models.DateTimeField("início")
-    ends_at = models.DateTimeField("fim")
+    starts_at = models.DateTimeField(
+        "início",
+        null=True,
+        blank=True,
+        help_text="Opcional. Sem data, o leilão fica disponível imediatamente.",
+    )
+    ends_at = models.DateTimeField(
+        "fim",
+        null=True,
+        blank=True,
+        help_text="Opcional. Sem data, o leilão não tem encerramento próprio.",
+    )
     is_published = models.BooleanField("publicado", default=False)
     created_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -135,9 +145,16 @@ class Product(models.Model):
         now = timezone.now()
         return (
             self.auction.is_published
-            and self.auction.starts_at <= now < self.auction.ends_at
+            and (self.auction.starts_at is None or self.auction.starts_at <= now)
+            and (self.auction.ends_at is None or now < self.auction.ends_at)
             and self.starts_at <= now < self.ends_at
         )
+
+    @property
+    def effective_ends_at(self):
+        if self.auction.ends_at is None:
+            return self.ends_at
+        return min(self.ends_at, self.auction.ends_at)
 
     @property
     def highest_bid(self):
@@ -175,8 +192,7 @@ class Product(models.Model):
 
     @property
     def winner(self):
-        effective_end = min(self.ends_at, self.auction.ends_at)
-        if timezone.now() < effective_end:
+        if timezone.now() < self.effective_ends_at:
             return None
         highest = self.highest_bid
         if not highest or (self.reserve_price and highest.amount < self.reserve_price):

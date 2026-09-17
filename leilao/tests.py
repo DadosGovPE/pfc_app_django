@@ -2,14 +2,17 @@ from datetime import timedelta
 from decimal import Decimal
 from itertools import islice
 
+from django.contrib import admin
 from django.core import mail
 from django.core.exceptions import ValidationError
-from django.test import TestCase, override_settings
+from django.test import RequestFactory, TestCase, override_settings
 from django.urls import reverse
 from django.utils import timezone
 
 from pfc_app.models import User
 
+from .admin import AuctionAdmin
+from .forms import ProductForm
 from .models import Auction, Bid, Product
 from .notifications import process_product_outcome
 from .services import place_next_bid
@@ -99,6 +102,72 @@ class AuctionTestCase(TestCase):
         product = self.product(ends_at=timezone.now() - timedelta(seconds=1))
         with self.assertRaisesMessage(ValidationError, "não está mais"):
             place_next_bid(product_id=product.pk, bidder=self.bidder)
+
+    def test_auction_without_dates_is_available_and_accepts_bids(self):
+        auction = Auction.objects.create(
+            name="Sem período",
+            slug="sem-periodo",
+            is_published=True,
+            created_by=self.seller,
+        )
+        product = self.product(auction=auction)
+
+        self.assertTrue(product.is_active)
+        self.assertIn(auction, ProductForm().fields["auction"].queryset)
+        self.assertEqual(
+            place_next_bid(product_id=product.pk, bidder=self.bidder).amount,
+            Decimal("100.00"),
+        )
+
+    def test_auction_respects_each_optional_date_when_present(self):
+        now = timezone.now()
+        future = Auction.objects.create(
+            name="Ainda não iniciou",
+            slug="ainda-nao-iniciou",
+            starts_at=now + timedelta(hours=1),
+            is_published=True,
+            created_by=self.seller,
+        )
+        ended = Auction.objects.create(
+            name="Já encerrou",
+            slug="ja-encerrou",
+            ends_at=now - timedelta(seconds=1),
+            is_published=True,
+            created_by=self.seller,
+        )
+        started = Auction.objects.create(
+            name="Sem data final",
+            slug="sem-data-final",
+            starts_at=now - timedelta(hours=1),
+            is_published=True,
+            created_by=self.seller,
+        )
+        form_auctions = ProductForm().fields["auction"].queryset
+
+        self.assertFalse(self.product(auction=future).is_active)
+        self.assertFalse(self.product(auction=ended).is_active)
+        self.assertTrue(self.product(auction=started).is_active)
+        self.assertNotIn(future, form_auctions)
+        self.assertNotIn(ended, form_auctions)
+        self.assertIn(started, form_auctions)
+
+    def test_admin_assigns_logged_user_as_auction_creator(self):
+        request = RequestFactory().get("/admin/leilao/auction/add/")
+        request.user = self.seller
+        auction_admin = AuctionAdmin(Auction, admin.site)
+        form_class = auction_admin.get_form(request)
+
+        self.assertNotIn("created_by", form_class.base_fields)
+        self.assertFalse(form_class.base_fields["starts_at"].required)
+        self.assertFalse(form_class.base_fields["ends_at"].required)
+
+        auction = Auction(
+            name="Criado no admin",
+            slug="criado-no-admin",
+            is_published=True,
+        )
+        auction_admin.save_model(request, auction, form=None, change=False)
+        self.assertEqual(auction.created_by, self.seller)
 
     def test_reserve_price_controls_winner(self):
         product = self.product(

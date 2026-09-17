@@ -29,7 +29,7 @@
       <h2 id="product-title-{{ product.pk }}">{{ product.title }}</h2>
       <p>por {{ product.creator.nome|default:product.creator.username }} · {{ product.created_at|date:"d/m, H:i" }}</p>
     </div>
-    <div class="leilao-countdown {% if not product.is_active %}is-ended{% endif %}" data-countdown data-end="{{ product.ends_at|date:'c' }}">
+    <div class="leilao-countdown {% if not product.is_active %}is-ended{% endif %}" data-countdown data-end="{{ product.effective_ends_at|date:'c' }}">
       <i class="bi bi-clock" aria-hidden="true"></i>
       <span data-countdown-label>{% if product.is_active %}Calculando tempo…{% else %}Leilão encerrado{% endif %}</span>
     </div>
