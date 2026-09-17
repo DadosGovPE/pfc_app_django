@@ -1,10 +1,12 @@
 from datetime import timedelta
 import json
+import time
 
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ValidationError
+from django.db import close_old_connections
 from django.db.models import (
     BooleanField,
     Case,
@@ -17,14 +19,46 @@ from django.db.models import (
     When,
 )
 from django.db.models.functions import Coalesce
-from django.http import HttpResponse
+from django.http import HttpResponse, StreamingHttpResponse
 from django.shortcuts import redirect, render
 from django.utils import timezone
 from django.views.decorators.http import require_POST
 
 from .forms import ProductForm
 from .models import Bid, Product, ProductImage
+from .notifications import process_ended_products
 from .services import place_next_bid
+
+
+def _catalog_version():
+    now = timezone.now()
+    active_filter = Q(
+        starts_at__lte=now,
+        ends_at__gt=now,
+        auction__starts_at__lte=now,
+        auction__ends_at__gt=now,
+    )
+    state = Product.objects.filter(auction__is_published=True).aggregate(
+        last_bid_id=Max("bids__id"),
+        last_product_update=Max("updated_at"),
+        product_count=Count("id", distinct=True),
+        active_count=Count("id", filter=active_filter, distinct=True),
+        ended_count=Count(
+            "id",
+            filter=Q(ends_at__lte=now) | Q(auction__ends_at__lte=now),
+            distinct=True,
+        ),
+    )
+    updated = state["last_product_update"]
+    return ":".join(
+        [
+            str(state["last_bid_id"] or 0),
+            updated.isoformat() if updated else "0",
+            str(state["product_count"] or 0),
+            str(state["active_count"] or 0),
+            str(state["ended_count"] or 0),
+        ]
+    )
 
 
 def _catalog_queryset():
@@ -74,6 +108,7 @@ def _catalog_queryset():
 
 @login_required(login_url="login")
 def catalog(request):
+    process_ended_products(limit=10)
     products = _catalog_queryset()
     query = request.GET.get("q", "").strip()
     status = request.GET.get("status", "all")
@@ -111,10 +146,46 @@ def catalog(request):
         "status": status,
         "now": now,
         "active_count": active_count,
+        "catalog_version": _catalog_version(),
     }
     if request.headers.get("HX-Request") == "true":
         return render(request, "leilao/partials/product_grid.html", context)
     return render(request, "leilao/catalog.html", context)
+
+
+@login_required(login_url="login")
+def catalog_events(request):
+    initial_version = (
+        request.headers.get("Last-Event-ID")
+        or request.GET.get("version")
+        or _catalog_version()
+    )
+
+    def stream():
+        last_version = initial_version
+        deadline = time.monotonic() + 25
+        heartbeat_at = time.monotonic()
+        notification_at = time.monotonic()
+        yield "retry: 1500\n\n"
+        while time.monotonic() < deadline:
+            close_old_connections()
+            if time.monotonic() >= notification_at:
+                process_ended_products(limit=10)
+                notification_at = time.monotonic() + 10
+            version = _catalog_version()
+            if version != last_version:
+                payload = json.dumps({"version": version})
+                yield f"id: {version}\nevent: catalog-update\ndata: {payload}\n\n"
+                last_version = version
+            elif time.monotonic() - heartbeat_at >= 10:
+                yield ": heartbeat\n\n"
+                heartbeat_at = time.monotonic()
+            time.sleep(1)
+
+    response = StreamingHttpResponse(stream(), content_type="text/event-stream")
+    response["Cache-Control"] = "no-cache"
+    response["X-Accel-Buffering"] = "no"
+    return response
 
 
 @login_required(login_url="login")

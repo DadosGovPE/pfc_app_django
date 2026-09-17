@@ -81,7 +81,7 @@
 
 .leilao-tools {
   display: grid;
-  grid-template-columns: minmax(220px, 1fr) minmax(150px, 220px) auto;
+  grid-template-columns: minmax(220px, 1fr) minmax(150px, 220px) auto auto;
   align-items: center;
   gap: .75rem;
   margin-bottom: 1.25rem;
@@ -118,6 +118,29 @@
   color: var(--leilao-primary-dark);
   font-size: .84rem;
   text-align: right;
+}
+
+.leilao-live-state {
+  display: inline-flex;
+  align-items: center;
+  justify-self: end;
+  gap: .4rem;
+  color: var(--leilao-success);
+  font-size: .78rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.leilao-live-state i {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: currentColor;
+  box-shadow: 0 2px 7px rgba(34, 122, 82, .3);
+}
+
+.leilao-live-state.is-offline {
+  color: var(--leilao-hot);
 }
 
 .leilao-grid {
@@ -567,7 +590,7 @@
 @media (max-width: 991px) {
   .leilao-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .leilao-tools { grid-template-columns: 1fr 190px; }
-  .leilao-active-count { grid-column: 1 / -1; text-align: left; }
+  .leilao-active-count { text-align: left; }
   .leilao-owner-row { grid-template-columns: 90px 1fr 130px; }
   .leilao-owner-outcome { grid-column: 2 / -1; padding: .7rem 0 0; border-top: 1px solid var(--leilao-line); border-left: 0; }
 }
@@ -577,7 +600,7 @@
   .leilao-header { align-items: stretch; flex-direction: column; }
   .leilao-actions .btn { flex: 1; }
   .leilao-tools { grid-template-columns: 1fr; }
-  .leilao-active-count { grid-column: auto; }
+  .leilao-live-state { justify-self: start; }
   .leilao-grid { grid-template-columns: 1fr; }
   .leilao-media { aspect-ratio: 4 / 3; }
   .leilao-form-layout { grid-template-columns: 1fr; }

@@ -1,14 +1,17 @@
 from datetime import timedelta
 from decimal import Decimal
+from itertools import islice
 
+from django.core import mail
 from django.core.exceptions import ValidationError
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.urls import reverse
 from django.utils import timezone
 
 from pfc_app.models import User
 
 from .models import Auction, Bid, Product
+from .notifications import process_product_outcome
 from .services import place_next_bid
 
 
@@ -143,3 +146,62 @@ class AuctionTestCase(TestCase):
         response = self.client.get(reverse("leilao:my_products"))
         self.assertContains(response, self.bidder.nome)
         self.assertContains(response, self.bidder.telefone)
+
+    @override_settings(
+        EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend",
+        DEFAULT_FROM_EMAIL="PFC <pfc@example.com>",
+    )
+    def test_ended_product_notifies_creator_and_winner_once(self):
+        product = self.product(ends_at=timezone.now() - timedelta(seconds=1))
+        Bid.objects.create(
+            product=product, bidder=self.bidder, amount=Decimal("110.00")
+        )
+
+        self.assertTrue(process_product_outcome(product.id))
+        self.assertTrue(process_product_outcome(product.id))
+
+        product.refresh_from_db()
+        self.assertIsNotNone(product.creator_notified_at)
+        self.assertIsNotNone(product.winner_notified_at)
+        self.assertEqual(len(mail.outbox), 2)
+        recipients = {message.to[0] for message in mail.outbox}
+        self.assertEqual(recipients, {self.seller.email, self.bidder.email})
+        combined_body = "\n".join(message.body for message in mail.outbox)
+        self.assertIn("R$ 110,00", combined_body)
+        self.assertIn("pagamento e entrega", combined_body)
+        self.assertIn(self.bidder.telefone, combined_body)
+
+    @override_settings(EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend")
+    def test_ended_product_without_winner_notifies_only_creator(self):
+        product = self.product(
+            reserve_price=Decimal("150.00"),
+            ends_at=timezone.now() - timedelta(seconds=1),
+        )
+        Bid.objects.create(
+            product=product, bidder=self.bidder, amount=Decimal("110.00")
+        )
+
+        self.assertTrue(process_product_outcome(product.id))
+
+        product.refresh_from_db()
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertEqual(mail.outbox[0].to, [self.seller.email])
+        self.assertIn("sem arrematante", mail.outbox[0].body)
+        self.assertIsNotNone(product.winner_notified_at)
+
+    def test_live_stream_announces_new_bid_version(self):
+        product = self.product()
+        Bid.objects.create(
+            product=product, bidder=self.bidder, amount=Decimal("100.00")
+        )
+        self.client.force_login(self.seller)
+
+        response = self.client.get(
+            reverse("leilao:catalog_events"),
+            {"version": "0"},
+        )
+        chunks = b"".join(islice(response.streaming_content, 2)).decode()
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("event: catalog-update", chunks)
+        self.assertIn("retry: 1500", chunks)

@@ -36,6 +36,11 @@ class ProductAdmin(admin.ModelAdmin):
     )
     list_filter = ("auction", "increment_type")
     search_fields = ("title", "description", "creator__nome", "creator__email")
+    readonly_fields = (
+        "creator_notified_at",
+        "winner_notified_at",
+        "notification_error",
+    )
     inlines = [ProductImageInline]
 
 

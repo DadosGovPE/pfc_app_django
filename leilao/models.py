@@ -98,6 +98,9 @@ class Product(models.Model):
     ends_at = models.DateTimeField("fim")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    creator_notified_at = models.DateTimeField(null=True, blank=True, editable=False)
+    winner_notified_at = models.DateTimeField(null=True, blank=True, editable=False)
+    notification_error = models.TextField(blank=True, editable=False)
 
     class Meta:
         ordering = ["-created_at", "-pk"]

@@ -2,7 +2,7 @@
 
 {% block content %}
 {% include "leilao/partials/assets.html" %}
-<div class="leilao-app">
+<div class="leilao-app" data-events-url="{% url 'leilao:catalog_events' %}">
   {% include 'parciais/_messages.html' %}
   <div id="leilao-global-status" class="leilao-global-status" role="status" aria-live="polite"></div>
 
@@ -40,6 +40,7 @@
       </select>
     </label>
     <strong class="leilao-active-count">{{ active_count }} produto{{ active_count|pluralize }} ativo{{ active_count|pluralize }}</strong>
+    <span id="leilao-live-state" class="leilao-live-state" role="status"><i aria-hidden="true"></i><span>Conectando atualizações</span></span>
   </form>
 
   {% include "leilao/partials/product_grid.html" %}

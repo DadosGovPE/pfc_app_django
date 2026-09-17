@@ -1,4 +1,4 @@
-<section id="product-grid" class="leilao-grid" aria-label="Produtos do leilão">
+<section id="product-grid" class="leilao-grid" data-catalog-version="{{ catalog_version }}" aria-label="Produtos do leilão">
   {% for product in products %}
     {% include "leilao/partials/product_card.html" %}
   {% empty %}
