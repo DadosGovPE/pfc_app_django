@@ -552,6 +552,11 @@ class CronogramaExecucao(models.Model):
         verbose_name_plural = "cronogramas de execução"
 
 
+class InscricaoQuerySet(models.QuerySet):
+    def ordenar_instrutores(self):
+        return self.order_by("-instrutor_principal", "inscrito_em", "pk")
+
+
 class Inscricao(models.Model):
     STATUS_NECESSARIO_PARA_CONCLUSAO = "APROVADA"
     ERRO_STATUS_CONCLUSAO = (
@@ -579,6 +584,7 @@ class Inscricao(models.Model):
     instrutor_principal = models.BooleanField(
         default=False, verbose_name=("Instrutor principal?")
     )
+    objects = InscricaoQuerySet.as_manager()
 
     class Meta:
         verbose_name_plural = "inscrições"

@@ -534,7 +534,7 @@ def cursos(request):
     subquery_docentes = ArraySubquery(
         Inscricao.objects.filter(curso=OuterRef("pk"))
         .exclude(condicao_na_acao="DISCENTE")
-        .order_by("inscrito_em")
+        .ordenar_instrutores()
         .annotate(
             nome_completo=Concat(
                 "participante__first_name", Value(" "), "participante__last_name"
@@ -1147,7 +1147,7 @@ class CursoDetailView(LoginRequiredMixin, DetailView):
         # Verifique se há uma inscrição do tipo 'DOCENTE' relacionada a este curso
         inscricoes_docentes = Inscricao.objects.filter(
             curso=curso, condicao_na_acao="DOCENTE"
-        )
+        ).ordenar_instrutores()
 
         usuarios_docentes = [
             inscricao.participante for inscricao in inscricoes_docentes
@@ -2390,7 +2390,7 @@ def docentes_curso(curso):
     # Obtém as inscrições que são de 'DOCENTE' para este curso específico
     inscricoes_docentes = Inscricao.objects.filter(
         curso=curso, condicao_na_acao="DOCENTE", status__nome="APROVADA"
-    )
+    ).ordenar_instrutores()
 
     # Extrai os participantes (Users) dessas inscrições
     participantes_docentes = [
@@ -2650,7 +2650,7 @@ def pagina_dados_curso(c: canvas.Canvas, width, height, curso_id):
         ~Q(status__nome="EM FILA"),
         Q(condicao_na_acao="DOCENTE"),
         curso=plano_curso.curso,
-    ).order_by("inscrito_em")
+    ).ordenar_instrutores()
     # c.setFont("Helvetica-Bold", 14)
     # c.drawAlignedString(100, height - 100, 'Dados do curso')
     style_body = ParagraphStyle(

@@ -1,13 +1,63 @@
 from datetime import date
 
 from django.core import mail
-from django.test import SimpleTestCase, override_settings
+from django.test import SimpleTestCase, TestCase, override_settings
 
 from pfc_app.calendar_invites import (
     build_course_invite_ics,
     send_course_calendar_invite,
 )
-from pfc_app.models import Curso, Inscricao, User
+from pfc_app.models import Curso, Inscricao, StatusCurso, StatusInscricao, User
+
+
+class OrdenacaoInstrutoresTests(TestCase):
+    def setUp(self):
+        status_curso = StatusCurso.objects.create(nome="A INICIAR")
+        self.status_inscricao = StatusInscricao.objects.create(nome="APROVADA")
+        self.curso = Curso.objects.create(
+            nome_curso="Curso Teste",
+            ementa_curso="Ementa",
+            ch_curso=8,
+            vagas=20,
+            data_inicio="2026-01-10",
+            status=status_curso,
+        )
+
+    def _criar_instrutor(self, numero, *, principal=False):
+        participante = User.objects.create_user(
+            username=f"instrutor{numero}",
+            cpf=f"{numero:011d}",
+            nome=f"Instrutor {numero}",
+            email=f"instrutor{numero}@example.com",
+            password="123",
+        )
+        return Inscricao.objects.create(
+            curso=self.curso,
+            participante=participante,
+            status=self.status_inscricao,
+            condicao_na_acao="DOCENTE",
+            instrutor_principal=principal,
+        )
+
+    def test_instrutor_principal_fica_em_primeiro(self):
+        primeiro = self._criar_instrutor(1)
+        principal = self._criar_instrutor(2, principal=True)
+
+        instrutores = Inscricao.objects.filter(
+            curso=self.curso, condicao_na_acao="DOCENTE"
+        ).ordenar_instrutores()
+
+        self.assertEqual(list(instrutores), [principal, primeiro])
+
+    def test_sem_principal_mantem_ordem_de_inscricao(self):
+        primeiro = self._criar_instrutor(1)
+        segundo = self._criar_instrutor(2)
+
+        instrutores = Inscricao.objects.filter(
+            curso=self.curso, condicao_na_acao="DOCENTE"
+        ).ordenar_instrutores()
+
+        self.assertEqual(list(instrutores), [primeiro, segundo])
 
 
 class CalendarInviteTests(SimpleTestCase):
