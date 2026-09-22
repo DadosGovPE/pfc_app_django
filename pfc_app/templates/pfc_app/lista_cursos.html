@@ -3,12 +3,23 @@
 {% load filtros %}
 
 {% block content %}
+<style>
+  @media (min-width: 576px) {
+    .curso-card-column {
+      display: flex;
+    }
+
+    .curso-card-column > .card {
+      width: 100%;
+    }
+  }
+</style>
 {% include 'parciais/_messages.html' %}
 <div class="d-flex p-2 justify-content-center mb-4"><h1>INSCRIÇÕES ABERTAS</h1></div>
 <div class="row">
 {% for curso in cursos %}
-<div class="col-sm-4">
-<div class="card border-secondary mb-3 mt-3 position-relative zoom" style="height: auto;">
+<div class="col-sm-4 curso-card-column">
+<div class="card border-secondary mb-3 mt-3 position-relative zoom">
   {% if curso.num_inscricoes >= curso.vagas %}
     <span class="position-absolute top-0 end-0 badge bg-danger p-2">Lotado</span>
   {% endif %}
