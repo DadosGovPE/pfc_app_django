@@ -4,6 +4,55 @@
 
 {% block content %}
 <style>
+  @property --curso-neon-angle {
+    syntax: "<angle>";
+    inherits: false;
+    initial-value: 0deg;
+  }
+
+  .curso-card-neon {
+    isolation: isolate;
+  }
+
+  .curso-card-neon::before {
+    content: "";
+    position: absolute;
+    z-index: 2;
+    inset: -1px;
+    padding: 2px;
+    border-radius: inherit;
+    pointer-events: none;
+    background: conic-gradient(
+      from var(--curso-neon-angle),
+      transparent 0deg 285deg,
+      rgba(13, 110, 253, 0.08) 305deg,
+      rgba(13, 110, 253, 0.38) 332deg,
+      #24c8ff 350deg,
+      #e7fbff 357deg,
+      transparent 360deg
+    );
+    filter: drop-shadow(0 0 4px rgba(36, 200, 255, 0.85));
+    -webkit-mask:
+      linear-gradient(#000 0 0) content-box,
+      linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    opacity: 0;
+    transition: opacity 160ms ease-out;
+  }
+
+  .curso-card-neon:hover::before,
+  .curso-card-neon:focus-within::before {
+    opacity: 1;
+    animation: curso-neon-circuito 5s linear infinite;
+  }
+
+  @keyframes curso-neon-circuito {
+    to {
+      --curso-neon-angle: 360deg;
+    }
+  }
+
   @media (min-width: 576px) {
     .curso-card-column {
       display: flex;
@@ -13,13 +62,21 @@
       width: 100%;
     }
   }
+
+  @media (prefers-reduced-motion: reduce) {
+    .curso-card-neon:hover::before,
+    .curso-card-neon:focus-within::before {
+      --curso-neon-angle: 115deg;
+      animation: none;
+    }
+  }
 </style>
 {% include 'parciais/_messages.html' %}
 <div class="d-flex p-2 justify-content-center mb-4"><h1>INSCRIÇÕES ABERTAS</h1></div>
 <div class="row">
 {% for curso in cursos %}
 <div class="col-sm-4 curso-card-column">
-<div class="card border-secondary mb-3 mt-3 position-relative zoom">
+<div class="card border-secondary mb-3 mt-3 position-relative zoom curso-card-neon">
   {% if curso.num_inscricoes >= curso.vagas %}
     <span class="position-absolute top-0 end-0 badge bg-danger p-2">Lotado</span>
   {% endif %}
