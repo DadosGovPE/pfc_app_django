@@ -182,6 +182,7 @@ class ClassifiedsTests(TestCase):
         self.client.force_login(self.seller)
         catalog = self.client.get(reverse("classificados:catalog"))
         self.assertContains(catalog, 'aria-label="2 comentários não lidos"', count=2)
+        self.assertContains(catalog, '<a class="dropdown-item" href="' + reverse("classificados:catalog") + '">Classificados')
         self.assertContains(catalog, reverse("classificados:my_products"))
         count_url = reverse("classificados:unread_count")
         self.assertEqual(self.client.get(count_url).json(), {"count": 2})

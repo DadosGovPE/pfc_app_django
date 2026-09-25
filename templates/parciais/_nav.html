@@ -110,7 +110,8 @@
                     <li class="nav-item iconChange me-4 pt-2">
                         <a href="{% url 'classificados:catalog' %}" class="nav-link text-center p-0">
                             <div class="d-flex align-items-center overflow-hidden changeWidth mx-auto">
-                                <i class="bi bi-shop iconHeight mx-2 textColor" aria-hidden="true"></i>
+                                <img class="one iconHeight mx-2" src="{% static 'pfc_app/icones/bag.svg' %}" alt="" aria-hidden="true">
+                                <img class="two iconHeight mx-2" src="{% static 'pfc_app/icones/bag-fill.svg' %}" alt="" aria-hidden="true">
                             </div>
                             <div class="smallFont textColor">Classificados</div>
                         </a>
@@ -197,7 +198,7 @@
                             <li><hr class="dropdown-divider"></li>
                             <li><a class="dropdown-item" href="{% url 'update_profile' %}">Meu Perfil</a></li>
                             <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item" href="{% url 'classificados:my_products' %}">Meus produtos <span class="badge rounded-pill bg-danger ms-1 {% if not classificados_unread_comments %}d-none{% endif %}" data-classificados-unread-badge aria-label="{{ classificados_unread_comments }} comentário{{ classificados_unread_comments|pluralize }} não lido{{ classificados_unread_comments|pluralize }}">{{ classificados_unread_comments }}</span></a></li>
+                            <li><a class="dropdown-item" href="{% url 'classificados:catalog' %}">Classificados <span class="badge rounded-pill bg-danger ms-1 {% if not classificados_unread_comments %}d-none{% endif %}" data-classificados-unread-badge aria-label="{{ classificados_unread_comments }} comentário{{ classificados_unread_comments|pluralize }} não lido{{ classificados_unread_comments|pluralize }}">{{ classificados_unread_comments }}</span></a></li>
                             <li><hr class="dropdown-divider"></li>
                             {% if is_aberta %}
                             <li><a class="dropdown-item" href="{% url 'listar_cursos_priorizados' %}">Pesquisa de priorização</a></li>
