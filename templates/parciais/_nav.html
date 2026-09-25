@@ -1,6 +1,7 @@
 <!--_nav.html-->
 {% load static %}
 {% load custom_tags %}
+{% if user.is_authenticated %}<script src="{% static 'classificados/unread_badge.js' %}" defer></script>{% endif %}
 <nav class="navbar navbar-expand-lg navbar-light static-top p-0 align-items-center border-bottom shadow-sm">
     <div class="container-fluid">
         <a class="navbar-brand " href="#">
@@ -188,13 +189,15 @@
                                 <img class="two iconHeight mx-2" src="{% static 'pfc_app/icones/person-fill-check.svg' %}"
                                     alt="person-check-fill">
                             </div>
-                            <div class="smallFont textColor">{{user.username}}</div> 
+                            <div class="smallFont textColor">{{user.username}}<span class="badge rounded-pill bg-danger ms-1 {% if not classificados_unread_comments %}d-none{% endif %}" data-classificados-unread-badge data-unread-url="{% url 'classificados:unread_count' %}" aria-label="{{ classificados_unread_comments }} comentário{{ classificados_unread_comments|pluralize }} não lido{{ classificados_unread_comments|pluralize }}">{{ classificados_unread_comments }}</span></div>
                            
                         </a>
                         <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
                             <li><a class="dropdown-item" href="{% url 'change_password' %}">Alterar Senha</a></li>
                             <li><hr class="dropdown-divider"></li>
                             <li><a class="dropdown-item" href="{% url 'update_profile' %}">Meu Perfil</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="{% url 'classificados:my_products' %}">Meus produtos <span class="badge rounded-pill bg-danger ms-1 {% if not classificados_unread_comments %}d-none{% endif %}" data-classificados-unread-badge aria-label="{{ classificados_unread_comments }} comentário{{ classificados_unread_comments|pluralize }} não lido{{ classificados_unread_comments|pluralize }}">{{ classificados_unread_comments }}</span></a></li>
                             <li><hr class="dropdown-divider"></li>
                             {% if is_aberta %}
                             <li><a class="dropdown-item" href="{% url 'listar_cursos_priorizados' %}">Pesquisa de priorização</a></li>

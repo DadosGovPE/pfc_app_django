@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+<link rel="stylesheet" href="{% static 'classificados/classificados.css' %}">
+<main class="classifieds">
+  {% include 'parciais/_messages.html' %}
+  <a class="classified-back" href="{% url 'classificados:catalog' %}"><i class="bi bi-arrow-left" aria-hidden="true"></i> Voltar aos classificados</a>
+  <header class="classifieds-header">
+    <div><h1>Meus produtos</h1><p>Gerencie seus anúncios. Os desativados saem dos classificados; os vencidos permanecem aqui para consulta.</p></div>
+    {% if can_publish %}<a class="btn btn-primary" href="{% url 'classificados:product_create' %}"><i class="bi bi-plus-lg" aria-hidden="true"></i> Anunciar produto</a>{% endif %}
+  </header>
+
+  {% if page.object_list %}
+    <div class="classified-my-list">
+      {% for product in page %}
+        <article class="classified-my-item">
+          {% with photo=product.images.first %}{% if photo %}<img class="classified-my-photo" src="{{ photo.image.url }}" alt="Foto de {{ product.title }}" loading="lazy">{% endif %}{% endwith %}
+          <div class="classified-my-info">
+            <div class="classified-my-title-row"><h2>{{ product.title }}</h2>{% if product.is_active %}<span class="classified-status is-active">Ativo</span>{% elif product.expires_at <= now %}<span class="classified-status is-expired">Prazo encerrado</span>{% else %}<span class="classified-status is-disabled">Desativado</span>{% endif %}</div>
+            <strong class="classified-price">R$ {{ product.price|floatformat:2 }}</strong>
+            <p>Publicado em {{ product.created_at|date:"d/m/Y" }} · prazo até {{ product.expires_at|date:"d/m/Y" }} · {{ product.like_count }} curtida{{ product.like_count|pluralize }} · {{ product.comment_count }} comentário{{ product.comment_count|pluralize }}</p>
+            <div class="classified-my-actions">
+              <a href="{% url 'classificados:product_detail' product.pk %}">{% if product.is_active %}Ver anúncio{% else %}Ver comentários{% endif %}{% if product.unread_count %} <span class="badge rounded-pill bg-danger" aria-label="{{ product.unread_count }} comentário{{ product.unread_count|pluralize }} não lido{{ product.unread_count|pluralize }}">{{ product.unread_count }}</span>{% endif %}</a>
+              <a href="{% url 'classificados:product_edit' product.pk %}">Editar</a>
+              {% if product.expires_at > now %}
+                <form method="post" action="{% url 'classificados:toggle_active' product.pk %}">{% csrf_token %}<button type="submit">{% if product.is_enabled %}Desativar{% else %}Reativar{% endif %}</button></form>
+              {% endif %}
+              <a class="classified-delete-link" href="{% url 'classificados:product_delete' product.pk %}">Excluir</a>
+            </div>
+          </div>
+        </article>
+      {% endfor %}
+    </div>
+    {% if page.has_other_pages %}<nav class="classified-pagination" aria-label="Páginas dos meus produtos">{% if page.has_previous %}<a href="?page={{ page.previous_page_number }}">Anterior</a>{% endif %}<span>Página {{ page.number }} de {{ page.paginator.num_pages }}</span>{% if page.has_next %}<a href="?page={{ page.next_page_number }}">Próxima</a>{% endif %}</nav>{% endif %}
+  {% else %}
+    <div class="classified-empty"><i class="bi bi-box-seam" aria-hidden="true"></i><h2>Você ainda não publicou produtos</h2><p>{% if can_publish %}Seu primeiro anúncio aparecerá aqui.{% else %}A publicação está disponível para usuários com origem SEPLAG.{% endif %}</p>{% if can_publish %}<a class="btn btn-primary" href="{% url 'classificados:product_create' %}">Anunciar produto</a>{% endif %}</div>
+  {% endif %}
+</main>
+{% endblock %}

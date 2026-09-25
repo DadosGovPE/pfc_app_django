@@ -98,6 +98,7 @@ TEMPLATES = [
                 "django.contrib.messages.context_processors.messages",
                 "pfc_app.context_processors.ajustes_pesquisa_context",
                 "pesquisas.context_processors.pesquisa_aberta",
+                "classificados.context_processors.unread_comments",
             ],
         },
     },

@@ -13,6 +13,8 @@ class MultipleImageField(forms.ImageField):
 
     def clean(self, data, initial=None):
         images = data if isinstance(data, (list, tuple)) else ([data] if data else [])
+        if not images and not self.required:
+            return []
         if not 1 <= len(images) <= 3:
             raise ValidationError("Envie de 1 a 3 fotos.")
         result = [super(MultipleImageField, self).clean(image, initial) for image in images]
@@ -40,6 +42,14 @@ class ProductForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         for field in self.fields.values():
             field.widget.attrs["class"] = "form-control"
+
+
+class EditProductForm(ProductForm):
+    photos = MultipleImageField(
+        label="Substituir fotos", required=False,
+        help_text="Opcional. Se enviar novas fotos, elas substituirão todas as atuais (1 a 3 imagens).",
+        widget=MultipleFileInput(attrs={"accept": "image/jpeg,image/png,image/webp", "multiple": True}),
+    )
 
 
 class CommentForm(forms.ModelForm):

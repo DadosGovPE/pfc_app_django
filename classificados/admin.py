@@ -5,9 +5,10 @@ from .models import Comment, Like, Product, ProductImage
 
 @admin.register(Product)
 class ProductAdmin(admin.ModelAdmin):
-    list_display = ("title", "creator", "price", "created_at", "is_active")
+    list_display = ("title", "creator", "price", "created_at", "is_enabled", "is_active")
+    list_filter = ("is_enabled",)
     search_fields = ("title", "description", "creator__nome")
-    readonly_fields = ("creator", "title", "description", "price", "created_at")
+    readonly_fields = ("creator", "title", "description", "price", "created_at", "expires_at")
 
     def has_add_permission(self, request):
         return False

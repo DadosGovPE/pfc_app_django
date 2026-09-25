@@ -24,6 +24,7 @@ class Product(models.Model):
     )
     created_at = models.DateTimeField("publicado em", default=timezone.now, editable=False)
     expires_at = models.DateTimeField("expira em", editable=False)
+    is_enabled = models.BooleanField("ativo pelo anunciante", default=True)
 
     class Meta:
         ordering = ["-created_at", "-pk"]
@@ -41,11 +42,11 @@ class Product(models.Model):
 
     @property
     def is_active(self):
-        return self.expires_at > timezone.now()
+        return self.is_enabled and self.expires_at > timezone.now()
 
     @classmethod
     def active(cls):
-        return cls.objects.filter(expires_at__gt=timezone.now())
+        return cls.objects.filter(is_enabled=True, expires_at__gt=timezone.now())
 
 
 class ProductImage(models.Model):
@@ -82,6 +83,7 @@ class Comment(models.Model):
     author = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="classificados_comments")
     text = models.TextField("comentário", max_length=2000)
     created_at = models.DateTimeField(auto_now_add=True)
+    read_at = models.DateTimeField("lido pelo anunciante em", null=True, blank=True, editable=False)
 
     class Meta:
         ordering = ["created_at", "pk"]

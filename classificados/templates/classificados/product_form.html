@@ -4,8 +4,11 @@
 {% block content %}
 <link rel="stylesheet" href="{% static 'classificados/classificados.css' %}">
 <main class="classifieds classifieds-narrow">
-  <a class="classified-back" href="{% url 'classificados:catalog' %}"><i class="bi bi-arrow-left" aria-hidden="true"></i> Voltar aos classificados</a>
-  <header class="classifieds-header"><div><h1>Anunciar produto</h1><p>Seu anúncio ficará visível por dois meses. Informe o preço e envie de uma a três fotos.</p></div></header>
+  <a class="classified-back" href="{% if editing %}{% url 'classificados:my_products' %}{% else %}{% url 'classificados:catalog' %}{% endif %}"><i class="bi bi-arrow-left" aria-hidden="true"></i> {% if editing %}Voltar aos meus produtos{% else %}Voltar aos classificados{% endif %}</a>
+  <header class="classifieds-header"><div><h1>{% if editing %}Editar produto{% else %}Anunciar produto{% endif %}</h1><p>{% if editing %}Atualize as informações do anúncio. Deixe o campo de fotos vazio para manter as atuais. O prazo original de dois meses continua valendo.{% else %}Seu anúncio ficará visível por dois meses. Informe o preço e envie de uma a três fotos.{% endif %}</p></div></header>
+  {% if editing %}
+    <div class="classified-current-photos"><strong>Fotos atuais</strong><div>{% for photo in product.images.all %}<img src="{{ photo.image.url }}" alt="Foto {{ forloop.counter }} de {{ product.title }}">{% endfor %}</div></div>
+  {% endif %}
   <form class="classified-form" method="post" enctype="multipart/form-data" novalidate>
     {% csrf_token %}
     {% for field in form %}
@@ -17,7 +20,7 @@
       </div>
     {% endfor %}
     {% for error in form.non_field_errors %}<p class="classified-error" role="alert">{{ error }}</p>{% endfor %}
-    <div class="classified-form-actions"><a class="btn btn-outline-secondary" href="{% url 'classificados:catalog' %}">Cancelar</a><button class="btn btn-primary" type="submit">Publicar produto</button></div>
+    <div class="classified-form-actions"><a class="btn btn-outline-secondary" href="{% if editing %}{% url 'classificados:my_products' %}{% else %}{% url 'classificados:catalog' %}{% endif %}">Cancelar</a><button class="btn btn-primary" type="submit">{% if editing %}Salvar alterações{% else %}Publicar produto{% endif %}</button></div>
   </form>
 </main>
 {% endblock %}

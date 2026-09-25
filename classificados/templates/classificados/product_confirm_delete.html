@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+<link rel="stylesheet" href="{% static 'classificados/classificados.css' %}">
+<main class="classifieds classifieds-narrow">
+  <a class="classified-back" href="{% url 'classificados:my_products' %}"><i class="bi bi-arrow-left" aria-hidden="true"></i> Voltar aos meus produtos</a>
+  <div class="classified-confirm">
+    <h1>Excluir publicação?</h1>
+    <p><strong>{{ product.title }}</strong> será removido dos classificados. As fotos, curtidas e comentários dessa publicação também serão excluídos.</p>
+    <form method="post">{% csrf_token %}<a class="btn btn-outline-secondary" href="{% url 'classificados:my_products' %}">Cancelar</a><button class="btn btn-danger" type="submit">Excluir publicação</button></form>
+  </div>
+</main>
+{% endblock %}

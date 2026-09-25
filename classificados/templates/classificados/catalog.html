@@ -10,7 +10,10 @@
       <h1>Classificados PFC</h1>
       <p>Encontre produtos anunciados pela comunidade PFC. Os anúncios ficam disponíveis por dois meses.</p>
     </div>
-    {% if can_publish %}<a class="btn btn-primary" href="{% url 'classificados:product_create' %}"><i class="bi bi-plus-lg" aria-hidden="true"></i> Anunciar produto</a>{% endif %}
+    <nav class="classifieds-header-actions" aria-label="Ações dos classificados">
+      <a class="btn btn-outline-primary" href="{% url 'classificados:my_products' %}">Meus produtos</a>
+      {% if can_publish %}<a class="btn btn-primary" href="{% url 'classificados:product_create' %}"><i class="bi bi-plus-lg" aria-hidden="true"></i> Anunciar produto</a>{% endif %}
+    </nav>
   </header>
 
   <form class="classifieds-search" method="get" role="search">
