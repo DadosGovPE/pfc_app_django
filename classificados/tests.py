@@ -204,6 +204,18 @@ class ClassifiedsTests(TestCase):
         self.assertEqual(self.client.get(count_url).json(), {"count": 1})
         self.assertContains(self.client.get(reverse("classificados:catalog")), 'aria-label="1 comentário não lido"', count=2)
 
+    def test_classificados_navigation_links_only_for_seplag_users(self):
+        catalog_url = reverse("classificados:catalog")
+        self.client.force_login(self.seller)
+        seller_page = self.client.get(catalog_url)
+        self.assertContains(seller_page, f'href="{catalog_url}" class="nav-link text-center p-0"')
+        self.assertContains(seller_page, f'<a class="dropdown-item" href="{catalog_url}">Classificados')
+
+        self.client.force_login(self.viewer)
+        viewer_page = self.client.get(catalog_url)
+        self.assertNotContains(viewer_page, f'href="{catalog_url}" class="nav-link text-center p-0"')
+        self.assertNotContains(viewer_page, f'<a class="dropdown-item" href="{catalog_url}">Classificados')
+
     def test_owner_can_read_comments_on_disabled_product_without_republishing(self):
         product = self.make_product()
         product.is_enabled = False
