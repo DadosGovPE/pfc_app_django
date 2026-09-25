@@ -1,0 +1,7 @@
+from django.apps import AppConfig
+
+
+class ClassificadosConfig(AppConfig):
+    default_auto_field = "django.db.models.BigAutoField"
+    name = "classificados"
+    verbose_name = "Classificados PFC"

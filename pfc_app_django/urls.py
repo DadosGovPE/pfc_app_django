@@ -25,4 +25,5 @@ urlpatterns = [
     path("mensageria/", include("mensageria.urls")),
     path("moodle/", include("moodle_sync.urls")),
     path("leilao/", include("leilao.urls")),
+    path("classificados/", include("classificados.urls")),
 ]

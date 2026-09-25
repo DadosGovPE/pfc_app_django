@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+<link rel="stylesheet" href="{% static 'classificados/classificados.css' %}">
+<main class="classifieds classifieds-narrow">
+  <a class="classified-back" href="{% url 'classificados:catalog' %}"><i class="bi bi-arrow-left" aria-hidden="true"></i> Voltar aos classificados</a>
+  <header class="classifieds-header"><div><h1>Anunciar produto</h1><p>Seu anúncio ficará visível por dois meses. Informe o preço e envie de uma a três fotos.</p></div></header>
+  <form class="classified-form" method="post" enctype="multipart/form-data" novalidate>
+    {% csrf_token %}
+    {% for field in form %}
+      <div class="classified-field">
+        <label for="{{ field.id_for_label }}">{{ field.label }}{% if field.field.required %} <span aria-hidden="true">*</span>{% endif %}</label>
+        {{ field }}
+        {% if field.help_text %}<small>{{ field.help_text }}</small>{% endif %}
+        {% for error in field.errors %}<p class="classified-error" role="alert">{{ error }}</p>{% endfor %}
+      </div>
+    {% endfor %}
+    {% for error in form.non_field_errors %}<p class="classified-error" role="alert">{{ error }}</p>{% endfor %}
+    <div class="classified-form-actions"><a class="btn btn-outline-secondary" href="{% url 'classificados:catalog' %}">Cancelar</a><button class="btn btn-primary" type="submit">Publicar produto</button></div>
+  </form>
+</main>
+{% endblock %}

@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+<link rel="stylesheet" href="{% static 'classificados/classificados.css' %}">
+<main class="classifieds">
+  {% include 'parciais/_messages.html' %}
+  <header class="classifieds-header">
+    <div>
+      <h1>Classificados PFC</h1>
+      <p>Encontre produtos anunciados pela comunidade PFC. Os anúncios ficam disponíveis por dois meses.</p>
+    </div>
+    {% if can_publish %}<a class="btn btn-primary" href="{% url 'classificados:product_create' %}"><i class="bi bi-plus-lg" aria-hidden="true"></i> Anunciar produto</a>{% endif %}
+  </header>
+
+  <form class="classifieds-search" method="get" role="search">
+    <label for="classifieds-query" class="visually-hidden">Buscar produtos</label>
+    <i class="bi bi-search" aria-hidden="true"></i>
+    <input id="classifieds-query" type="search" name="q" value="{{ query }}" placeholder="Buscar produto" autocomplete="off">
+    <button class="btn btn-outline-primary" type="submit">Buscar</button>
+  </form>
+
+  {% if page.object_list %}
+    <div class="classifieds-grid">
+      {% for product in page %}
+        <article class="classified-card">
+          <div class="classified-card-media">
+            <div id="classified-photos-{{ product.pk }}" class="carousel slide" {% if product.images.all|length > 1 %}data-bs-ride="carousel" data-bs-interval="4000"{% endif %}>
+              <div class="carousel-inner">
+                {% for photo in product.images.all %}
+                  <div class="carousel-item {% if forloop.first %}active{% endif %}">
+                    <img src="{{ photo.image.url }}" alt="Foto {{ forloop.counter }} de {{ product.title }}" loading="lazy">
+                  </div>
+                {% endfor %}
+              </div>
+              {% if product.images.all|length > 1 %}
+                <button class="carousel-control-prev" type="button" data-bs-target="#classified-photos-{{ product.pk }}" data-bs-slide="prev" aria-label="Foto anterior"><span class="carousel-control-prev-icon" aria-hidden="true"></span></button>
+                <button class="carousel-control-next" type="button" data-bs-target="#classified-photos-{{ product.pk }}" data-bs-slide="next" aria-label="Próxima foto"><span class="carousel-control-next-icon" aria-hidden="true"></span></button>
+              {% endif %}
+            </div>
+            {% if product.like_count >= hot_likes %}<span class="classified-hot"><i class="bi bi-fire" aria-hidden="true"></i> Em alta</span>{% endif %}
+          </div>
+          <div class="classified-card-body">
+            <div class="classified-card-top"><span class="classified-price">R$ {{ product.price|floatformat:2 }}</span><span class="classified-likes"><i class="bi bi-heart-fill" aria-hidden="true"></i> {{ product.like_count }}</span></div>
+            <h2><a href="{% url 'classificados:product_detail' product.pk %}">{{ product.title }}</a></h2>
+            <p class="classified-description">{{ product.description|truncatechars:110 }}</p>
+            <div class="classified-card-footer"><span>por {{ product.creator.nome|default:product.creator.username }}</span><a href="{% url 'classificados:product_detail' product.pk %}">Ver produto <i class="bi bi-arrow-right" aria-hidden="true"></i></a></div>
+          </div>
+        </article>
+      {% endfor %}
+    </div>
+    {% if page.has_other_pages %}
+      <nav class="classified-pagination" aria-label="Páginas dos classificados">
+        {% if page.has_previous %}<a href="?q={{ query|urlencode }}&page={{ page.previous_page_number }}">Anterior</a>{% endif %}
+        <span>Página {{ page.number }} de {{ page.paginator.num_pages }}</span>
+        {% if page.has_next %}<a href="?q={{ query|urlencode }}&page={{ page.next_page_number }}">Próxima</a>{% endif %}
+      </nav>
+    {% endif %}
+  {% else %}
+    <div class="classified-empty"><i class="bi bi-box-seam" aria-hidden="true"></i><h2>Nenhum produto encontrado</h2><p>{% if query %}Tente outro termo de busca.{% else %}Os novos anúncios aparecerão aqui.{% endif %}</p></div>
+  {% endif %}
+</main>
+{% endblock %}

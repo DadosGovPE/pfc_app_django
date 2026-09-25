@@ -68,6 +68,7 @@ INSTALLED_APPS = [
     "mensageria",
     "moodle_sync",
     "leilao",
+    "classificados",
 ]
 
 MIDDLEWARE = [

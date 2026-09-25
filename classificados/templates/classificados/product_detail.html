@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+<link rel="stylesheet" href="{% static 'classificados/classificados.css' %}">
+<main class="classifieds classifieds-detail">
+  <a class="classified-back" href="{% url 'classificados:catalog' %}"><i class="bi bi-arrow-left" aria-hidden="true"></i> Voltar aos classificados</a>
+  <article class="classified-post">
+    <header class="classified-post-header"><div><h1>{{ product.title }}</h1><p>por {{ product.creator.nome|default:product.creator.username }} · publicado em {{ product.created_at|date:"d/m/Y" }}</p></div>{% if product.like_count >= hot_likes %}<span class="classified-hot"><i class="bi bi-fire" aria-hidden="true"></i> Em alta</span>{% endif %}</header>
+    <div id="detail-photos" class="carousel slide classified-detail-carousel" {% if product.images.all|length > 1 %}data-bs-ride="carousel" data-bs-interval="4000"{% endif %}>
+      <div class="carousel-inner">
+        {% for photo in product.images.all %}<div class="carousel-item {% if forloop.first %}active{% endif %}"><img src="{{ photo.image.url }}" alt="Foto {{ forloop.counter }} de {{ product.title }}"></div>{% endfor %}
+      </div>
+      {% if product.images.all|length > 1 %}
+        <button class="carousel-control-prev" type="button" data-bs-target="#detail-photos" data-bs-slide="prev" aria-label="Foto anterior"><span class="carousel-control-prev-icon" aria-hidden="true"></span></button>
+        <button class="carousel-control-next" type="button" data-bs-target="#detail-photos" data-bs-slide="next" aria-label="Próxima foto"><span class="carousel-control-next-icon" aria-hidden="true"></span></button>
+        <span class="classified-photo-count">{{ product.images.all|length }} fotos</span>
+      {% endif %}
+    </div>
+    <div class="classified-post-body">
+      <div class="classified-post-actions"><strong class="classified-price">R$ {{ product.price|floatformat:2 }}</strong><form method="post" action="{% url 'classificados:toggle_like' product.pk %}">{% csrf_token %}<button class="classified-like {% if product.liked_by_me %}is-liked{% endif %}" type="submit" aria-label="{% if product.liked_by_me %}Descurtir{% else %}Curtir{% endif %} produto"><i class="bi bi-heart{% if product.liked_by_me %}-fill{% endif %}" aria-hidden="true"></i> {{ product.like_count }} curtida{{ product.like_count|pluralize }}</button></form></div>
+      <p class="classified-full-description">{{ product.description|linebreaksbr }}</p>
+      <section class="classified-comments" aria-labelledby="comments-title">
+        <h2 id="comments-title">Comentários <span>{{ product.comment_count }}</span></h2>
+        {% if comments %}<ol class="classified-comment-list">{% for comment in comments %}<li><div><strong>{{ comment.author.nome|default:comment.author.username }}</strong><time datetime="{{ comment.created_at|date:'c' }}">{{ comment.created_at|date:"d/m/Y H:i" }}</time></div><p>{{ comment.text|linebreaksbr }}</p></li>{% endfor %}</ol>{% else %}<p class="classified-no-comments">Ainda não há comentários. Comece a conversa com o anunciante.</p>{% endif %}
+        <form class="classified-comment-form" method="post" action="{% url 'classificados:add_comment' product.pk %}">{% csrf_token %}<label for="{{ form.text.id_for_label }}">Escreva um comentário público</label>{{ form.text }}{% for error in form.text.errors %}<p class="classified-error" role="alert">{{ error }}</p>{% endfor %}<button class="btn btn-primary" type="submit">Publicar comentário</button></form>
+      </section>
+    </div>
+  </article>
+</main>
+{% endblock %}
