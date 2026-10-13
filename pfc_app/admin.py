@@ -70,7 +70,7 @@ class PlanoCursoAdmin(admin.ModelAdmin):
         return (
             super()
             .get_queryset(request)
-            .select_related("curso")
+            .select_related("curso__turma")
             .defer(
                 "curso__ementa_curso",
                 "curso__descricao",
@@ -113,7 +113,7 @@ class CursoNomeTurmaFilter(admin.SimpleListFilter):
     parameter_name = "curso_nome_turma"
 
     def lookups(self, request, model_admin):
-        cursos = Curso.objects.all().values_list("id", "nome_curso", "turma")
+        cursos = Curso.objects.all().values_list("id", "nome_curso", "turma__nome")
         return [(curso[0], f"{curso[1]} - {curso[2]}") for curso in cursos]
 
     def queryset(self, request, queryset):
@@ -127,7 +127,7 @@ class CursoRelacionadoFilter(admin.SimpleListFilter):
     parameter_name = "curso_id"
 
     def lookups(self, request, model_admin):
-        cursos = Curso.objects.values_list("id", "nome_curso", "turma")
+        cursos = Curso.objects.values_list("id", "nome_curso", "turma__nome")
         return [(curso_id, f"{nome} - {turma}") for curso_id, nome, turma in cursos]
 
     def queryset(self, request, queryset):
@@ -216,16 +216,16 @@ class CursoAdmin(admin.ModelAdmin):
         "periodo_avaliativo",
         "curso_priorizado",
     )
-    autocomplete_fields = ["curso_priorizado", "coordenador"]
+    autocomplete_fields = ["curso_priorizado", "coordenador", "turma"]
     readonly_fields = ["ver_inscricoes"]
-    search_fields = ["nome_curso", "turma"]
+    search_fields = ["nome_curso", "turma__nome"]
     ordering = ["-data_inicio"]
 
     def get_queryset(self, request):
         return (
             super()
             .get_queryset(request)
-            .select_related("status", "curso_priorizado", "origem_pagamento")
+            .select_related("status", "curso_priorizado", "origem_pagamento", "turma")
             .annotate(
                 total_inscritos=Count(
                     "inscricao",
@@ -454,7 +454,7 @@ class InscricaoAdmin(admin.ModelAdmin):
         return (
             super()
             .get_queryset(request)
-            .select_related("curso", "participante", "status")
+            .select_related("curso__turma", "participante", "status")
             .defer(
                 "participante__avatar_base64",
                 "curso__ementa_curso",
@@ -555,7 +555,7 @@ class AvaliacaoAdmin(admin.ModelAdmin):
         return (
             super()
             .get_queryset(request)
-            .select_related("curso", "participante", "subtema")
+            .select_related("curso__turma", "participante", "subtema")
             .defer(
                 "participante__avatar_base64",
                 "curso__ementa_curso",
@@ -821,7 +821,7 @@ class AvaliacaoAbertaAdmin(admin.ModelAdmin):
         return (
             super()
             .get_queryset(request)
-            .select_related("curso", "participante")
+            .select_related("curso__turma", "participante")
             .defer(
                 "participante__avatar_base64",
                 "curso__ementa_curso",
@@ -901,6 +901,12 @@ class PageVisitAdmin(admin.ModelAdmin):
 
 
 # Register your models here.
+
+@admin.register(Turma)
+class TurmaAdmin(admin.ModelAdmin):
+    list_display = ("nome", "ordem")
+    search_fields = ("nome",)
+
 
 admin.site.register(Curso, CursoAdmin)
 admin.site.register(User, CustomUserAdmin)

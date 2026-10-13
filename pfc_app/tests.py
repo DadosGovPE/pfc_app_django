@@ -7,7 +7,7 @@ from pfc_app.calendar_invites import (
     build_course_invite_ics,
     send_course_calendar_invite,
 )
-from pfc_app.models import Curso, Inscricao, StatusCurso, StatusInscricao, User
+from pfc_app.models import Curso, Inscricao, StatusCurso, StatusInscricao, Turma, User
 
 
 class OrdenacaoInstrutoresTests(TestCase):
@@ -64,6 +64,7 @@ class CalendarInviteTests(SimpleTestCase):
     def _inscricao(self, horario="08:30 as 12:00", data_termino=None):
         curso = Curso(
             id=10,
+            turma=Turma(id=1, nome="TURMA 1", codigo="TURMA1"),
             nome_curso="Curso PFC",
             ementa_curso="Ementa do curso",
             ch_curso=4,

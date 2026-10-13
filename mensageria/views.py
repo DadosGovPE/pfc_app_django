@@ -35,7 +35,7 @@ def enviar_emails_por_curso_status(request):
 @require_GET
 def enviar_emails_cursos(request):
     query = (request.GET.get("q") or "").strip()
-    cursos = Curso.objects.select_related("status").order_by(
+    cursos = Curso.objects.select_related("status", "turma").order_by(
         "-data_inicio", "-data_criacao", "nome_curso"
     ).filter(
         Q(status__nome__iexact="A INICIAR")
@@ -63,7 +63,7 @@ def enviar_emails_cursos(request):
 @staff_member_required
 @require_GET
 def enviar_emails_curso_participantes(request, curso_id):
-    curso = get_object_or_404(Curso.objects.select_related("status"), id=curso_id)
+    curso = get_object_or_404(Curso.objects.select_related("status", "turma"), id=curso_id)
     inscricoes = (
         Inscricao.objects.select_related("participante", "status")
         .filter(curso=curso)

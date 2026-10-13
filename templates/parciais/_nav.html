@@ -1,7 +1,6 @@
 <!--_nav.html-->
 {% load static %}
 {% load custom_tags %}
-{% if user.is_authenticated %}<script src="{% static 'classificados/unread_badge.js' %}" defer></script>{% endif %}
 <nav class="navbar navbar-expand-lg navbar-light static-top p-0 align-items-center border-bottom shadow-sm">
     <div class="container-fluid">
         <a class="navbar-brand " href="#">
@@ -107,17 +106,6 @@
                         </a>
                     </li>
 
-                    {% if user.origem == 'SEPLAG' %}
-                    <li class="nav-item iconChange me-4 pt-2">
-                        <a href="{% url 'classificados:catalog' %}" class="nav-link text-center p-0">
-                            <div class="d-flex align-items-center overflow-hidden changeWidth mx-auto">
-                                <img class="one iconHeight mx-2" src="{% static 'pfc_app/icones/bag.svg' %}" alt="" aria-hidden="true">
-                                <img class="two iconHeight mx-2" src="{% static 'pfc_app/icones/bag-fill.svg' %}" alt="" aria-hidden="true">
-                            </div>
-                            <div class="smallFont textColor">Classificados</div>
-                        </a>
-                    </li>
-                    {% endif %}
                     
 
                     <li class="nav-item iconChange  me-4 pt-2">
@@ -192,7 +180,7 @@
                                 <img class="two iconHeight mx-2" src="{% static 'pfc_app/icones/person-fill-check.svg' %}"
                                     alt="person-check-fill">
                             </div>
-                            <div class="smallFont textColor">{{user.username}}<span class="badge rounded-pill bg-danger ms-1 {% if not classificados_unread_comments %}d-none{% endif %}" data-classificados-unread-badge data-unread-url="{% url 'classificados:unread_count' %}" aria-label="{{ classificados_unread_comments }} comentário{{ classificados_unread_comments|pluralize }} não lido{{ classificados_unread_comments|pluralize }}">{{ classificados_unread_comments }}</span></div>
+                            <div class="smallFont textColor">{{user.username}}</div>
                            
                         </a>
                         <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
@@ -200,10 +188,6 @@
                             <li><hr class="dropdown-divider"></li>
                             <li><a class="dropdown-item" href="{% url 'update_profile' %}">Meu Perfil</a></li>
                             <li><hr class="dropdown-divider"></li>
-                            {% if user.origem == 'SEPLAG' %}
-                            <li><a class="dropdown-item" href="{% url 'classificados:catalog' %}">Classificados <span class="badge rounded-pill bg-danger ms-1 {% if not classificados_unread_comments %}d-none{% endif %}" data-classificados-unread-badge aria-label="{{ classificados_unread_comments }} comentário{{ classificados_unread_comments|pluralize }} não lido{{ classificados_unread_comments|pluralize }}">{{ classificados_unread_comments }}</span></a></li>
-                            <li><hr class="dropdown-divider"></li>
-                            {% endif %}
                             {% if is_aberta %}
                             <li><a class="dropdown-item" href="{% url 'listar_cursos_priorizados' %}">Pesquisa de priorização</a></li>
                             {% else %}

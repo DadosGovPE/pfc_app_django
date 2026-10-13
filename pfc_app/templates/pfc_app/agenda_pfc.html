@@ -21,7 +21,7 @@
             </tr>
             {% for curso in dados.cursos %}
             <tr style="background-color: {{ dados.fundo_tabela }};">
-                {% if curso.turma != 'TURMA1' %}
+                {% if curso.exibir_turma %}
                     <td style="border: 2px solid white; text-align: center;">{{ curso.nome_curso }} - ({{curso.get_turma_display}})</td>
                 {% else %}
                     <td style="border: 2px solid white; text-align: center;">{{ curso.nome_curso }}</td>

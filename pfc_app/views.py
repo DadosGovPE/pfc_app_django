@@ -66,6 +66,7 @@ from .forms import (
     UserUpdateForm,
     PriorizacaoRespostaForm,
 )
+from .carga_horaria import inscricoes_ch_unicas, total_ch_pfc
 from django.db.models import (
     Count,
     Q,
@@ -207,7 +208,7 @@ def dashboard(request):
 
     # Cursos por mês e ano
     cursos_qs = (
-        Curso.objects.annotate(
+        Curso.objects.select_related("turma").annotate(
             ano=ExtractYear("data_inicio"), mes=ExtractMonth("data_inicio")
         )
         .values("ano", "mes")
@@ -513,7 +514,7 @@ def cursos(request):
     e docentes usando ``ArraySubquery`` para melhorar a performance.
     """
     logger.info(f"cursos: {request.user.cpf}")
-    lista_cursos = Curso.objects.all()
+    lista_cursos = Curso.objects.select_related("turma")
     data_atual = date.today()
     status_inscricao = Subquery(
         Inscricao.objects.filter(
@@ -546,7 +547,7 @@ def cursos(request):
     )
 
     cursos_com_inscricoes = (
-        Curso.objects.annotate(
+        Curso.objects.select_related("turma").annotate(
             num_inscricoes=Count(
                 "inscricao",
                 filter=~Q(inscricao__condicao_na_acao="DOCENTE")
@@ -621,23 +622,7 @@ def usuarios_sem_ch(request):
     if isinstance(data_fim, date):
         data_fim = data_fim.strftime("%Y-%m-%d")
 
-    inscricoes = Inscricao.objects.filter(
-        participante=OuterRef("pk"), concluido=True, curso__status__nome="FINALIZADO"
-    )
-
-    if data_inicio:
-        inscricoes = inscricoes.filter(
-            curso__data_termino__gte=data_inicio
-        )  # Substitua 'data' pelo campo correto
-    if data_fim:
-        inscricoes = inscricoes.filter(
-            curso__data_termino__lte=data_fim
-        )  # Substitua 'data' pelo campo correto
-
-    # alterado aqui ##########################
-    # Distinc para que so conte 1 curso por periodo
-    inscricoes = inscricoes.values("curso__nome_curso").distinct()
-
+    inscricoes = inscricoes_ch_unicas(data_inicio, data_fim, OuterRef("pk"))
     inscricoes = (
         inscricoes.values("participante")
         .annotate(total_ch=Sum("ch_valida"))
@@ -930,7 +915,7 @@ def carga_horaria(request):
             )
             validacoes = validacoes.filter(data_termino_curso__lte=data_fim_padrao)
 
-    cursos_feitos_pfc = inscricoes_do_usuario
+    cursos_feitos_pfc = inscricoes_do_usuario.select_related("curso__turma")
     data_inicio_filtro = form.cleaned_data["data_inicio"] if form.is_valid() else None
     data_fim_filtro = form.cleaned_data["data_fim"] if form.is_valid() else None
     moodle_qs = CursoCompletoUsuario.objects.filter(user=usuario_alvo)
@@ -953,11 +938,10 @@ def carga_horaria(request):
         )
     }
 
-    # Distinc para que so conte 1 curso por periodo
-    inscricoes_do_usuario = inscricoes_do_usuario.values("curso__nome_curso").distinct()
-    # Calcula a soma da carga horária das inscrições do usuário
-    carga_horaria_pfc = (
-        inscricoes_do_usuario.aggregate(Sum("ch_valida"))["ch_valida__sum"] or 0
+    carga_horaria_pfc = total_ch_pfc(
+        data_inicio_filtro or data_inicio_ciclo,
+        data_fim_filtro or data_fim_padrao,
+        usuario_alvo,
     )
     validacoes_ch = (
         validacoes.aggregate(Sum("ch_confirmada"))["ch_confirmada__sum"] or 0
@@ -3191,7 +3175,7 @@ def salva_fotos(fotos):
 @login_required
 def relatorio(request):
     """Formulário para geração do relatório de avaliação."""
-    cursos = Curso.objects.order_by("-data_inicio").filter(
+    cursos = Curso.objects.select_related("turma").order_by("-data_inicio").filter(
         status__nome="FINALIZADO", planocurso__isnull=False
     )
 
@@ -3344,7 +3328,7 @@ def gerar_curadoria(request, ano, mes):
             url = f"https://www.pfc.seplag.pe.gov.br/curso_detail/{curso.id}"
             link_text = '<u><link href="' + url + '">' + "Inscrição" + "</link></u>"
             curso_nome = curso.nome_curso
-            if curso.turma != "TURMA1":
+            if curso.exibir_turma:
                 curso_nome += f" - ({curso.get_turma_display()})"
 
             data_pfc.append(
@@ -4566,24 +4550,7 @@ def carga_horaria_por_cpf(request):
         data_fim_considerada = min(hoje, data_fim_ciclo)
 
         # INSCRIÇÕES PFC (apenas 1 vez por curso no ciclo)
-        inscricoes_qs = (
-            Inscricao.objects.filter(
-                ~Q(status__nome="CANCELADA"),
-                ~Q(status__nome="EM FILA"),
-                Q(curso__status__nome="FINALIZADO"),
-                Q(concluido=True),
-                participante=usuario,
-                curso__data_termino__gte=data_corte,
-                curso__data_termino__lte=data_fim_considerada,
-            )
-            .values("curso__nome_curso")  # agrupa por curso
-            .annotate(
-                ch_por_curso=Max("ch_valida")
-            )  # pega a CH por curso (se houver duplicadas, usa a maior)
-        )
-
-        # carga_pfc = sum(i.ch_valida or 0 for i in inscricoes)
-        carga_pfc = sum(row["ch_por_curso"] or 0 for row in inscricoes_qs)
+        carga_pfc = total_ch_pfc(data_corte, data_fim_considerada, usuario)
 
         status_validacoes = StatusValidacao.objects.filter(
             nome__in=["DEFERIDA", "DEFERIDA PARCIALMENTE"]

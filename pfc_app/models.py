@@ -345,23 +345,53 @@ class OrigemPagamento(models.Model):
         return self.nome
 
 
+class Turma(models.Model):
+    nome = models.CharField(max_length=100, unique=True)
+    ordem = models.PositiveIntegerField(default=0)
+    codigo = models.CharField(max_length=100, unique=True, null=True, blank=True, editable=False)
+
+    class Meta:
+        ordering = ["ordem", "nome"]
+        constraints = [
+            models.UniqueConstraint(
+                models.functions.Lower(models.functions.Trim("nome")),
+                name="turma_nome_normalizado_unico",
+            ),
+            models.CheckConstraint(check=~models.Q(nome=""), name="turma_nome_nao_vazio"),
+        ]
+
+    def clean(self):
+        super().clean()
+        self.nome = self.nome.strip()
+        if not self.nome:
+            raise ValidationError({"nome": "Informe o nome da turma."})
+
+    def save(self, *args, **kwargs):
+        self.clean()
+        return super().save(*args, **kwargs)
+
+    def __str__(self):
+        return self.nome
+
+
+def turma_padrao_id():
+    turma = Turma.objects.filter(codigo="TURMA1").first()
+    if turma:
+        return turma.pk
+    turma, _ = Turma.objects.get_or_create(
+        nome="TURMA 1", defaults={"codigo": "TURMA1", "ordem": 1}
+    )
+    if turma.codigo != "TURMA1":
+        turma.codigo = "TURMA1"
+        turma.save(update_fields=["codigo"])
+    return turma.pk
+
+
 class Curso(models.Model):
     TURNO_CHOICES = [
         ("MANHA", "MANHÃ"),
         ("TARDE", "TARDE"),
         ("NOITE", "NOITE"),
-    ]
-    TURMA_CHOICES = [
-        ("TURMA1", "TURMA 1"),
-        ("TURMA2", "TURMA 2"),
-        ("TURMA3", "TURMA 3"),
-        ("TURMA4", "TURMA 4"),
-        ("TURMA5", "TURMA 5"),
-        ("TURMA6", "TURMA 6"),
-        ("TURMA7", "TURMA 7"),
-        ("TURMA8", "TURMA 8"),
-        ("TURMA9", "TURMA 9"),
-        ("TURMA10", "TURMA 10"),
     ]
 
     data_criacao = models.DateTimeField(auto_now_add=True)
@@ -383,7 +413,9 @@ class Curso(models.Model):
     data_inicio = models.DateField(blank=False, null=False)
     data_termino = models.DateField(blank=True, null=True)
     turno = models.CharField(max_length=10, choices=TURNO_CHOICES, default="TARDE")
-    turma = models.CharField(max_length=10, choices=TURMA_CHOICES, default="TURMA1")
+    turma = models.ForeignKey(
+        Turma, on_delete=models.PROTECT, default=turma_padrao_id, related_name="cursos"
+    )
     inst_certificadora = models.ForeignKey(
         InstituicaoCertificadora, on_delete=models.SET_NULL, blank=True, null=True
     )
@@ -439,26 +471,30 @@ class Curso(models.Model):
         self.save()
 
     def __str__(self):
-        turma_display = dict(self.TURMA_CHOICES).get(self.turma, self.turma)
         ano = self.data_termino.year if self.data_termino else "----"
-        if self.turma != "TURMA1":
-            return f"({ano}) - {self.nome_curso} - {turma_display}"
+        if self.exibir_turma:
+            return f"({ano}) - {self.nome_curso} - {self.get_turma_display()}"
         return f"({ano}) - {self.nome_curso}"
 
     @property
     def nome_formatado(self):
-        turma_display = dict(self.TURMA_CHOICES).get(self.turma, self.turma)
-        if self.turma != "TURMA1":
-            return f"{self.nome_curso} - {turma_display}"
+        if self.exibir_turma:
+            return f"{self.nome_curso} - {self.get_turma_display()}"
         return self.nome_curso
 
     @property
     def nome_formatado_ano(self):
-        ano = self.data_termino.year
-        turma_display = dict(self.TURMA_CHOICES).get(self.turma, self.turma)
-        if self.turma != "TURMA1":
-            return f"{ano} - {self.nome_curso} - {turma_display}"
+        ano = self.data_termino.year if self.data_termino else "----"
+        if self.exibir_turma:
+            return f"{ano} - {self.nome_curso} - {self.get_turma_display()}"
         return f"{ano} - {self.nome_curso}"
+
+    def get_turma_display(self):
+        return self.turma.nome
+
+    @property
+    def exibir_turma(self):
+        return self.turma.codigo != "TURMA1"
 
     class Meta:
         indexes = [

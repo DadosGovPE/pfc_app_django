@@ -181,8 +181,8 @@ class ClassifiedsTests(TestCase):
 
         self.client.force_login(self.seller)
         catalog = self.client.get(reverse("classificados:catalog"))
-        self.assertContains(catalog, 'aria-label="2 comentários não lidos"', count=2)
-        self.assertContains(catalog, '<a class="dropdown-item" href="' + reverse("classificados:catalog") + '">Classificados')
+        self.assertNotContains(catalog, "data-classificados-unread-badge")
+        self.assertNotContains(catalog, '<a class="dropdown-item" href="' + reverse("classificados:catalog") + '">Classificados')
         self.assertContains(catalog, reverse("classificados:my_products"))
         count_url = reverse("classificados:unread_count")
         self.assertEqual(self.client.get(count_url).json(), {"count": 2})
@@ -202,14 +202,14 @@ class ClassifiedsTests(TestCase):
         self.assertIsNotNone(comment_one.read_at)
         self.assertIsNone(comment_two.read_at)
         self.assertEqual(self.client.get(count_url).json(), {"count": 1})
-        self.assertContains(self.client.get(reverse("classificados:catalog")), 'aria-label="1 comentário não lido"', count=2)
+        self.assertContains(self.client.get(reverse("classificados:my_products")), 'aria-label="1 comentário não lido"', count=1)
 
-    def test_classificados_navigation_links_only_for_seplag_users(self):
+    def test_classificados_navigation_links_hidden_for_all_users(self):
         catalog_url = reverse("classificados:catalog")
         self.client.force_login(self.seller)
         seller_page = self.client.get(catalog_url)
-        self.assertContains(seller_page, f'href="{catalog_url}" class="nav-link text-center p-0"')
-        self.assertContains(seller_page, f'<a class="dropdown-item" href="{catalog_url}">Classificados')
+        self.assertNotContains(seller_page, f'href="{catalog_url}" class="nav-link text-center p-0"')
+        self.assertNotContains(seller_page, f'<a class="dropdown-item" href="{catalog_url}">Classificados')
 
         self.client.force_login(self.viewer)
         viewer_page = self.client.get(catalog_url)
