@@ -25,7 +25,7 @@
             <div class="col-md-6">
                 <p><strong>Turno:</strong> {{curso.turno}}</p>
                 <p><strong>Trilha:</strong> {{curso.trilha}}</p>
-                <p><strong>Descrição do Curso:</strong> {{curso.descricao}}</p>
+                <div class="mb-3"><strong>Descrição do Curso:</strong> {{curso.descricao|safe|linebreaksbr}}</div>
                 {% if curso.horario %}
                     <p><strong>Horário:</strong> {{curso.horario|safe}}</p>
                 {% endif %}
@@ -94,7 +94,7 @@
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
         <div class="modal-body">
-            {{curso.ementa_curso | safe | linebreaksbr}}
+            {{curso.ementa_curso|safe|linebreaksbr}}
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
