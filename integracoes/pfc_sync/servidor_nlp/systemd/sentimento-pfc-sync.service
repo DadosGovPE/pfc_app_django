@@ -1,0 +1,18 @@
+[Unit]
+Description=Atualiza os dashboards Sentimento e PFC a partir das avaliações
+Requires=docker.service
+After=docker.service network-online.target
+Wants=network-online.target
+StartLimitIntervalSec=2h
+StartLimitBurst=3
+
+[Service]
+Type=oneshot
+User=igpe01
+WorkingDirectory=/home/igpe01/projetos/analise_sentimento_pfc
+ExecStart=/usr/bin/docker exec sentimento-web python /app/job_pfc.py
+TimeoutStartSec=45min
+Restart=on-failure
+RestartSec=15min
+StandardOutput=journal
+StandardError=journal

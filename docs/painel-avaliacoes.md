@@ -16,7 +16,8 @@ A ação também pode ser aberta diretamente em
 http://192.168.4.102/sentimento/sincronizar-pfc .
 O upload de planilha foi preservado como operação legada do painel da LAB;
 para buscar a fonte oficial e atualizar os dois painéis, use **Atualizar do PFC**.
-A execução é manual, sem agendamento periódico criado nesta implantação.
+A execução automática ocorre diariamente às **03:00, no horário de Fortaleza**,
+na LAB-01. A atualização manual continua disponível a qualquer momento.
 
 Na LAB, o mesmo fluxo completo pode ser executado por SSH:
 
@@ -24,6 +25,52 @@ Na LAB, o mesmo fluxo completo pode ser executado por SSH:
 cd /home/igpe01/projetos/analise_sentimento_pfc
 docker compose exec -T web python -c "from app.pfc_sync import executar; executar()"
 ```
+
+## Job diário
+
+Instalado em 10/11/2026 como `sentimento-pfc-sync.timer` e
+`sentimento-pfc-sync.service` no systemd da LAB-01. O serviço roda como `igpe01`
+e executa `docker exec sentimento-web python /app/job_pfc.py`.
+
+- Consulta a fonte completa do Explorer 33, incluindo cursos antigos e períodos
+  avaliativos que continuaram abertos. Não depende da finalização do curso.
+- Classifica somente textos novos ou alterados e atualiza os dois painéis quando
+  há mudanças. Reenvios sem mudanças não substituem os snapshots publicados.
+- O modelo só é carregado se algum texto precisar de classificação.
+- A atualização manual, o upload legado e o job compartilham uma trava de arquivo,
+  impedindo processamento simultâneo entre processos.
+- O timer é persistente: se a máquina estiver desligada no horário, recupera a
+  execução perdida quando voltar. Fica habilitado para iniciar após reinicializações.
+- Em falhas de rede ou atualização ocupada, o serviço tenta novamente após 15 minutos.
+  O systemd limita as partidas a três em uma janela de duas horas.
+- Os logs ficam no journal; não contêm o token nem os textos das avaliações.
+
+Para consultar o próximo horário e os logs:
+
+```console
+systemctl list-timers sentimento-pfc-sync.timer --no-pager
+systemctl show sentimento-pfc-sync.service -p Result -p ExecMainStatus
+journalctl -u sentimento-pfc-sync.service -n 50 --no-pager
+```
+
+Para solicitar uma execução imediata pelo serviço:
+
+```console
+sudo systemctl start sentimento-pfc-sync.service
+```
+
+O botão web **Atualizar do PFC** também executa o fluxo completo imediatamente.
+Para suspender somente o agendamento, mantendo a opção manual:
+
+```console
+sudo systemctl disable --now sentimento-pfc-sync.timer
+```
+
+Os arquivos de instalação estão em `integracoes/pfc_sync/servidor_nlp/systemd/`.
+Para reinstalar em outra máquina, ajuste o usuário/diretório do serviço, copie as
+unidades para `/etc/systemd/system/`, execute `sudo systemctl daemon-reload` e
+`sudo systemctl enable --now sentimento-pfc-sync.timer`. A imagem deve conter
+`job_pfc.py`, `app/pfc_lock.py` e a alteração de `app/dados.py` registrada no patch.
 
 ## Arquitetura e autenticação
 
@@ -83,13 +130,19 @@ Para atualizar também o painel local da LAB, prefira a ação web ou `app.pfc_s
 
 ## Validação
 
-- 73 testes do projeto Django e 7 testes adicionais da integração LAB passaram.
+- 73 testes do projeto Django passaram na implantação inicial.
+- Os 17 testes da integração LAB e do job passaram após a inclusão do agendamento,
+  incluindo trava entre processos, atualização manual, falhas e execução sem mudanças.
 - Primeira sincronização real: **1.786 avaliações, 317 comentários, 82 nomes de cursos**.
 - **311 textos únicos** classificados com o modelo original.
 - Segunda execução: nenhum texto novo para classificar e resposta `alterado: false`.
 - Snapshot local da LAB e snapshot no banco do PFC conferidos com os mesmos totais.
 - Acesso em produção pelo menu do usuário conferido no navegador.
 - API sem token retorna 401; telas sem login redirecionam para autenticação.
+- Primeira execução pelo serviço diário concluída com sucesso em 10/11/2026:
+  1.786 avaliações, 317 comentários e 82 cursos, sem novas classificações e com
+  `alterado: false`. O timer ficou ativo/habilitado; próxima execução confirmada
+  para 11/11/2026 às 03:00 de Fortaleza.
 
 ## Backups e reversão
 
@@ -104,6 +157,13 @@ A imagem anterior foi preservada com a tag
 `analise_sentimento_pfc-web:backup-20261110102909`.
 Para reversão, restaure os arquivos/ambiente e a imagem anterior e recrie somente `web`.
 Os volumes `dados` e `huggingface` devem ser preservados.
+
+Job diário: backup adicional dos arquivos alterados em
+`/home/igpe01/projetos/analise_sentimento_pfc/dados/deploy-backups/job-diario-20261110T111846`.
+A imagem anterior foi preservada como
+`analise_sentimento_pfc-web:antes-job-20261110111846`.
+Antes de reverter essa etapa, desabilite o timer; restaure os arquivos/imagem
+anteriores e recrie somente o serviço `web`. Preserve os volumes de dados e modelo.
 
 O código da integração está versionado neste repositório em `integracoes/pfc_sync/`.
 `servidor_nlp/integracao.patch` registra as alterações pontuais aplicadas ao projeto

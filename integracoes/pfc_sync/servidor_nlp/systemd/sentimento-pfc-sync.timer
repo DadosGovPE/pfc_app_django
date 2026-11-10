@@ -1,0 +1,10 @@
+[Unit]
+Description=Verifica diariamente novas avaliações do PFC às 3h de Fortaleza
+
+[Timer]
+OnCalendar=*-*-* 03:00:00 America/Fortaleza
+Persistent=true
+Unit=sentimento-pfc-sync.service
+
+[Install]
+WantedBy=timers.target

@@ -68,3 +68,13 @@ A execução real atualizou os dois painéis com 1.786 avaliações, 317 coment�
 82 cursos; a segunda execução reaproveitou as 311 classificações únicas e foi idempotente.
 O acesso ao dashboard pelo menu ADMIN foi conferido no navegador em produção.
 Há backups para reversão; os procedimentos estão em docs/painel-avaliacoes.md.
+
+## Atualização diária e manual — 10/11/2026
+
+A LAB-01 verifica diariamente a fonte completa do PFC às 03:00 de Fortaleza,
+inclusive para cursos antigos cujo período avaliativo permaneceu aberto.
+O timer persistente do systemd executa o mesmo fluxo que o botão manual,
+que continua disponível. Textos já classificados são reaproveitados e publicações
+idênticas não substituem os dados. Uma trava compartilhada entre processos protege
+o job, a atualização manual e o upload legado contra processamento simultâneo.
+Os 17 testes da integração LAB/job passaram, incluindo concorrência entre processos.

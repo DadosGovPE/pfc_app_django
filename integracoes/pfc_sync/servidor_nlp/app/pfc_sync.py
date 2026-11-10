@@ -45,6 +45,13 @@ def converter_base(fonte, resultados):
 def executar():
     if not dados._ocupado.acquire(blocking=False):
         raise dados.Ocupado("Outra atualização está em andamento. Tente novamente em instantes.")
+    try:
+        return _executar_bloqueado()
+    finally:
+        dados._ocupado.release()
+
+
+def _executar_bloqueado():
     novo = None
     raiz = Path(__file__).resolve().parent.parent
     modelo = hashlib.sha256((raiz / "modelos" / "classificador.joblib").read_bytes()).hexdigest()
@@ -79,12 +86,14 @@ def executar():
             pfc_url=os.getenv("PFC_API_URL", "https://www.pfc.seplag.pe.gov.br/"),
             cache=DADOS / "pfc" / "classificacoes.json", permitir_http=False,
         )
-        return sincronizar(args, classificar_callback=dados.classificador().classificar,
+        def classificar(textos):
+            return dados.classificador().classificar(textos)
+
+        return sincronizar(args, classificar_callback=classificar,
                            antes_publicar=preparar, apos_publicar=publicar_local)
     finally:
         if novo is not None:
             shutil.rmtree(novo, ignore_errors=True)
-        dados._ocupado.release()
 
 
 def pagina(request, erro="", sucesso=""):

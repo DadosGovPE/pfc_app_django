@@ -63,6 +63,20 @@ class IntegracaoPfcTests(unittest.TestCase):
                 pfc_sync.executar()
             lock.release.assert_not_called()
 
+    def test_falha_de_preparacao_libera_trava(self):
+        with patch.object(pfc_sync, "_executar_bloqueado", side_effect=OSError("modelo ausente")), \
+                patch.object(pfc_sync.dados, "_ocupado") as lock:
+            with self.assertRaises(OSError):
+                pfc_sync.executar()
+            lock.release.assert_called_once()
+
+    def test_classificador_so_e_carregado_quando_necessario(self):
+        with patch.object(pfc_sync, "sincronizar", return_value={"alterado": False}) as sync, \
+                patch.object(pfc_sync.dados, "classificador") as classifier:
+            self.assertEqual(pfc_sync.executar(), {"alterado": False})
+            classifier.assert_not_called()
+            self.assertTrue(callable(sync.call_args.kwargs["classificar_callback"]))
+
     def test_falha_do_pfc_preserva_publicacao_local(self):
         f, c = fonte()
         def falhar(args, **kwargs):
