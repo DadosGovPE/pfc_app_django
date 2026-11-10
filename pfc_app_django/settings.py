@@ -240,6 +240,11 @@ JAZZMIN_SETTINGS = {
 EXPLORER_CONNECTIONS = {"Default": "default"}
 EXPLORER_DEFAULT_CONNECTION = "default"
 
+# Token dedicado à sincronização de avaliações com o servidor NLP.
+PFC_AVALIACOES_SYNC_TOKEN = os.getenv("PFC_AVALIACOES_SYNC_TOKEN", "")
+PFC_AVALIACOES_QUERY_ID = int(os.getenv("PFC_AVALIACOES_QUERY_ID", "33"))
+PFC_AVALIACOES_SYNC_MAX_BYTES = 2 * 1024 * 1024
+
 MOODLE_URL = os.getenv("MOODLE_URL", "https://moodle.seplag.pe.gov.br/moodle")
 MOODLE_TOKEN = os.getenv("MOODLE_TOKEN", "75fa1862d89f8604ee214a3e12d40baa")
 

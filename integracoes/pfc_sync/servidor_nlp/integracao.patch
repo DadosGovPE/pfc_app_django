@@ -1,0 +1,63 @@
+--- a/app/main.py
++++ b/app/main.py
+@@ -21,6 +21,9 @@
+ log = logging.getLogger("sentimento")
+ MAX_BYTES = MAX_UPLOAD_MB * 1024 * 1024
+ 
++from .pfc_sync import router as pfc_sync_router
++
++
+ 
+ @asynccontextmanager
+ async def ciclo(_app):
+@@ -34,6 +37,9 @@
+ app = FastAPI(root_path=PREFIX, lifespan=ciclo, docs_url=None, redoc_url=None, openapi_url=None)
+ app.add_middleware(SessionMiddleware, secret_key=chave_sessao(), session_cookie="sentimento_sessao",
+                    max_age=SESSAO_HORAS * 3600, same_site="lax", https_only=COOKIE_SEGURO, path=PREFIX or "/")
++
++
++app.include_router(pfc_sync_router)
+ 
+ 
+ @app.middleware("http")
+--- a/painel_template.html
++++ b/painel_template.html
+@@ -185,7 +185,8 @@
+       <div class="eyebrow">Programa de Formação Continuada · campo “Avaliação aberta”</div>
+       <nav class="acoes" id="acoes" hidden>
+         <span id="atualizado"></span>
+-        <a class="btn primary" href="atualizar">Atualizar planilha</a>
++        <a class="btn primary" href="sincronizar-pfc">Atualizar do PFC</a>
++        <a class="btn" href="atualizar">Importar planilha</a>
+         <a class="btn" href="baixar">Baixar resultado (.xlsx)</a>
+         <form method="post" action="sair"><button class="btn" type="submit">Sair</button></form>
+       </nav>
+@@ -278,7 +279,7 @@
+     <button class="more" id="more" type="button">Mostrar mais</button>
+   </section>
+ 
+-  <p class="note">Fonte: planilha “Avaliação - Aberta” (<span id="nlinhas"></span> avaliações; só os registros com texto entram na análise). Critérios: <b>Positivo</b>, só elogio (pedido de curso sequencial conta como positivo); <b>Misto</b>, elogio com crítica ou ponto de melhoria; <b>Negativo</b>, só crítica ou problema relatado; <b>Neutro</b>, sugestão sem tom definido ou texto sem conteúdo. <b>Confiança</b> é a probabilidade que o modelo atribuiu ao sentimento escolhido; abaixo de 60% vale revisar o comentário.</p>
++  <p class="note">Fonte: avaliações de cursos do PFC (<span id="nlinhas"></span> avaliações; só os registros com texto entram na análise). Critérios: <b>Positivo</b>, só elogio (pedido de curso sequencial conta como positivo); <b>Misto</b>, elogio com crítica ou ponto de melhoria; <b>Negativo</b>, só crítica ou problema relatado; <b>Neutro</b>, sugestão sem tom definido ou texto sem conteúdo. <b>Confiança</b> é a probabilidade que o modelo atribuiu ao sentimento escolhido; abaixo de 60% vale revisar o comentário.</p>
+ </div>
+ <div class="tip" id="tip" hidden></div>
+ 
+@@ -346,7 +347,7 @@
+ const toggle = (k, v) => { state[k] = state[k] === v ? "" : v; state.shown = 30; render(); };
+ 
+ /* Cabeçalho */
+-document.getElementById("periodo").textContent = `${mesLabel(datasAll[0])} a ${mesLabel(datasAll[datasAll.length - 1])}`;
++document.getElementById("periodo").textContent = DATA.length ? `${mesLabel(datasAll[0])} a ${mesLabel(datasAll[datasAll.length - 1])}` : "período sem comentários";
+ document.getElementById("nlinhas").textContent = fmt(TOTAL_LINHAS);
+ if (SERVIDOR) {
+   document.getElementById("acoes").hidden = false;
+--- a/docker-compose.yml
++++ b/docker-compose.yml
+@@ -7,6 +7,8 @@
+     restart: unless-stopped
+     environment:
+       URL_PREFIX: /sentimento
++      PFC_API_URL: ${PFC_API_URL:-https://www.pfc.seplag.pe.gov.br/}
++      PFC_AVALIACOES_SYNC_TOKEN: ${PFC_AVALIACOES_SYNC_TOKEN:-}
+       # SECRET_KEY: assina o cookie de sessão; se vazia, é gerada e guardada em ./dados
+       SECRET_KEY: ${SECRET_KEY:-}
+     volumes:

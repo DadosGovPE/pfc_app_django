@@ -1,0 +1,128 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Avaliações abertas | PFC</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Instrument+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="{% static 'pfc_app/css/painel_avaliacoes.css' %}">
+</head>
+<body>
+<div class="wrap">
+<nav class="pfc-nav" aria-label="Navegação do PFC"><a href="{% url 'lista_cursos' %}"><strong>PFC</strong> · Voltar aos cursos</a><span>{{ user.username }}</span></nav>
+<noscript><p>Ative o JavaScript para visualizar os gráficos e atualizar as avaliações.</p></noscript>
+
+  <header>
+    <div class="top">
+      <nav class="acoes" aria-label="Ações do painel">
+        <span id="atualizado">{% if atualizado %}Dados de {{ atualizado }}{% else %}Nenhuma atualização concluída{% endif %}</span>
+        <a class="btn" href="{% url 'painel_avaliacoes' %}">Recarregar painel</a>
+      </nav>
+    </div>
+    <h1>Avaliações abertas do PFC</h1>
+    <p class="sub">Sentimento e temas dos comentários deixados pelos participantes ao final de cada curso, <span id="periodo"></span>. Cada comentário é classificado automaticamente por um modelo de linguagem treinado com rótulos manuais.</p>
+  </header>
+
+  {% if not tem_publicacao %}
+  <section class="panel"><h2>Aguardando análise das avaliações</h2><p class="sub">O painel será preenchido quando a próxima análise de avaliações for concluída. Use “Recarregar painel” para consultar os dados mais recentes.</p></section>
+  {% elif not dados_painel.registros %}
+  <section class="panel"><h2>Nenhum comentário encontrado</h2><p class="sub">Há {{ dados_painel.total_linhas }} avaliações na fonte atual. Os gráficos usam apenas avaliações com comentários escritos.</p></section>
+  {% endif %}
+  <div id="dashboard-charts" {% if not dados_painel.registros %}hidden{% endif %}>
+  <section class="filtros" aria-label="Filtros">
+    <div class="linha">
+      <label>Ano<select id="f-ano"></select></label>
+      <label>Mês<select id="f-mes"></select></label>
+      <label>Curso<select id="f-curso"></select></label>
+      <label>Tema<select id="f-tema"></select></label>
+      <label>Sentimento<select id="f-sent"></select></label>
+      <label>Confiança<select id="f-conf"></select></label>
+    </div>
+    <div class="rodape">
+      <div class="busca"><label for="q" style="display:contents">Buscar</label><input type="search" id="q" placeholder="ex.: mofo, carga horária, Power BI"></div>
+      <div><span id="resumo-filtro"></span> <button class="btn" type="button" id="limpar">Limpar filtros</button></div>
+    </div>
+  </section>
+
+  <section class="panel" aria-labelledby="h-resumo">
+    <h2 id="h-resumo" >Resumo</h2>
+    <div class="kpis" id="kpis"></div>
+    <div class="stack" id="stack" role="group" aria-label="Distribuição do sentimento"></div>
+    <div class="legend" id="legend"></div>
+  </section>
+
+  <div class="grid2">
+    <section class="panel" aria-labelledby="h-temas">
+      <div class="panel-head">
+        <h2 id="h-temas">Temas mencionados</h2>
+        <p>Clique num tema para filtrar</p>
+      </div>
+      <div class="themes" id="themes"></div>
+      <p class="note">Um comentário pode tratar de mais de um tema. Barras em número de comentários.</p>
+    </section>
+
+    <section class="panel" aria-labelledby="h-atencao">
+      <div class="panel-head"><h2 id="h-atencao">Pontos de atenção</h2></div>
+      <div class="alerts" id="alerts"></div>
+      <p class="note">Temas com mais comentários mistos ou negativos no filtro atual, e comentários que o modelo classificou com pouca certeza.</p>
+    </section>
+  </div>
+
+  <section class="panel" aria-labelledby="h-mes">
+    <div class="panel-head">
+      <h2 id="h-mes">Comentários por mês de início do curso</h2>
+      <p>Clique numa coluna para filtrar o mês</p>
+    </div>
+    <div class="chart-scroll" id="monthly" tabindex="0" role="region" aria-label="Evolução mensal"></div>
+    <div class="legend" id="legend2"></div>
+  </section>
+
+  <section class="panel" aria-labelledby="h-cursos">
+    <div class="panel-head">
+      <h2 id="h-cursos">Cursos</h2>
+      <div class="controls">
+        <label for="minc">Mínimo de comentários
+          <select id="minc"><option value="1">1</option><option value="3">3</option><option value="5" selected>5</option><option value="10">10</option></select>
+        </label>
+      </div>
+    </div>
+    <div class="table-scroll" tabindex="0" role="region" aria-label="Cursos avaliados">
+      <table>
+        <thead><tr>
+          <th><button data-sort="nome">Curso</button></th>
+          <th class="r"><button data-sort="total">Coment.</button></th>
+          <th>Distribuição</th>
+          <th class="r"><button data-sort="pos">% positivo</button></th>
+          <th class="r"><button data-sort="crit">% com crítica</button></th>
+        </tr></thead>
+        <tbody id="courses"></tbody>
+      </table>
+    </div>
+    <p class="note">“Com crítica” soma comentários mistos e negativos. Em cursos com poucos comentários, um único comentário muda bastante a porcentagem. Clique numa linha para filtrar o curso.</p>
+  </section>
+
+  <section class="panel" aria-labelledby="h-coment" id="comentarios">
+    <div class="panel-head">
+      <h2 id="h-coment">Comentários</h2>
+      <p id="count"></p>
+    </div>
+    <div class="controls">
+      <div class="chips" id="sentChips" role="group" aria-label="Filtrar por sentimento"></div>
+    </div>
+    <div class="clist" id="clist"></div>
+    <button class="more" id="more" type="button">Mostrar mais</button>
+  </section>
+
+  </div>
+  <p class="note">Fonte: avaliações de cursos do PFC (<span id="nlinhas"></span> avaliações; só os registros com texto entram na análise). Critérios: <b>Positivo</b>, só elogio (pedido de curso sequencial conta como positivo); <b>Misto</b>, elogio com crítica ou ponto de melhoria; <b>Negativo</b>, só crítica ou problema relatado; <b>Neutro</b>, sugestão sem tom definido ou texto sem conteúdo. <b>Confiança</b> é a probabilidade que o modelo atribuiu ao sentimento escolhido; abaixo de 60% vale revisar o comentário.</p>
+</div>
+<div class="tip" id="tip" hidden></div>
+
+
+{{ dados_painel|json_script:"dados-painel" }}
+<script src="{% static 'pfc_app/js/painel_avaliacoes.js' %}" defer></script>
+</body>
+</html>

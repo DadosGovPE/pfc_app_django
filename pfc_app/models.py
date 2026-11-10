@@ -932,6 +932,15 @@ class PageVisit(models.Model):
         return f"{self.user.username} visited {self.url} for {self.time_spent} ms"
 
 
+class PainelAvaliacoes(models.Model):
+    """Snapshot administrativo publicado pelo servidor externo de classificação."""
+
+    publicado = models.JSONField(default=dict)
+    rascunho = models.JSONField(null=True, blank=True)
+    classificacoes = models.JSONField(default=dict)
+    atualizado_em = models.DateTimeField(null=True, blank=True)
+
+
 ####################################
 # APP DE PESQUISA - CRIA PESQUISAS #
 ####################################
