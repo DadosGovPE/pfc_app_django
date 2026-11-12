@@ -15,7 +15,9 @@ from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_GET, require_POST
 
 from .models import PainelAvaliacoes
-from .sentimento.services import DadosInvalidos, FonteAlterada, fonte_avaliacoes, publicar_resultados
+from .sentimento.services import (
+    DadosInvalidos, FonteAlterada, dados_painel_com_filtros, fonte_avaliacoes, publicar_resultados,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -52,7 +54,7 @@ def painel_avaliacoes(request):
     dados = painel.publicado if painel else {}
     atualizado = timezone.localtime(painel.atualizado_em).strftime("%d/%m/%Y %H:%M") if painel and painel.atualizado_em else ""
     return render(request, "pfc_app/painel_avaliacoes.html", {
-        "dados_painel": dados or {"registros": [], "total_linhas": 0, "total_cursos": 0},
+        "dados_painel": dados_painel_com_filtros(dados) if dados else {"registros": [], "total_linhas": 0, "total_cursos": 0},
         "atualizado": atualizado, "tem_publicacao": bool(dados),
     })
 

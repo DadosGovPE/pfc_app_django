@@ -1,0 +1,6 @@
+{
+  "name": "pfc-dashboard-tests",
+  "private": true,
+  "scripts": { "test": "node --test painel_avaliacoes.test.cjs" },
+  "devDependencies": { "jsdom": "29.1.1" }
+}

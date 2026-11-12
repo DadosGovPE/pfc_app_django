@@ -13,7 +13,7 @@ from django.utils import timezone
 from explorer.models import Query
 from explorer.utils import get_valid_connection
 
-from pfc_app.models import PainelAvaliacoes
+from pfc_app.models import Curso, Inscricao, PainelAvaliacoes
 
 COLUNAS = ("participante_id", "ID do Curso", "Turma", "Nome do Curso", "Data de Início", "Avaliacao Aberta")
 SENTIMENTOS = {"Positivo", "Misto", "Negativo", "Neutro"}
@@ -119,6 +119,31 @@ def hash_texto(texto):
 
 def _json_canonico(valor):
     return json.dumps(valor, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+
+
+def dados_painel_com_filtros(publicado):
+    """Enriquece o snapshot para exibição sem alterar a publicação ou a fonte NLP."""
+    registros = publicado.get("registros", [])
+    if not registros:
+        return publicado
+    cursos_ids = {r["id_curso"] for r in registros}
+    turmas = {
+        str(curso_id): nome
+        for curso_id, nome in Curso.objects.filter(pk__in=cursos_ids).values_list("pk", "turma__nome")
+    }
+    instrutores = {}
+    docentes = (
+        Inscricao.objects.filter(curso_id__in=cursos_ids, condicao_na_acao="DOCENTE")
+        .ordenar_instrutores()
+        .values_list("curso_id", "participante_id", "participante__nome")
+    )
+    for curso_id, participante_id, nome in docentes:
+        instrutores.setdefault(str(curso_id), []).append({"id": str(participante_id), "nome": nome})
+    return {**publicado, "registros": [
+        {**r, "turma": turmas.get(str(r["id_curso"]), r.get("t", "")),
+         "instrutores": instrutores.get(str(r["id_curso"]), [])}
+        for r in registros
+    ]}
 
 
 def fonte_avaliacoes():

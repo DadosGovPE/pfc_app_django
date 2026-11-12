@@ -19,6 +19,31 @@ para buscar a fonte oficial e atualizar os dois painéis, use **Atualizar do PFC
 A execução automática ocorre diariamente às **03:00, no horário de Fortaleza**,
 na LAB-01. A atualização manual continua disponível a qualquer momento.
 
+### Filtros no dashboard do PFC
+
+Os campos **Curso**, **Turma** e **Instrutor** são combinados: selecionar um deles
+restringe as opções dos demais às avaliações compatíveis. Ano, mês, tema, sentimento,
+confiança e busca também restringem as opções. Cada campo mantém as alternativas do
+próprio filtro; uma seleção sem resultados permanece visível para poder ser removida.
+**Limpar filtros** restaura todos os campos e a busca.
+
+As turmas e os instrutores são consultados no cadastro atual dos cursos ao carregar
+a página, incluindo todos os docentes vinculados. A identificação do curso separa
+as turmas de cursos com o mesmo nome. Cursos com mais de um instrutor não duplicam
+os comentários ou os indicadores; o filtro identifica cada instrutor pelo seu ID.
+As análises já publicadas recebem esses filtros sem nova classificação ou sincronização.
+Esta mudança se aplica à tela do PFC; o painel externo da LAB usa seu próprio template.
+
+Os testes de interação usam o template e o JavaScript reais em um DOM de teste:
+
+```console
+npm --prefix pfc_app/tests_js install
+npm --prefix pfc_app/tests_js test
+```
+
+Os testes Django de permissões, publicação e metadados ficam em
+`pfc_app.tests_painel_avaliacoes` e devem usar um banco de testes isolado.
+
 Na LAB, o mesmo fluxo completo pode ser executado por SSH:
 
 ```console

@@ -15,9 +15,9 @@ from django.test import Client, RequestFactory, SimpleTestCase, TestCase, overri
 from django.urls import reverse
 from django.utils import timezone
 
-from .models import PainelAvaliacoes, User
+from .models import Curso, Inscricao, PainelAvaliacoes, StatusCurso, StatusInscricao, Turma, User
 from .sentimento.services import (
-    COLUNAS, DadosInvalidos, consultar_explorer, fonte_avaliacoes, hash_texto,
+    COLUNAS, DadosInvalidos, consultar_explorer, dados_painel_com_filtros, fonte_avaliacoes, hash_texto,
     normalizar_resultado, publicar_resultados,
 )
 from .views_avaliacoes import painel_avaliacoes
@@ -88,6 +88,77 @@ class NormalizacaoPainelTests(SimpleTestCase):
         self.assertEqual(fonte_avaliacoes()["source_hash"], a["source_hash"])
         consulta.return_value[0]["txt"] = "Alterado"
         self.assertNotEqual(fonte_avaliacoes()["source_hash"], a["source_hash"])
+
+
+class FiltrosPainelTests(TestCase):
+    def setUp(self):
+        status = StatusCurso.objects.create(nome="FINALIZADO")
+        status_inscricao = StatusInscricao.objects.create(nome="APROVADA")
+        self.cursos = [Curso.objects.create(
+            nome_curso="Mesmo curso", ementa_curso="Ementa", ch_curso=8, vagas=20,
+            data_inicio="2026-11-01", status=status,
+            turma=Turma.objects.get_or_create(nome=f"TURMA {n}")[0],
+        ) for n in (1, 2)]
+        self.docentes = [User.objects.create_user(
+            username=f"docente{n}", cpf=f"{n:011d}", nome="Mesmo nome", email=f"d{n}@example.com",
+        ) for n in (1, 2)]
+        discente = User.objects.create_user(
+            username="aluno", cpf="00000000003", nome="Nome privado do aluno", email="a@example.com",
+        )
+        for curso, docente in ((self.cursos[0], self.docentes[0]),
+                               (self.cursos[0], self.docentes[1]),
+                               (self.cursos[1], self.docentes[1])):
+            Inscricao.objects.create(curso=curso, participante=docente,
+                                     condicao_na_acao="DOCENTE", status=status_inscricao)
+        Inscricao.objects.create(curso=self.cursos[0], participante=discente, status=status_inscricao)
+        self.publicado = {"registros": [linha(curso=str(c.pk)) for c in self.cursos],
+                          "total_linhas": 2, "total_cursos": 1, "signature": "original"}
+
+    def test_snapshot_antigo_recebe_turmas_e_todos_os_docentes_sem_duplicar_comentarios(self):
+        original = copy.deepcopy(self.publicado)
+        with self.assertNumQueries(2):
+            dados = dados_painel_com_filtros(self.publicado)
+        registros = dados["registros"]
+        self.assertEqual(len(registros), 2)
+        self.assertEqual([r["turma"] for r in registros], ["TURMA 1", "TURMA 2"])
+        self.assertEqual(registros[0]["instrutores"], [
+            {"id": str(d.pk), "nome": d.nome} for d in self.docentes
+        ])
+        self.assertEqual(registros[1]["instrutores"], [
+            {"id": str(self.docentes[1].pk), "nome": self.docentes[1].nome}
+        ])
+        self.assertNotIn("NOME PRIVADO DO ALUNO", json.dumps(dados))
+        self.assertEqual(self.publicado, original)
+        self.assertEqual(dados["signature"], "original")
+
+    def test_curso_sem_instrutor_e_curso_removido_preservam_comentarios(self):
+        Inscricao.objects.filter(curso=self.cursos[0], condicao_na_acao="DOCENTE").delete()
+        self.cursos[1].delete()
+        registros = dados_painel_com_filtros(self.publicado)["registros"]
+        self.assertEqual(registros[0]["instrutores"], [])
+        self.assertEqual(registros[1]["instrutores"], [])
+        self.assertEqual(registros[1]["turma"], self.publicado["registros"][1]["t"])
+        self.assertEqual(len(registros), 2)
+
+    def test_sem_publicacao_nao_consulta_cursos(self):
+        with self.assertNumQueries(0):
+            self.assertEqual(dados_painel_com_filtros({"registros": []}), {"registros": []})
+
+    def test_dashboard_inclui_metadados_do_cadastro_sem_republicar_analise(self):
+        for r in self.publicado["registros"]:
+            r.update(sent="Positivo", conf=.9, temas=[])
+        painel = PainelAvaliacoes.objects.create(pk=1, publicado=self.publicado)
+        request = RequestFactory().get("/dashboard/avaliacoes/")
+        request.user = self.docentes[0]
+        request.user.role = "ADMIN"
+        response = painel_avaliacoes(request)
+        self.assertContains(response, 'id="f-turma"')
+        self.assertContains(response, 'id="f-instrutor"')
+        self.assertContains(response, self.docentes[0].nome)
+        self.assertContains(response, "TURMA 2")
+        painel.refresh_from_db()
+        self.assertEqual(painel.publicado, self.publicado)
+
 
 @override_settings(PFC_AVALIACOES_SYNC_TOKEN=TOKEN)
 class ApiAvaliacoesTests(TestCase):

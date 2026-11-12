@@ -23,15 +23,19 @@ const mesLabel = ym => { const [y, m] = ym.split("-"); return `${MESES[+m - 1]}/
 const count = arr => { const o = { Positivo: 0, Misto: 0, Negativo: 0, Neutro: 0 }; arr.forEach(d => o[d.sent]++); return o; };
 const norm = s => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
 
-DATA.forEach(d => { d.ano = d.mes.slice(0, 4); d.nt = norm(d.txt + " " + d.curso); });
+DATA.forEach(d => {
+  d.ano = d.mes.slice(0, 4);
+  d.turma = String(d.turma ?? d.t ?? "");
+  d.instrutores = d.instrutores || [];
+  d.nt = norm(d.txt + " " + d.curso);
+});
 const datasAll = DATA.map(d => d.mes).sort();
 const TEMAS = Object.entries(DATA.flatMap(d => d.temas).reduce((o, t) => (o[t] = (o[t] || 0) + 1, o), {})).sort((a, b) => b[1] - a[1]).map(x => x[0]);
 const CURSOS = [...new Set(DATA.map(d => d.curso))].sort((a, b) => a.localeCompare(b, "pt-BR"));
-const ANOS = [...new Set(DATA.map(d => d.ano))].sort();
-const MESES_ALL = [...new Set(DATA.map(d => d.mes))].sort();
+const INSTRUTORES = new Map(DATA.flatMap(d => d.instrutores.map(i => [i.id, i.nome])));
 
-const state = { ano: "", mes: "", curso: "", tema: "", sent: "", conf: "", q: "", shown: 30 };
-const FILTROS = ["ano", "mes", "curso", "tema", "sent", "conf"];
+const state = { ano: "", mes: "", curso: "", turma: "", instrutor: "", tema: "", sent: "", conf: "", q: "", shown: 30 };
+const FILTROS = ["ano", "mes", "curso", "turma", "instrutor", "tema", "sent", "conf"];
 
 /* Subconjunto dos dados: aplica todos os filtros, menos os de `skip` (cada bloco ignora o próprio filtro
    para continuar mostrando as alternativas). */
@@ -42,6 +46,8 @@ function sub(skip = []) {
     (!on("ano") || d.ano === state.ano) &&
     (!on("mes") || d.mes === state.mes) &&
     (!on("curso") || d.curso === state.curso) &&
+    (!on("turma") || d.turma === state.turma) &&
+    (!on("instrutor") || d.instrutores.some(i => i.id === state.instrutor)) &&
     (!on("tema") || d.temas.includes(state.tema)) &&
     (!on("sent") || d.sent === state.sent) &&
     (!on("conf") || (state.conf === "baixa" ? d.conf < LIM_CONF : d.conf >= LIM_CONF)) &&
@@ -71,16 +77,28 @@ document.getElementById("nlinhas").textContent = fmt(TOTAL_LINHAS);
 /* Filtros */
 const opt = (v, l, sel) => `<option value="${esc(v)}"${sel ? " selected" : ""}>${esc(l)}</option>`;
 function renderFiltros() {
-  const mesesVis = MESES_ALL.filter(m => !state.ano || m.startsWith(state.ano));
+  const valores = k => [...new Set(sub(k === "ano" ? ["ano", "mes"] : [k]).flatMap(d => {
+    if (k === "instrutor") return d.instrutores.map(i => i.id);
+    if (k === "tema") return d.temas;
+    if (k === "conf") return [d.conf < LIM_CONF ? "baixa" : "alta"];
+    return [d[k]];
+  }))].filter(Boolean);
+  const ordenar = itens => itens.sort((a, b) => a.localeCompare(b, "pt-BR", { numeric: true }));
+  const confiancas = { baixa: `Baixa (< ${LIM_CONF * 100}%) · revisar`, alta: `Alta (≥ ${LIM_CONF * 100}%)` };
+  const label = (k, v) => k === "mes" ? mesLabel(v) : k === "instrutor" ? INSTRUTORES.get(v) : k === "conf" ? confiancas[v] : v;
   const f = (id, todos, itens, k) => {
+    // Mantém uma seleção visível mesmo quando a busca não encontra resultados.
+    if (state[k] && !itens.some(([v]) => v === state[k])) itens.push([state[k], label(k, state[k])]);
     document.getElementById(id).innerHTML = opt("", todos, !state[k]) + itens.map(([v, l]) => opt(v, l, state[k] === v)).join("");
   };
-  f("f-ano", "Todos", ANOS.map(a => [a, a]), "ano");
-  f("f-mes", "Todos", mesesVis.map(m => [m, mesLabel(m)]), "mes");
-  f("f-curso", "Todos", CURSOS.map(c => [c, c]), "curso");
-  f("f-tema", "Todos", TEMAS.map(t => [t, t]), "tema");
-  f("f-sent", "Todos", SENTS.map(s => [s.k, s.k]), "sent");
-  f("f-conf", "Todas", [["baixa", `Baixa (< ${LIM_CONF * 100}%) · revisar`], ["alta", `Alta (≥ ${LIM_CONF * 100}%)`]], "conf");
+  FILTROS.forEach(k => {
+    const disponiveis = valores(k);
+    const itens = k === "sent" ? SENTS.map(s => s.k).filter(v => disponiveis.includes(v)) :
+      k === "conf" ? ["baixa", "alta"].filter(v => disponiveis.includes(v)) : ordenar(disponiveis);
+    const opcoes = itens.map(v => [v, label(k, v)]);
+    if (k === "instrutor") opcoes.sort((a, b) => a[1].localeCompare(b[1], "pt-BR"));
+    f("f-" + k, k === "conf" || k === "turma" ? "Todas" : "Todos", opcoes, k);
+  });
   const n = sub().length;
   document.getElementById("resumo-filtro").textContent = filtrado() ? `${fmt(n)} de ${fmt(DATA.length)} comentários` : `${fmt(DATA.length)} comentários`;
   document.getElementById("limpar").disabled = !filtrado();
@@ -93,7 +111,8 @@ FILTROS.forEach(k => document.getElementById("f-" + k).addEventListener("change"
 }));
 document.getElementById("q").addEventListener("input", e => { state.q = e.target.value; state.shown = 30; render(); });
 document.getElementById("limpar").addEventListener("click", () => {
-  Object.assign(state, { ano: "", mes: "", curso: "", tema: "", sent: "", conf: "", q: "", shown: 30 });
+  FILTROS.forEach(k => { state[k] = ""; });
+  Object.assign(state, { q: "", shown: 30 });
   document.getElementById("q").value = ""; render();
 });
 
@@ -305,7 +324,7 @@ function renderComments() {
       <div class="stripe" style="background:${col(d.sent)}"></div>
       <div>
         <p>${esc(d.txt)}</p>
-        <div class="meta"><span class="sent">${d.sent}</span><span>${esc(d.curso)}</span><span>${mesLabel(d.mes)}</span>${d.temas.length ? `<span class="tag">${d.temas.map(esc).join(" · ")}</span>` : ""}<span class="mono">participante ${esc(d.p)} · turma ${esc(d.t)} · confiança ${Math.round(d.conf * 100)}%</span></div>
+        <div class="meta"><span class="sent">${d.sent}</span><span>${esc(d.curso)}</span><span>${mesLabel(d.mes)}</span>${d.instrutores.length ? `<span>Instrutores: ${d.instrutores.map(i => esc(i.nome)).join(" · ")}</span>` : ""}${d.temas.length ? `<span class="tag">${d.temas.map(esc).join(" · ")}</span>` : ""}<span class="mono">participante ${esc(d.p)} · ${esc(d.turma ? `Turma: ${d.turma}` : "Turma não informada")} · confiança ${Math.round(d.conf * 100)}%</span></div>
       </div>
     </article>`).join("") : `<div class="empty">Nenhum comentário com esses filtros. Remova um filtro ou mude a busca.</div>`;
   const more = document.getElementById("more");
