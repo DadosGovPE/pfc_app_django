@@ -3785,7 +3785,11 @@ def listar_cursos_priorizados(request):
 
     user_cursos = request.user.pesquisa_cursos_priorizados.all()
 
-    trilhas = Trilha.objects.order_by("ordem_relatorio")
+    trilhas = (
+        Trilha.objects.filter(pesquisa_cursos_priorizados__ano_ref=ajustes.ano_ref)
+        .distinct()
+        .order_by("ordem_relatorio")
+    )
     cursos_por_trilha = defaultdict(list)
 
     for curso in cursos:
