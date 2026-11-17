@@ -1,4 +1,5 @@
 from django import forms
+from django.db.models import Q
 from .models import (
     Avaliacao,
     Subtema,
@@ -16,6 +17,21 @@ CHOICES = [
     ("5", "5"),
     ("0", "N/A"),
 ]
+
+
+class TrilhaAtivaForm(forms.ModelForm):
+    """Oferece trilhas ativas, preservando o vínculo de registros antigos."""
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        campo = self.fields.get("trilha")
+        if campo is None:
+            return
+
+        permitidas = Q(ativa=True)
+        if not self.instance._state.adding and self.instance.trilha_id:
+            permitidas |= Q(pk=self.instance.trilha_id)
+        campo.queryset = campo.queryset.filter(permitidas)
 
 
 class AvaliacaoForm(forms.ModelForm):

@@ -3768,8 +3768,11 @@ def listar_cursos_priorizados(request):
         messages.error(request, f"Pesquisa de priorização fechada!")
         return redirect("lista_cursos")
 
+    user_cursos = request.user.pesquisa_cursos_priorizados.all()
+
     cursos = (
         PesquisaCursosPriorizados.objects.filter(ano_ref=ajustes.ano_ref)
+        .filter(Q(trilha__ativa=True) | Q(pk__in=user_cursos.values("pk")))
         .select_related("trilha")
         .annotate(
             outro_order=Case(
@@ -3783,10 +3786,8 @@ def listar_cursos_priorizados(request):
         )  # "Outro" vai pro final dentro de cada trilha
     )
 
-    user_cursos = request.user.pesquisa_cursos_priorizados.all()
-
     trilhas = (
-        Trilha.objects.filter(pesquisa_cursos_priorizados__ano_ref=ajustes.ano_ref)
+        Trilha.objects.filter(pesquisa_cursos_priorizados__in=cursos)
         .distinct()
         .order_by("ordem_relatorio")
     )
@@ -3821,7 +3822,23 @@ def votar_cursos(request):
 
         try:
             cursos_ids = request.POST.getlist("cursos")
-            cursos = list(PesquisaCursosPriorizados.objects.filter(id__in=cursos_ids))
+            cursos = list(
+                PesquisaCursosPriorizados.objects.filter(id__in=cursos_ids)
+                .select_related("trilha")
+            )
+            escolhas_anteriores = set(
+                request.user.pesquisa_cursos_priorizados.filter(
+                    id__in=cursos_ids
+                ).values_list("pk", flat=True)
+            )
+            if any(
+                curso.trilha_id
+                and not curso.trilha.ativa
+                and curso.pk not in escolhas_anteriores
+                for curso in cursos
+            ):
+                messages.error(request, "Selecione cursos de trilhas ativas.")
+                return redirect("listar_cursos_priorizados")
             # cursos_selecionados = PesquisaCursosPriorizados.objects.filter(
             #     id__in=cursos_ids
             # )

@@ -10,7 +10,7 @@ from django.contrib.admin.widgets import RelatedFieldWidgetWrapper
 # Curso, User, Inscricao, StatusCurso, StatusInscricao, \
 # StatusValidacao, Avaliacao, Validacao_CH,Certificado, \
 # RequerimentoCH, Competencia, Trilha
-from .forms import UsuarioForm
+from .forms import TrilhaAtivaForm, UsuarioForm
 from django.utils.html import format_html
 from django.urls import reverse
 
@@ -52,6 +52,26 @@ def cached_related_changelist_form(model, field_name, objects, base_form=forms.M
         ),
     }
     return type(f"{model.__name__}CachedChangelistForm", (base_form,), attributes)
+
+
+def cached_trilha_changelist_form(model):
+    """Reutiliza trilhas carregadas, limitando as opções para cada registro."""
+    trilhas = list(Trilha.objects.only("id", "nome", "ativa"))
+    base_form = cached_related_changelist_form(model, "trilha", trilhas)
+
+    class TrilhaChangelistForm(base_form):
+        def __init__(self, *args, **kwargs):
+            super().__init__(*args, **kwargs)
+            atual_id = (
+                self.instance.trilha_id if not self.instance._state.adding else None
+            )
+            self.fields["trilha"] = CachedRelatedChoiceField(
+                [trilha for trilha in trilhas if trilha.ativa or trilha.pk == atual_id],
+                required=not model._meta.get_field("trilha").blank,
+                widget=self.fields["trilha"].widget,
+            )
+
+    return TrilhaChangelistForm
 
 
 class CronogramaExecucaoInline(admin.TabularInline):
@@ -161,6 +181,7 @@ class ArquivoCursoInline(admin.TabularInline):
 
 
 class CursoAdmin(admin.ModelAdmin):
+    form = TrilhaAtivaForm
     inlines = [ArquivoCursoInline]
     list_per_page = 25
     show_full_result_count = False
@@ -566,6 +587,7 @@ class AvaliacaoAdmin(admin.ModelAdmin):
 
 
 class Validacao_CHAdmin(admin.ModelAdmin):
+    form = TrilhaAtivaForm
     list_per_page = 25
     show_full_result_count = False
     list_display = (
@@ -682,6 +704,7 @@ class CuradoriaAdminForm(forms.ModelForm):
 
 
 class CuradoriaAdmin(admin.ModelAdmin):
+    form = TrilhaAtivaForm
     list_per_page = 25
     show_full_result_count = False
     list_display = (
@@ -745,8 +768,10 @@ class CuradoriaAdmin(admin.ModelAdmin):
 
 
 class TrilhaAdmin(admin.ModelAdmin):
-    list_display = ("nome", "cor_circulo", "ordem_relatorio", "fundo_tabela")
+    list_display = ("nome", "ativa", "cor_circulo", "ordem_relatorio", "fundo_tabela")
+    list_filter = ("ativa",)
     list_editable = (
+        "ativa",
         "ordem_relatorio",
         "cor_circulo",
         "fundo_tabela",
@@ -754,6 +779,7 @@ class TrilhaAdmin(admin.ModelAdmin):
 
 
 class CursoPriorizadoAdmin(admin.ModelAdmin):
+    form = TrilhaAtivaForm
     search_fields = ["nome_sugestao_acao"]
     list_display = (
         "nome_sugestao_acao",
@@ -770,8 +796,7 @@ class CursoPriorizadoAdmin(admin.ModelAdmin):
     list_per_page = 50
 
     def get_changelist_form(self, request, **kwargs):
-        trilhas = list(Trilha.objects.only("id", "nome"))
-        return cached_related_changelist_form(CursoPriorizado, "trilha", trilhas)
+        return cached_trilha_changelist_form(CursoPriorizado)
 
 
 class CursoNomeFilter(admin.SimpleListFilter):
@@ -860,6 +885,7 @@ intermediario._meta.verbose_name_plural = "Relações Usuário - Cursos Prioriza
 
 
 class PesquisaCursosAdmin(admin.ModelAdmin):
+    form = TrilhaAtivaForm
     list_display = ("nome", "trilha", "forma_atendimento", "ano_ref")
     list_editable = ("trilha", "forma_atendimento")
     list_filter = ("trilha", "forma_atendimento", "ano_ref")
@@ -867,10 +893,7 @@ class PesquisaCursosAdmin(admin.ModelAdmin):
     list_select_related = ("trilha",)
 
     def get_changelist_form(self, request, **kwargs):
-        trilhas = list(Trilha.objects.only("id", "nome"))
-        return cached_related_changelist_form(
-            PesquisaCursosPriorizados, "trilha", trilhas
-        )
+        return cached_trilha_changelist_form(PesquisaCursosPriorizados)
 
 
 class PriorizacaoRespostaAdmin(admin.ModelAdmin):
